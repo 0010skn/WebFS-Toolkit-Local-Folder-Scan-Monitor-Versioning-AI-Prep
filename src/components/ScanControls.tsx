@@ -19,8 +19,10 @@ import {
   compareScans,
   downloadTextReport,
 } from "../lib/scanService";
+import { useTranslations } from "./LocaleProvider";
 
 export default function ScanControls() {
+  const { t } = useTranslations();
   const [directoryHandle] = useAtom(directoryHandleAtom);
   const [currentScan, setCurrentScan] = useAtom(currentScanAtom);
   const [previousScan, setPreviousScan] = useAtom(previousScanAtom);
@@ -98,6 +100,7 @@ export default function ScanControls() {
 
   // 监控效果
   useEffect(() => {
+    setShowAllFiles(true);
     // 清除之前的定时器
     if (monitorTimerRef.current) {
       clearInterval(monitorTimerRef.current);
@@ -126,7 +129,9 @@ export default function ScanControls() {
           disabled={!directoryHandle || scanStatus === "scanning"}
           className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 transition-colors dark:bg-green-700 dark:hover:bg-green-800 dark:focus:ring-green-600"
         >
-          {scanStatus === "scanning" ? "扫描中..." : "开始扫描"}
+          {scanStatus === "scanning"
+            ? t("scanControls.scanning")
+            : t("scanControls.startScan")}
         </button>
 
         <button
@@ -138,7 +143,9 @@ export default function ScanControls() {
               : "bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800"
           } text-white rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 transition-colors`}
         >
-          {isMonitoring ? "停止监控" : "开始监控"}
+          {isMonitoring
+            ? t("scanControls.stopScan")
+            : t("scanControls.startScan")}
         </button>
 
         {changeReport && (
@@ -147,7 +154,7 @@ export default function ScanControls() {
             disabled={isDownloading}
             className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 disabled:opacity-50 transition-colors dark:bg-purple-700 dark:hover:bg-purple-800 dark:focus:ring-purple-600"
           >
-            {isDownloading ? "下载中..." : "下载报告"}
+            {isDownloading ? "下载中..." : t("scanControls.download")}
           </button>
         )}
       </div>
@@ -164,7 +171,7 @@ export default function ScanControls() {
           htmlFor="showAllFiles"
           className="text-sm text-gray-700 dark:text-gray-300"
         >
-          显示所有文件内容（会在下次扫描后生效）
+          {t("scanControls.showAllFiles")}
         </label>
       </div>
 
@@ -176,7 +183,8 @@ export default function ScanControls() {
 
       {isMonitoring && (
         <p className="text-sm text-green-600 dark:text-green-500 animate-pulse">
-          监控中... 每 {monitorInterval / 1000} 秒自动扫描一次
+          监控中... 每 {monitorInterval / 1000} {t("scanControls.seconds")}
+          自动扫描一次
         </p>
       )}
     </div>

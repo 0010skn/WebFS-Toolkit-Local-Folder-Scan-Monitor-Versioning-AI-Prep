@@ -14,8 +14,10 @@ import {
   requestDirectoryAccess,
   checkGitignoreExists,
 } from "../lib/scanService";
+import { useTranslations } from "./LocaleProvider";
 
 export default function FolderPicker() {
+  const { t } = useTranslations();
   const [isSelecting, setIsSelecting] = useState(false);
   const [directoryHandle, setDirectoryHandle] = useAtom(directoryHandleAtom);
   const [hasGitignore, setHasGitignore] = useAtom(hasGitignoreAtom);
@@ -35,7 +37,7 @@ export default function FolderPicker() {
       const dirHandle = await requestDirectoryAccess();
 
       if (!dirHandle) {
-        setErrorMessage("未能获取文件夹访问权限");
+        setErrorMessage(t("folderPicker.noPermission"));
         return;
       }
 
@@ -155,7 +157,7 @@ export default function FolderPicker() {
               onClick={handleCloseModal}
               className="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
             >
-              关闭
+              {t("settings.close")}
             </button>
           </div>
         </div>
@@ -171,10 +173,10 @@ export default function FolderPicker() {
         className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 transition-colors dark:bg-blue-700 dark:hover:bg-blue-800"
       >
         {isSelecting
-          ? "选择中..."
+          ? t("folderPicker.selecting")
           : directoryHandle
           ? "更换文件夹"
-          : "选择文件夹"}
+          : t("folderPicker.selectFolder")}
       </button>
 
       {directoryHandle && (
@@ -189,17 +191,17 @@ export default function FolderPicker() {
             {hasGitignore ? (
               <>
                 <span className="mr-2">
-                  ✓ 已检测到 .gitignore 文件，将应用其规则
+                  ✓ {t("folderPicker.gitignoreFound")}
                 </span>
                 <button
                   onClick={handleViewRules}
                   className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 underline text-xs"
                 >
-                  查看规则
+                  {t("folderPicker.viewRules")}
                 </button>
               </>
             ) : (
-              "⚠️ 未检测到 .gitignore 文件，将扫描所有文件"
+              `⚠️ ${t("folderPicker.gitignoreNotFound")}`
             )}
           </p>
         </div>

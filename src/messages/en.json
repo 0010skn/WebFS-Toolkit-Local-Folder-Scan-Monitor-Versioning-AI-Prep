@@ -1,0 +1,70 @@
+{
+  "app": {
+    "title": "Folda-Scan",
+    "description": "Local Folder Scanning & Monitoring Tool"
+  },
+  "settings": {
+    "title": "Settings",
+    "language": "Language",
+    "about": "About",
+    "theme": "Theme",
+    "darkMode": "Dark Mode",
+    "lightMode": "Light Mode",
+    "close": "Close",
+    "back": "Back",
+    "backToHome": "Back to Home",
+    "languageDescription": "Choose the display language for the application",
+    "themeDescription": "Select your preferred application theme",
+    "lightModeDescription": "Suitable for use in well-lit environments",
+    "darkModeDescription": "Reduces eye strain, ideal for night-time use"
+  },
+  "about": {
+    "title": "About Folda-Scan",
+    "description": "Folda-Scan is a local folder scanning tool that allows you to monitor changes in your project folders in real-time. It supports .gitignore rules and provides project structure reports and version management.",
+    "version": "Version",
+    "developer": "Developer",
+    "copyright": "© 2024 Folda-Scan Team. All rights reserved."
+  },
+  "folderPicker": {
+    "selectFolder": "Select Folder",
+    "selecting": "Selecting...",
+    "noPermission": "Unable to get folder access permission",
+    "gitignoreFound": "Found .gitignore file",
+    "gitignoreNotFound": "No .gitignore file found",
+    "viewRules": "View Rules"
+  },
+  "scanControls": {
+    "startScan": "Start Scan",
+    "stopScan": "Stop Scan",
+    "scanning": "Scanning...",
+    "monitorInterval": "Monitor Interval",
+    "seconds": "seconds",
+    "showAllFiles": "Show All Files",
+    "download": "Download Report"
+  },
+  "versionManager": {
+    "title": "Version Management",
+    "createBackup": "Create Backup",
+    "backupInfo": "Describe this version's changes, e.g. 'Completed login module'",
+    "backingUp": "Backing up...",
+    "backupCurrentVersion": "Backup Current Version",
+    "versionHistory": "Version History",
+    "restore": "Restore",
+    "confirmRestore": "Are you sure you want to restore this version? Current changes will be lost.",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "restoring": "Restoring..."
+  },
+  "resultDisplay": {
+    "waitingForScan": "Scanning, please wait...",
+    "selectFolderPrompt": "Please select a folder and click \"Start Scan\" button",
+    "structure": "Structure",
+    "changes": "Changes",
+    "details": "Details",
+    "files": "Files",
+    "noChanges": "No changes detected",
+    "addedFiles": "Added Files",
+    "deletedFiles": "Deleted Files",
+    "modifiedFiles": "Modified Files"
+  }
+}

@@ -3,9 +3,11 @@
 import { useEffect } from "react";
 import { useAtom } from "jotai";
 import { themeAtom } from "../lib/store";
+import { useTranslations } from "./LocaleProvider";
 
 export default function ThemeToggle() {
   const [theme, setTheme] = useAtom(themeAtom);
+  const { t } = useTranslations();
 
   // 切换主题
   const toggleTheme = () => {
@@ -33,7 +35,9 @@ export default function ThemeToggle() {
     <button
       onClick={toggleTheme}
       className="p-2 rounded-full bg-gray-200 dark:bg-gray-700 transition-colors duration-300 focus:outline-none"
-      aria-label={theme === "light" ? "切换到深色模式" : "切换到浅色模式"}
+      aria-label={
+        theme === "light" ? t("settings.darkMode") : t("settings.lightMode")
+      }
     >
       {theme === "light" ? (
         // 月亮图标 - 深色模式

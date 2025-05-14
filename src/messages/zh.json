@@ -1,0 +1,70 @@
+{
+  "app": {
+    "title": "Folda-Scan",
+    "description": "本地文件夹扫描与监控工具"
+  },
+  "settings": {
+    "title": "设置",
+    "language": "语言",
+    "about": "关于",
+    "theme": "主题",
+    "darkMode": "深色模式",
+    "lightMode": "浅色模式",
+    "close": "关闭",
+    "back": "返回",
+    "backToHome": "返回首页",
+    "languageDescription": "选择应用界面的显示语言",
+    "themeDescription": "选择适合您的应用主题",
+    "lightModeDescription": "适合在光线充足的环境中使用",
+    "darkModeDescription": "减少眼睛疲劳，适合夜间使用"
+  },
+  "about": {
+    "title": "关于 Folda-Scan",
+    "description": "Folda-Scan 是一款本地文件夹扫描工具，可以实时监控项目文件夹中的变化。它支持 .gitignore 规则，提供项目结构报告和版本管理功能。",
+    "version": "版本",
+    "developer": "开发者",
+    "copyright": "© 2024 Folda-Scan 团队。保留所有权利。"
+  },
+  "folderPicker": {
+    "selectFolder": "选择文件夹",
+    "selecting": "选择中...",
+    "noPermission": "未能获取文件夹访问权限",
+    "gitignoreFound": "已找到 .gitignore 文件",
+    "gitignoreNotFound": "未找到 .gitignore 文件",
+    "viewRules": "查看规则"
+  },
+  "scanControls": {
+    "startScan": "开始扫描",
+    "stopScan": "停止扫描",
+    "scanning": "扫描中...",
+    "monitorInterval": "监控间隔",
+    "seconds": "秒",
+    "showAllFiles": "显示所有文件",
+    "download": "下载报告"
+  },
+  "versionManager": {
+    "title": "版本管理",
+    "createBackup": "创建备份",
+    "backupInfo": "描述此版本的更改，如'完成登录模块'等",
+    "backingUp": "备份中...",
+    "backupCurrentVersion": "备份当前版本",
+    "versionHistory": "版本历史",
+    "restore": "恢复",
+    "confirmRestore": "确定要恢复此版本吗？当前未备份的更改将会丢失。",
+    "cancel": "取消",
+    "confirm": "确认",
+    "restoring": "恢复中..."
+  },
+  "resultDisplay": {
+    "waitingForScan": "扫描中，请稍候...",
+    "selectFolderPrompt": "请选择一个文件夹并点击'开始扫描'按钮",
+    "structure": "结构",
+    "changes": "变更",
+    "details": "详情",
+    "files": "文件",
+    "noChanges": "未检测到变更",
+    "addedFiles": "新增文件",
+    "deletedFiles": "删除文件",
+    "modifiedFiles": "修改文件"
+  }
+}

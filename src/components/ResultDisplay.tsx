@@ -11,6 +11,7 @@ import {
   themeAtom,
 } from "../lib/store";
 import dynamic from "next/dynamic";
+import { useTranslations } from "./LocaleProvider";
 
 // 动态导入差异查看器组件
 const DiffViewer = dynamic(() => import("react-diff-viewer-continued"), {
@@ -18,6 +19,7 @@ const DiffViewer = dynamic(() => import("react-diff-viewer-continued"), {
 });
 
 export default function ResultDisplay() {
+  const { t } = useTranslations();
   const [changeReport] = useAtom(changeReportAtom);
   const [currentScan] = useAtom(currentScanAtom);
   const [scanStatus] = useAtom(scanStatusAtom);
@@ -48,10 +50,12 @@ export default function ResultDisplay() {
     return (
       <div className="p-6 bg-gray-50 dark:bg-gray-800 rounded-lg text-center transition-colors duration-300">
         {scanStatus === "scanning" ? (
-          <p className="text-gray-600 dark:text-gray-300">扫描中，请稍候...</p>
+          <p className="text-gray-600 dark:text-gray-300">
+            {t("resultDisplay.waitingForScan")}
+          </p>
         ) : (
           <p className="text-gray-600 dark:text-gray-300">
-            请选择一个文件夹并点击"开始扫描"按钮
+            {t("resultDisplay.selectFolderPrompt")}
           </p>
         )}
 
@@ -94,7 +98,11 @@ export default function ResultDisplay() {
       changeReport.modifiedFiles.length > 0;
 
     if (!hasChanges) {
-      return <p className="text-gray-600 dark:text-gray-300">没有检测到变动</p>;
+      return (
+        <p className="text-gray-600 dark:text-gray-300">
+          {t("resultDisplay.noChanges")}
+        </p>
+      );
     }
 
     return (
@@ -102,7 +110,7 @@ export default function ResultDisplay() {
         {changeReport.addedFiles.length > 0 && (
           <div>
             <h3 className="text-lg font-medium mb-2 dark:text-white">
-              新增文件 ({changeReport.addedFiles.length})
+              {t("resultDisplay.addedFiles")} ({changeReport.addedFiles.length})
             </h3>
             <ul className="list-disc pl-5 space-y-1">
               {changeReport.addedFiles.map((file) => {
@@ -132,7 +140,8 @@ export default function ResultDisplay() {
         {changeReport.deletedFiles.length > 0 && (
           <div>
             <h3 className="text-lg font-medium mb-2 dark:text-white">
-              删除文件 ({changeReport.deletedFiles.length})
+              {t("resultDisplay.deletedFiles")} (
+              {changeReport.deletedFiles.length})
             </h3>
             <ul className="list-disc pl-5 space-y-1">
               {changeReport.deletedFiles.map((file) => (
@@ -147,7 +156,8 @@ export default function ResultDisplay() {
         {changeReport.modifiedFiles.length > 0 && (
           <div>
             <h3 className="text-lg font-medium mb-2 dark:text-white">
-              修改文件 ({changeReport.modifiedFiles.length})
+              {t("resultDisplay.modifiedFiles")} (
+              {changeReport.modifiedFiles.length})
             </h3>
             <ul className="list-disc pl-5 space-y-1">
               {changeReport.modifiedFiles
@@ -291,7 +301,7 @@ export default function ResultDisplay() {
             }`}
             onClick={() => setActiveTab("structure")}
           >
-            项目结构
+            {t("resultDisplay.structure")}
           </button>
           <button
             className={`px-4 py-2 border-b-2 font-medium text-sm transition-colors duration-300 ${
@@ -301,7 +311,7 @@ export default function ResultDisplay() {
             }`}
             onClick={() => setActiveTab("changes")}
           >
-            变动列表
+            {t("resultDisplay.changes")}
           </button>
           <button
             className={`px-4 py-2 border-b-2 font-medium text-sm transition-colors duration-300 ${
@@ -312,7 +322,7 @@ export default function ResultDisplay() {
             onClick={() => setActiveTab("details")}
             disabled={!selectedFile}
           >
-            文件详情
+            {t("resultDisplay.details")}
           </button>
           {showAllFiles && (
             <button
@@ -323,7 +333,7 @@ export default function ResultDisplay() {
               }`}
               onClick={() => setActiveTab("files")}
             >
-              文件内容
+              {t("resultDisplay.files")}
             </button>
           )}
         </nav>

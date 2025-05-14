@@ -24,8 +24,10 @@ import {
 } from "../lib/versionService";
 import { performScan, compareScans } from "../lib/scanService";
 import { VersionHistoryItem } from "@/types";
+import { useTranslations } from "./LocaleProvider";
 
 export default function VersionManager() {
+  const { t } = useTranslations();
   const [directoryHandle] = useAtom(directoryHandleAtom);
   const [versionHistory, setVersionHistory] = useAtom(versionHistoryAtom);
   const [showVersionModal, setShowVersionModal] = useAtom(showVersionModalAtom);
@@ -220,22 +222,20 @@ export default function VersionManager() {
             警告：此操作无法撤销
           </h3>
           <p className="text-gray-700 dark:text-gray-300 mb-6">
-            此操作将用选定版本的内容覆盖当前项目文件，当前未备份的更改将会丢失（.fe
-            文件夹本身不会受影响）。 确定要恢复到版本 "
-            {versionToRestore.versionTitle}" 吗？
+            {t("versionManager.confirmRestore")}
           </p>
           <div className="flex justify-end space-x-3">
             <button
               onClick={cancelRestore}
               className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
             >
-              取消
+              {t("versionManager.cancel")}
             </button>
             <button
               onClick={confirmRestore}
               className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
             >
-              确认恢复
+              {t("versionManager.confirm")}
             </button>
           </div>
         </div>
@@ -274,7 +274,7 @@ export default function VersionManager() {
                 className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 underline"
                 disabled={operationStatus !== "idle"}
               >
-                恢复此版本
+                {t("versionManager.restore")}
               </button>
             </div>
           </div>
@@ -326,7 +326,7 @@ export default function VersionManager() {
         onClick={() => setShowVersionModal(true)}
         className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition-colors dark:bg-purple-700 dark:hover:bg-purple-800"
       >
-        版本管理
+        {t("versionManager.title")}
       </button>
     );
   };
@@ -341,7 +341,7 @@ export default function VersionManager() {
           <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-3xl w-full max-h-[90vh] flex flex-col transition-colors duration-300">
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-2xl font-bold text-gray-800 dark:text-white">
-                版本管理
+                {t("versionManager.title")}
               </h3>
               <button
                 onClick={() => setShowVersionModal(false)}
@@ -355,14 +355,14 @@ export default function VersionManager() {
 
             <div className="bg-gray-100 dark:bg-gray-700 p-4 rounded-lg mb-6">
               <h4 className="text-lg font-semibold mb-3 text-gray-700 dark:text-gray-300">
-                备份当前版本
+                {t("versionManager.createBackup")}
               </h4>
               <div className="flex items-center space-x-3">
                 <input
                   type="text"
                   value={backupInfo}
                   onChange={(e) => setBackupInfo(e.target.value)}
-                  placeholder="描述此版本的更改，如'完成登录模块'等"
+                  placeholder={t("versionManager.backupInfo")}
                   className="flex-1 p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   disabled={operationStatus !== "idle"}
                 />
@@ -372,14 +372,14 @@ export default function VersionManager() {
                   className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 transition-colors"
                 >
                   {operationStatus === "backing-up"
-                    ? "备份中..."
-                    : "备份当前版本"}
+                    ? t("versionManager.backingUp")
+                    : t("versionManager.backupCurrentVersion")}
                 </button>
               </div>
             </div>
 
             <h4 className="text-lg font-semibold mb-3 text-gray-700 dark:text-gray-300">
-              版本历史
+              {t("versionManager.versionHistory")}
             </h4>
             {renderVersionHistory()}
           </div>

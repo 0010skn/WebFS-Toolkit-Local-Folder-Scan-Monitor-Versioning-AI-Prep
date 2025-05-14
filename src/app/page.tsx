@@ -5,11 +5,14 @@ import ScanControls from "../components/ScanControls";
 import ResultDisplay from "../components/ResultDisplay";
 import ThemeToggle from "../components/ThemeToggle";
 import VersionManager from "../components/VersionManager";
+import SettingsButton from "../components/SettingsModal";
 import { useAtom } from "jotai";
 import { directoryHandleAtom } from "../lib/store";
+import { useTranslations } from "@/components/LocaleProvider";
 
 export default function Home() {
   const [directoryHandle] = useAtom(directoryHandleAtom);
+  const { t } = useTranslations();
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8 transition-colors duration-300">
@@ -17,14 +20,15 @@ export default function Home() {
         <header className="mb-8 flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-              Folda-Scan
+              {t("app.title")}
             </h1>
             <p className="mt-2 text-lg text-gray-600 dark:text-gray-300">
-              本地文件夹扫描与监控工具
+              {t("app.description")}
             </p>
           </div>
           <div className="flex items-center space-x-3">
             {directoryHandle && <VersionManager />}
+            <SettingsButton />
             <ThemeToggle />
           </div>
         </header>
@@ -32,7 +36,7 @@ export default function Home() {
         <main className="space-y-6">
           <section className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow transition-colors duration-300">
             <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">
-              选择文件夹
+              {t("folderPicker.selectFolder")}
             </h2>
             <FolderPicker />
             <ScanControls />
@@ -42,8 +46,7 @@ export default function Home() {
         </main>
 
         <footer className="mt-12 text-center text-gray-500 dark:text-gray-400 text-sm">
-          <p>基于 Next.js 14 和 File System Access API 构建</p>
-          <p className="mt-1">支持 .gitignore 规则、实时监控与版本管理</p>
+          <p>{t("about.copyright")}</p>
         </footer>
       </div>
     </div>
