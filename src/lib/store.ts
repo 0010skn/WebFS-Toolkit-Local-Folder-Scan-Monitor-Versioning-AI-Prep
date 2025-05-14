@@ -1,5 +1,5 @@
 import { atom } from "jotai";
-import { ScanResult, ChangeReport } from "@/types";
+import { ScanResult, ChangeReport, VersionHistoryItem } from "@/types";
 
 // 文件夹句柄
 export const directoryHandleAtom = atom<FileSystemDirectoryHandle | null>(null);
@@ -39,3 +39,26 @@ export const showAllFilesAtom = atom<boolean>(false);
 
 // 主题模式
 export const themeAtom = atom<"light" | "dark">("light");
+
+// 版本管理相关状态
+export const versionHistoryAtom = atom<VersionHistoryItem[]>([]);
+
+// 是否显示版本管理模态窗
+export const showVersionModalAtom = atom<boolean>(false);
+
+// 版本管理操作状态
+export const versionOperationStatusAtom = atom<
+  "idle" | "backing-up" | "restoring" | "error"
+>("idle");
+
+// 版本管理操作信息
+export const versionOperationMessageAtom = atom<string | null>(null);
+
+// 版本备份信息输入
+export const versionBackupInfoAtom = atom<string>("");
+
+// 备份进度
+export const backupProgressAtom = atom<number>(0);
+
+// 恢复进度
+export const restoreProgressAtom = atom<number>(0);

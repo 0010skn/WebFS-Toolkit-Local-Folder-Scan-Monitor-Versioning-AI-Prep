@@ -4,8 +4,13 @@ import FolderPicker from "../components/FolderPicker";
 import ScanControls from "../components/ScanControls";
 import ResultDisplay from "../components/ResultDisplay";
 import ThemeToggle from "../components/ThemeToggle";
+import VersionManager from "../components/VersionManager";
+import { useAtom } from "jotai";
+import { directoryHandleAtom } from "../lib/store";
 
 export default function Home() {
+  const [directoryHandle] = useAtom(directoryHandleAtom);
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8 transition-colors duration-300">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -18,7 +23,10 @@ export default function Home() {
               本地文件夹扫描与监控工具
             </p>
           </div>
-          <ThemeToggle />
+          <div className="flex items-center space-x-3">
+            {directoryHandle && <VersionManager />}
+            <ThemeToggle />
+          </div>
         </header>
 
         <main className="space-y-6">
@@ -35,7 +43,7 @@ export default function Home() {
 
         <footer className="mt-12 text-center text-gray-500 dark:text-gray-400 text-sm">
           <p>基于 Next.js 14 和 File System Access API 构建</p>
-          <p className="mt-1">支持 .gitignore 规则和实时监控</p>
+          <p className="mt-1">支持 .gitignore 规则、实时监控与版本管理</p>
         </footer>
       </div>
     </div>

@@ -93,6 +93,11 @@ export async function scanDirectory(
   for await (const [name, handle] of dirHandle.entries()) {
     const path = basePath ? `${basePath}/${name}` : name;
 
+    // 跳过 .fe 版本管理目录
+    if (name === ".fe" || path.startsWith(".fe/")) {
+      continue;
+    }
+
     // 如果该路径应该被忽略，则跳过
     if (!shouldInclude(path)) {
       continue;

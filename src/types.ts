@@ -32,3 +32,16 @@ export interface ChangeReport {
   projectStructure: string;
   allFiles?: FileSystemEntry[]; // 添加所有文件的列表，用于显示所有文件内容
 }
+
+// 版本信息类型
+export interface VersionInfo {
+  backupTime: string; // ISO 8601 格式的备份时间戳
+  versionTitle: string; // 用户提供的版本标题或自动生成的时间戳
+}
+
+// 版本历史记录类型
+export interface VersionHistoryItem {
+  versionTitle: string; // 版本标题
+  backupTime: string; // 版本备份时间
+  folderName: string; // 版本文件夹名称
+}
