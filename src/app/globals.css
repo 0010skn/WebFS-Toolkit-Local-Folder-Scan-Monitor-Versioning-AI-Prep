@@ -1,0 +1,77 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+.dark {
+  --background: #121212;
+  --foreground: #f5f5f5;
+}
+
+html,
+body {
+  transition: background-color 0.5s ease, color 0.5s ease;
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* 淡入动画效果 */
+.animate-fade-in {
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+@keyframes fadeIn {
+  0% {
+    opacity: 0.6;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+/* 深色模式下的样式覆盖 */
+.dark .bg-white {
+  background-color: #1e1e1e;
+}
+
+.dark .bg-gray-50 {
+  background-color: #2d2d2d;
+}
+
+.dark .bg-gray-100 {
+  background-color: #333333;
+}
+
+.dark .text-gray-600 {
+  color: #d1d1d1;
+}
+
+.dark .text-gray-700 {
+  color: #e5e5e5;
+}
+
+.dark .text-gray-800 {
+  color: #f0f0f0;
+}
+
+.dark .border-gray-200 {
+  border-color: #3a3a3a;
+}
+
+.dark .shadow {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+}
