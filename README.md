@@ -1,3 +1,20 @@
+📂 Folda-Scan: Your Modern Local File Companion in the Browser! 🚀
+
+Folda-Scan leverages the File System Access API to bring powerful local folder exploration, real-time monitoring, and simple version control directly to your web browser. No installation needed!
+
+✨ Features:
+*   📁 **Browse Local Folders:** Securely access and navigate your local project directories.
+*   👁️ **Real-time Monitoring:** Keep an eye on file changes as they happen.
+*   📜 **.gitignore Aware:** Respects your project's ignore rules for cleaner scans and backups.
+*   ⏱️ **Simple Version Management:** Easily create backups of your project's current state and restore to previous versions. All stored locally in a `.fe` folder.
+*   🤖 **AI-Ready Reports:** Generate Markdown reports of your project structure, file contents, and changes – perfect for feeding to AI assistants or for documentation.
+*   🗂️ **View Project Structure, Changes, and File Content** directly in the app.
+
+Built with Next.js 14 and the File System Access API. Ideal for developers, designers, and anyone needing a quick, lightweight tool for local project management without the overhead of complex setups.
+
+Open source and privacy-focused – all operations happen locally in your browser.
+
+
 # Folda-Scan - 本地文件夹扫描工具
 
 Folda-Scan 是一个基于 Next.js 14 开发的网页应用，用于扫描和监控本地项目文件夹的变化。
