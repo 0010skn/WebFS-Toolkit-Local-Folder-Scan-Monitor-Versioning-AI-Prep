@@ -1,12 +1,9 @@
 <!-- GitHub Badges -->
 <p align="center">
-  <a href="https://github.com/YOUR_USERNAME/YOUR_REPOSITORY/stargazers"><img src="https://img.shields.io/github/stars/YOUR_USERNAME/YOUR_REPOSITORY?style=social" alt="GitHub stars"></a>
-  <a href="https://github.com/YOUR_USERNAME/YOUR_REPOSITORY/network/members"><img src="https://img.shields.io/github/forks/YOUR_USERNAME/YOUR_REPOSITORY?style=social" alt="GitHub forks"></a>
-  <a href="https://github.com/YOUR_USERNAME/YOUR_REPOSITORY/issues"><img src="https://img.shields.io/github/issues/YOUR_USERNAME/YOUR_REPOSITORY" alt="GitHub issues"></a>
-  <a href="https://github.com/YOUR_USERNAME/YOUR_REPOSITORY/blob/main/LICENSE"><img src="https://img.shields.io/github/license/YOUR_USERNAME/YOUR_REPOSITORY" alt="GitHub license"></a>
-  <!-- Optional: Add build status, version, etc. if applicable -->
-  <!-- <a href="YOUR_BUILD_STATUS_LINK"><img src="YOUR_BUILD_STATUS_BADGE_URL" alt="Build Status"></a> -->
-  <!-- <a href="YOUR_NPM_PACKAGE_LINK"><img src="https://img.shields.io/npm/v/YOUR_PACKAGE_NAME" alt="npm version"></a> -->
+  <a href="https://github.com/0010skn/WebFS-Toolkit-Local-Folder-Scan-Monitor-Versioning-AI-Prep/stargazers"><img src="https://img.shields.io/github/stars/0010skn/WebFS-Toolkit-Local-Folder-Scan-Monitor-Versioning-AI-Prep?style=social" alt="GitHub stars"></a>
+  <a href="https://github.com/0010skn/WebFS-Toolkit-Local-Folder-Scan-Monitor-Versioning-AI-Prep/network/members"><img src="https://img.shields.io/github/forks/0010skn/WebFS-Toolkit-Local-Folder-Scan-Monitor-Versioning-AI-Prep?style=social" alt="GitHub forks"></a>
+  <a href="https://github.com/0010skn/WebFS-Toolkit-Local-Folder-Scan-Monitor-Versioning-AI-Prep/issues"><img src="https://img.shields.io/github/issues/0010skn/WebFS-Toolkit-Local-Folder-Scan-Monitor-Versioning-AI-Prep" alt="GitHub issues"></a>
+  <a href="https://github.com/0010skn/WebFS-Toolkit-Local-Folder-Scan-Monitor-Versioning-AI-Prep/blob/main/LICENSE"><img src="https://img.shields.io/github/license/0010skn/WebFS-Toolkit-Local-Folder-Scan-Monitor-Versioning-AI-Prep" alt="GitHub license"></a>
 </p>
 
 # 📂 Folda-Scan
@@ -48,7 +45,7 @@ Open source and privacy-focused – all operations happen locally in your browse
 
 <p align="center">
   <!-- You can repeat badges or simply point to the project -->
-  <strong><a href="#-folda-scan">[English Version]</a></strong>
+  <strong><a href="#-folda-scan">[English Version / 英文版]</a></strong>
 </p>
 
 # 📂 折尔达-扫 (Folda-Scan)
