@@ -86,7 +86,7 @@ export async function scanDirectory(
   dirHandle: FileSystemDirectoryHandle,
   shouldInclude: (path: string) => boolean,
   basePath: string = "",
-  maxContentSize: number = 1024 * 1024 // 默认限制文本文件内容为1MB
+  maxContentSize: number = 1024 * 1024 * 10 // 默认限制文本文件内容为10MB
 ): Promise<FileSystemEntry[]> {
   const entries: FileSystemEntry[] = [];
 
@@ -217,20 +217,34 @@ export function generateDiffReport(
   const deletedFiles: FileSystemEntry[] = [];
   const modifiedFiles: FileDiff[] = [];
 
-  // 查找删除的文件
+  // 分类用于显示的目录集合
+  const addedDirs: Set<string> = new Set();
+  const deletedDirs: Set<string> = new Set();
+
+  // 查找删除的文件和文件夹
   oldScan.entries.forEach((oldEntry) => {
     if (!newEntryMap.has(oldEntry.path)) {
       deletedFiles.push(oldEntry);
+
+      // 如果是文件夹，记录到删除的文件夹集合中
+      if (oldEntry.kind === "directory") {
+        deletedDirs.add(oldEntry.path);
+      }
     }
   });
 
-  // 查找新增和修改的文件
+  // 查找新增和修改的文件和文件夹
   newScan.entries.forEach((newEntry) => {
     const oldEntry = oldEntryMap.get(newEntry.path);
 
     if (!oldEntry) {
-      // 新增的文件
+      // 新增的文件或文件夹
       addedFiles.push(newEntry);
+
+      // 如果是文件夹，记录到新增的文件夹集合中
+      if (newEntry.kind === "directory") {
+        addedDirs.add(newEntry.path);
+      }
 
       // 为新增的有内容的文本文件创建差异对象
       if (newEntry.kind === "file" && newEntry.content) {
@@ -279,6 +293,41 @@ export function generateDiffReport(
 
       modifiedFiles.push(fileDiff);
     }
+    // 注意：文件夹内容的修改已经通过文件的增删改表现出来，所以这里不需要特别处理文件夹的修改
+  });
+
+  // 过滤掉已被删除的父文件夹内的文件，避免重复显示
+  const filteredDeletedFiles = deletedFiles.filter((entry) => {
+    // 如果是文件，检查其父目录是否已被删除
+    if (entry.kind === "file") {
+      const pathParts = entry.path.split("/");
+      // 依次检查从根到当前路径的每一级父目录
+      for (let i = 1; i < pathParts.length; i++) {
+        const parentPath = pathParts.slice(0, i).join("/");
+        if (deletedDirs.has(parentPath)) {
+          // 如果父目录已被删除，则该文件不需要单独显示
+          return false;
+        }
+      }
+    }
+    return true;
+  });
+
+  // 过滤掉已添加的父文件夹内的文件，避免重复显示
+  const filteredAddedFiles = addedFiles.filter((entry) => {
+    // 如果是文件，检查其父目录是否已被添加
+    if (entry.kind === "file") {
+      const pathParts = entry.path.split("/");
+      // 依次检查从根到当前路径的每一级父目录
+      for (let i = 1; i < pathParts.length; i++) {
+        const parentPath = pathParts.slice(0, i).join("/");
+        if (addedDirs.has(parentPath)) {
+          // 如果父目录已被添加，则该文件不需要单独显示
+          return false;
+        }
+      }
+    }
+    return true;
   });
 
   // 生成项目结构字符串
@@ -287,17 +336,16 @@ export function generateDiffReport(
   // 创建变动报告
   const report: ChangeReport = {
     timestamp: newScan.timestamp,
-    addedFiles,
-    deletedFiles,
+    addedFiles: filteredAddedFiles,
+    deletedFiles: filteredDeletedFiles,
     modifiedFiles,
     projectStructure,
   };
 
   // 如果需要，添加所有文件
   if (showAllFiles) {
-    // 只包含文件，不包含目录
-    const allFiles = newScan.entries.filter((entry) => entry.kind === "file");
-    report.allFiles = allFiles;
+    // 包含文件和目录
+    report.allFiles = newScan.entries;
   }
 
   return report;
@@ -312,17 +360,23 @@ export function generateTextReport(report: ChangeReport): string {
   result += report.projectStructure + "\n\n";
 
   if (report.addedFiles.length > 0) {
-    result += "## 新增文件\n\n";
+    result += "## 新增文件和文件夹\n\n";
     report.addedFiles.forEach((file) => {
-      result += `- ${file.path}\n`;
+      const isDirectory = file.kind === "directory";
+      result += `- ${file.path}${isDirectory ? "/" : ""} ${
+        isDirectory ? "[目录]" : ""
+      }\n`;
     });
     result += "\n";
   }
 
   if (report.deletedFiles.length > 0) {
-    result += "## 删除文件\n\n";
+    result += "## 删除文件和文件夹\n\n";
     report.deletedFiles.forEach((file) => {
-      result += `- ${file.path}\n`;
+      const isDirectory = file.kind === "directory";
+      result += `- ${file.path}${isDirectory ? "/" : ""} ${
+        isDirectory ? "[目录]" : ""
+      }\n`;
     });
     result += "\n";
   }
@@ -341,12 +395,28 @@ export function generateTextReport(report: ChangeReport): string {
 
   // 添加所有文件内容部分
   if (report.allFiles && report.allFiles.length > 0) {
-    result += "## 所有文件内容\n\n";
+    result += "## 所有文件和文件夹内容\n\n";
+
+    // 先统计文件和文件夹的数量
+    const fileCount = report.allFiles.filter(
+      (file) => file.kind === "file"
+    ).length;
+    const dirCount = report.allFiles.filter(
+      (file) => file.kind === "directory"
+    ).length;
+
+    result += `共计: ${report.allFiles.length} 个项目 (${fileCount} 个文件, ${dirCount} 个文件夹)\n\n`;
 
     report.allFiles.forEach((file) => {
-      result += `### ${file.path}\n\n`;
-      if (file.content) {
+      const isDirectory = file.kind === "directory";
+      result += `### ${file.path}${isDirectory ? "/" : ""} ${
+        isDirectory ? "[目录]" : ""
+      }\n\n`;
+
+      if (!isDirectory && file.content) {
         result += "```\n" + file.content + "\n```\n\n";
+      } else if (isDirectory) {
+        result += "(文件夹)\n\n";
       } else {
         result += "(无法显示文件内容)\n\n";
       }

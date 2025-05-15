@@ -87,6 +87,39 @@ export default function ResultDisplay() {
     setActiveTab("details");
   };
 
+  // 文件夹图标
+  const FolderIcon = () => (
+    <svg
+      className="inline-block w-4 h-4 mr-1"
+      fill="currentColor"
+      viewBox="0 0 20 20"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        fillRule="evenodd"
+        d="M2 6a2 2 0 012-2h4l2 2h4a2 2 0 012 2v1H8a3 3 0 00-3 3v1.5a1.5 1.5 0 01-3 0V6z"
+        clipRule="evenodd"
+      />
+      <path d="M6 12a2 2 0 012-2h8a2 2 0 012 2v2a2 2 0 01-2 2H2h2a2 2 0 002-2v-2z" />
+    </svg>
+  );
+
+  // 文件图标
+  const FileIcon = () => (
+    <svg
+      className="inline-block w-4 h-4 mr-1"
+      fill="currentColor"
+      viewBox="0 0 20 20"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        fillRule="evenodd"
+        d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"
+        clipRule="evenodd"
+      />
+    </svg>
+  );
+
   // 渲染变动列表
   const renderChanges = () => {
     if (!changeReport)
@@ -118,18 +151,25 @@ export default function ResultDisplay() {
                 const hasFileDiff = changeReport.modifiedFiles.some(
                   (diff) => diff.path === file.path && diff.type === "added"
                 );
+                const isDirectory = file.kind === "directory";
 
                 return (
                   <li
                     key={file.path}
                     className={`text-green-600 dark:text-green-400 ${
-                      hasFileDiff ? "cursor-pointer hover:underline" : ""
+                      hasFileDiff && !isDirectory
+                        ? "cursor-pointer hover:underline"
+                        : ""
                     }`}
                     onClick={
-                      hasFileDiff ? () => handleFileClick(file.path) : undefined
+                      hasFileDiff && !isDirectory
+                        ? () => handleFileClick(file.path)
+                        : undefined
                     }
                   >
+                    {isDirectory ? <FolderIcon /> : <FileIcon />}
                     {file.path}
+                    {isDirectory ? "/" : ""}
                   </li>
                 );
               })}
@@ -144,11 +184,19 @@ export default function ResultDisplay() {
               {changeReport.deletedFiles.length})
             </h3>
             <ul className="list-disc pl-5 space-y-1">
-              {changeReport.deletedFiles.map((file) => (
-                <li key={file.path} className="text-red-600 dark:text-red-400">
-                  {file.path}
-                </li>
-              ))}
+              {changeReport.deletedFiles.map((file) => {
+                const isDirectory = file.kind === "directory";
+                return (
+                  <li
+                    key={file.path}
+                    className="text-red-600 dark:text-red-400"
+                  >
+                    {isDirectory ? <FolderIcon /> : <FileIcon />}
+                    {file.path}
+                    {isDirectory ? "/" : ""}
+                  </li>
+                );
+              })}
             </ul>
           </div>
         )}
@@ -168,6 +216,7 @@ export default function ResultDisplay() {
                     className="text-blue-600 dark:text-blue-400 cursor-pointer hover:underline"
                     onClick={() => handleFileClick(file.path)}
                   >
+                    <FileIcon />
                     {file.path}
                   </li>
                 ))}
@@ -263,7 +312,10 @@ export default function ResultDisplay() {
     return (
       <div className="space-y-6">
         <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
-          共找到 {changeReport.allFiles.length} 个文件
+          {t("resultDisplay.filesAndFoldersCount").replace(
+            "{count}",
+            changeReport.allFiles.length.toString()
+          )}
         </p>
 
         {changeReport.allFiles.map((file) => (
@@ -272,15 +324,21 @@ export default function ResultDisplay() {
             className="border-b dark:border-gray-700 pb-4 mb-4 last:border-0"
           >
             <h3 className="text-md font-medium text-blue-600 dark:text-blue-400">
+              {file.kind === "directory" ? <FolderIcon /> : <FileIcon />}
               {file.path}
+              {file.kind === "directory" ? "/" : ""}
             </h3>
-            {file.content ? (
+            {file.kind === "file" && file.content ? (
               <pre className="mt-2 p-3 bg-gray-100 dark:bg-gray-700 rounded-md text-sm overflow-auto max-h-96 text-gray-800 dark:text-gray-200 transition-colors duration-300">
                 {file.content}
               </pre>
+            ) : file.kind === "directory" ? (
+              <p className="text-gray-600 dark:text-gray-400 mt-2 text-sm">
+                （{t("resultDisplay.directoryContent")}）
+              </p>
             ) : (
               <p className="text-gray-600 dark:text-gray-400 mt-2 text-sm">
-                （无法显示文件内容）
+                （{t("resultDisplay.noContent")}）
               </p>
             )}
           </div>

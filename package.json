@@ -9,6 +9,8 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@types/crypto-js": "^4.2.2",
+    "crypto-js": "^4.2.0",
     "diff": "^8.0.1",
     "ignore": "^7.0.4",
     "jotai": "^2.12.4",

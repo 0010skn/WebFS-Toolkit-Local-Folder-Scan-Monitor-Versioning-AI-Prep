@@ -1,7 +1,7 @@
 {
   "app": {
     "title": "Folda-Scan",
-    "description": "本地文件夹扫描与监控工具"
+    "description": "代码项目扫描与监控"
   },
   "settings": {
     "title": "设置",
@@ -36,18 +36,27 @@
   "scanControls": {
     "startScan": "开始扫描",
     "stopScan": "停止扫描",
+    "startMonitoring": "开始监控",
+    "stopMonitoring": "停止监控",
     "scanning": "扫描中...",
     "monitorInterval": "监控间隔",
     "seconds": "秒",
     "showAllFiles": "显示所有文件",
-    "download": "下载报告"
+    "download": "下载报告",
+    "monitoring": "监控中...",
+    "usingObserver": "使用实时文件系统观察器",
+    "usingPolling": "自动扫描，每",
+    "observerFallback": "注意：文件系统观察器可用但未成功启用，已回退到轮询模式",
+    "lastScanTime": "上次扫描时间",
+    "changeDetected": "检测到文件变化",
+    "downloading": "下载中..."
   },
   "versionManager": {
-    "title": "版本管理",
+    "title": "版本",
     "createBackup": "创建备份",
     "backupInfo": "描述此版本的更改，如'完成登录模块'等",
     "backingUp": "备份中...",
-    "backupCurrentVersion": "备份当前版本",
+    "backupCurrentVersion": "备份",
     "versionHistory": "版本历史",
     "restore": "恢复",
     "confirmRestore": "确定要恢复此版本吗？当前未备份的更改将会丢失。",
@@ -63,8 +72,13 @@
     "details": "详情",
     "files": "文件",
     "noChanges": "未检测到变更",
-    "addedFiles": "新增文件",
-    "deletedFiles": "删除文件",
-    "modifiedFiles": "修改文件"
+    "addedFiles": "新增",
+    "deletedFiles": "删除",
+    "modifiedFiles": "修改",
+    "filesAndFoldersCount": "共找到 {count} 个",
+    "directoryType": "文件夹",
+    "fileType": "文件",
+    "noContent": "无内容可显示",
+    "directoryContent": "文件夹"
   }
 }

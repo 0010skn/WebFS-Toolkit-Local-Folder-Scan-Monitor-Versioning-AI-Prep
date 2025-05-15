@@ -26,7 +26,9 @@ export default function SettingsPage() {
 
   // 返回主页
   const handleBack = () => {
-    router.push("/");
+    router.push("/", {
+      onTransitionReady: slideInOut,
+    });
   };
 
   return (
@@ -264,20 +266,6 @@ export default function SettingsPage() {
                 </div>
               </div>
             </div>
-          </div>
-
-          <div className="px-8 py-4 bg-gray-50 dark:bg-gray-900 flex justify-between">
-            <a
-              onClick={(e) => {
-                e.preventDefault();
-                router.push("/", {
-                  onTransitionReady: slideInOut,
-                });
-              }}
-              className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
-            >
-              {t("settings.backToHome")}
-            </a>
           </div>
         </div>
       </div>

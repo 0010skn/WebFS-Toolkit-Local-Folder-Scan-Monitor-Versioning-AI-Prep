@@ -1,3 +1,6 @@
+// 声明全局类型来避免TypeScript错误
+declare interface FileSystemSyncAccessHandle {}
+
 // 文件系统条目类型
 export interface FileSystemEntry {
   name: string;
@@ -13,6 +16,25 @@ export interface ScanResult {
   entries: FileSystemEntry[];
   timestamp: number;
 }
+
+// 文件变化记录类型
+export interface FileSystemChangeRecord {
+  type: "added" | "deleted" | "modified" | "renamed";
+  changedHandle: FileSystemHandle;
+  oldName?: string; // 用于重命名操作
+}
+
+// 文件系统观察者类型
+export interface FileSystemObserver {
+  observe(handle: FileSystemHandle | FileSystemSyncAccessHandle): Promise<void>;
+  disconnect(): void;
+}
+
+// 文件系统观察者回调函数类型
+export type FileSystemObserverCallback = (
+  records: FileSystemChangeRecord[],
+  observer: FileSystemObserver
+) => void;
 
 // 差异类型
 export interface FileDiff {

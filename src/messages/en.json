@@ -36,11 +36,20 @@
   "scanControls": {
     "startScan": "Start Scan",
     "stopScan": "Stop Scan",
+    "startMonitoring": "Start Monitoring",
+    "stopMonitoring": "Stop Monitoring",
     "scanning": "Scanning...",
     "monitorInterval": "Monitor Interval",
     "seconds": "seconds",
     "showAllFiles": "Show All Files",
-    "download": "Download Report"
+    "download": "Download Report",
+    "monitoring": "Monitoring...",
+    "usingObserver": "Using real-time file system observer",
+    "usingPolling": "Auto-scanning every",
+    "observerFallback": "Note: File system observer is available but failed to enable, falling back to polling mode",
+    "lastScanTime": "Last scan time",
+    "changeDetected": "File changes detected",
+    "downloading": "Downloading..."
   },
   "versionManager": {
     "title": "Version Management",
@@ -63,8 +72,13 @@
     "details": "Details",
     "files": "Files",
     "noChanges": "No changes detected",
-    "addedFiles": "Added Files",
-    "deletedFiles": "Deleted Files",
-    "modifiedFiles": "Modified Files"
+    "addedFiles": "Added",
+    "deletedFiles": "Deleted",
+    "modifiedFiles": "Modified",
+    "filesAndFoldersCount": "Found {count}",
+    "directoryType": "Directory",
+    "fileType": "File",
+    "noContent": "No content to display",
+    "directoryContent": "Directory"
   }
 }

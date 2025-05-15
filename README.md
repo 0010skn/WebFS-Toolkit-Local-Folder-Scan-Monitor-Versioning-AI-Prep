@@ -16,19 +16,22 @@ Folda-Scan leverages the File System Access API to bring powerful local folder e
 
 ## ✨ Features
 
-*   📁 **Browse Local Folders:** Securely access and navigate your local project directories.
-*   👁️ **Real-time Monitoring:** Keep an eye on file changes as they happen.
-*   📜 **.gitignore Aware:** Respects your project's ignore rules for cleaner scans and backups.
-*   ⏱️ **Simple Version Management:** Easily create backups of your project's current state and restore to previous versions. All stored locally in a `.fe` folder.
-*   🤖 **AI-Ready Reports:** Generate Markdown reports of your project structure, file contents, and changes – perfect for feeding to AI assistants or for documentation.
-*   🗂️ **View Project Structure, Changes, and File Content** directly in the app.
+- 📁 **Browse Local Folders:** Securely access and navigate your local project directories.
+- 👁️ **Real-time Monitoring:** Keep an eye on file changes as they happen.
+  - 🆕 **FileSystemObserver Support:** Uses the experimental FileSystemObserver API when available for efficient, event-driven file change detection without polling.
+  - **Smart Fallback:** Automatically falls back to interval polling when the FileSystemObserver is not supported by the browser.
+- 📜 **.gitignore Aware:** Respects your project's ignore rules for cleaner scans and backups.
+- ⏱️ **Simple Version Management:** Easily create backups of your project's current state and restore to previous versions. All stored locally in a `.fe` folder.
+- 🤖 **AI-Ready Reports:** Generate Markdown reports of your project structure, file contents, and changes – perfect for feeding to AI assistants or for documentation.
+- 🗂️ **View Project Structure, Changes, and File Content** directly in the app.
 
 ---
 
 ## 🛠️ Built With
 
-*   Next.js 14
-*   File System Access API
+- Next.js 14
+- File System Access API
+- FileSystemObserver API (with fallback for unsupported browsers)
 
 Ideal for developers, designers, and anyone needing a quick, lightweight tool for local project management without the overhead of complex setups.
 
@@ -39,6 +42,7 @@ Ideal for developers, designers, and anyone needing a quick, lightweight tool fo
 Open source and privacy-focused – all operations happen locally in your browser.
 
 ---
+
 ---
 
 <!-- Chinese Version -->
@@ -58,19 +62,22 @@ Open source and privacy-focused – all operations happen locally in your browse
 
 ## ✨ 主要功能
 
-*   📁 **翻腾本地文件夹：** 贴实儿地进到并溜达你个本地项目文件夹。
-*   👁️ **现挂儿监控：** 盯着文件变化，一有动静就看见。
-*   📜 **.gitignore 知道：** 尊重你项目里头的忽略规则，扫得干净，备份利索。
-*   ⏱️ **简单版本管理：** 轻轻松松备份项目当前状态，想回哪个版本就回哪个版本。都保存在本地一个 `.fe` 文件夹里头。
-*   🤖 **AI 准备好了报告：** 生成项目结构、文件内容、变化情况的 Markdown 报告，给 AI 助手喂食或者做文档正好。
-*   🗂️ **注意啊这不是分布式的**
+- 📁 **翻腾本地文件夹：** 贴实儿地进到并溜达你个本地项目文件夹。
+- 👁️ **现挂儿监控：** 盯着文件变化，一有动静就看见。
+  - 🆕 **文件系统观察器支持：** 在支持的浏览器上使用实验性的 FileSystemObserver API，通过事件驱动方式高效检测文件变化，不再需要轮询。
+  - **智能回退：** 当浏览器不支持 FileSystemObserver 时，自动回退到定时轮询方式。
+- 📜 **.gitignore 知道：** 尊重你项目里头的忽略规则，扫得干净，备份利索。
+- ⏱️ **简单版本管理：** 轻轻松松备份项目当前状态，想回哪个版本就回哪个版本。都保存在本地一个 `.fe` 文件夹里头。
+- 🤖 **AI 准备好了报告：** 生成项目结构、文件内容、变化情况的 Markdown 报告，给 AI 助手喂食或者做文档正好。
+- 🗂️ **注意啊这不是分布式的**
 
 ---
 
 ## 🛠️ 技术栈
 
-*   Next.js 14
-*   文件系统访问 API (File System Access API)
+- Next.js 14
+- 文件系统访问 API (File System Access API)
+- 文件系统观察器 API (FileSystemObserver API)（不支持的浏览器会自动回退）
 
 对开发者、设计师还有那些需要快速、轻量级工具管理本地项目的人来说，是理想选择。别提那些复杂设置啦，累死个人。
 
