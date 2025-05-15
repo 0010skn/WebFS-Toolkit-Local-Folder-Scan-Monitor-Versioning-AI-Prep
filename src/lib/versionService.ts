@@ -98,7 +98,8 @@ async function backupFiles(
   try {
     for await (const [name, handle] of sourceHandle.entries()) {
       // 跳过 .fe 文件夹
-      if (name === ".fe") continue;
+      if (name === ".fe" || name === ".git" || name.startsWith(".git/"))
+        continue;
 
       const path = currentPath ? `${currentPath}/${name}` : name;
 
@@ -169,7 +170,8 @@ async function countFiles(
   try {
     for await (const [name, handle] of dirHandle.entries()) {
       // 跳过 .fe 文件夹
-      if (name === ".fe") continue;
+      if (name === ".fe" || name === ".git" || name.startsWith(".git/"))
+        continue;
 
       const path = currentPath ? `${currentPath}/${name}` : name;
 
@@ -267,7 +269,12 @@ export async function restoreVersion(
     // 1. 删除当前项目中不存在于备份版本中的文件
     for (const filePath of currentProjectFiles) {
       // 跳过 .fe 文件夹及其内容
-      if (filePath === ".fe" || filePath.startsWith(".fe/")) {
+      if (
+        filePath === ".fe" ||
+        filePath.startsWith(".fe/") ||
+        filePath === ".git" ||
+        filePath.startsWith(".git/")
+      ) {
         continue;
       }
 

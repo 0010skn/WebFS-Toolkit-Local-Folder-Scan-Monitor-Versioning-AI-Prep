@@ -69,3 +69,6 @@ export const backupProgressAtom = atom<number>(0);
 
 // 恢复进度
 export const restoreProgressAtom = atom<number>(0);
+
+// README文件内容
+export const readmeContentAtom = atom<string | null>(null);

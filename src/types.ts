@@ -45,6 +45,15 @@ export interface FileDiff {
   newContent?: string;
 }
 
+// 函数或方法信息
+export interface FunctionInfo {
+  name: string;
+  type: "函数" | "方法" | "类" | "箭头函数";
+  lines: [number, number]; // 开始行和结束行
+  filePath: string;
+  calls: string[]; // 调用的其他函数名称
+}
+
 // 变动报告类型
 export interface ChangeReport {
   timestamp: number;
@@ -53,6 +62,14 @@ export interface ChangeReport {
   modifiedFiles: FileDiff[];
   projectStructure: string;
   allFiles?: FileSystemEntry[]; // 添加所有文件的列表，用于显示所有文件内容
+  codeStructure?: {
+    functions: FunctionInfo[];
+    totalFiles: number;
+    totalFunctions: number;
+    totalMethods: number;
+    totalClasses: number;
+    totalLines: number;
+  };
 }
 
 // 版本信息类型

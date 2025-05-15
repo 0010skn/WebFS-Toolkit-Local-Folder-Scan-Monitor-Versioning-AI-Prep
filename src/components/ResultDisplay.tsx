@@ -9,9 +9,11 @@ import {
   errorMessageAtom,
   showAllFilesAtom,
   themeAtom,
+  readmeContentAtom,
 } from "../lib/store";
 import dynamic from "next/dynamic";
 import { useTranslations } from "./LocaleProvider";
+import ReactMarkdown from "react-markdown";
 
 // 动态导入差异查看器组件
 const DiffViewer = dynamic(() => import("react-diff-viewer-continued"), {
@@ -26,10 +28,11 @@ export default function ResultDisplay() {
   const [errorMessage] = useAtom(errorMessageAtom);
   const [showAllFiles] = useAtom(showAllFilesAtom);
   const [theme] = useAtom(themeAtom);
+  const [readmeContent] = useAtom(readmeContentAtom);
 
   const [activeTab, setActiveTab] = useState<
-    "structure" | "changes" | "details" | "files"
-  >("structure");
+    "documentation" | "structure" | "changes" | "details" | "files"
+  >(readmeContent ? "documentation" : "structure");
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
 
   // 调试用：监控状态变化
@@ -208,18 +211,31 @@ export default function ResultDisplay() {
               {changeReport.modifiedFiles.length})
             </h3>
             <ul className="list-disc pl-5 space-y-1">
-              {changeReport.modifiedFiles
-                .filter((file) => file.type === "modified")
-                .map((file) => (
-                  <li
-                    key={file.path}
-                    className="text-blue-600 dark:text-blue-400 cursor-pointer hover:underline"
-                    onClick={() => handleFileClick(file.path)}
+              {changeReport.modifiedFiles.map((file) => (
+                <li
+                  key={file.path}
+                  className={`cursor-pointer hover:underline ${
+                    file.type === "added"
+                      ? "text-green-600 dark:text-green-400"
+                      : "text-blue-600 dark:text-blue-400"
+                  }`}
+                  onClick={() => handleFileClick(file.path)}
+                >
+                  <FileIcon />
+                  {file.path}
+                  <span
+                    className="ml-2 text-xs px-1.5 py-0.5 rounded-full bg-opacity-20 font-medium inline-block align-middle"
+                    style={{
+                      backgroundColor:
+                        file.type === "added"
+                          ? "rgba(16, 185, 129, 0.2)"
+                          : "rgba(37, 99, 235, 0.2)",
+                    }}
                   >
-                    <FileIcon />
-                    {file.path}
-                  </li>
-                ))}
+                    {file.type === "added" ? "新增" : "修改"}
+                  </span>
+                </li>
+              ))}
             </ul>
           </div>
         )}
@@ -347,10 +363,41 @@ export default function ResultDisplay() {
     );
   };
 
+  // 渲染README文档内容
+  const renderDocumentation = () => {
+    if (!readmeContent) {
+      return (
+        <p className="text-gray-600 dark:text-gray-300">
+          没有找到README.md文件或文件无法读取
+        </p>
+      );
+    }
+
+    return (
+      <div className="prose dark:prose-invert prose-sm sm:prose-base lg:prose-lg max-w-none">
+        <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg overflow-auto text-gray-800 dark:text-gray-200 transition-colors duration-300">
+          <ReactMarkdown>{readmeContent}</ReactMarkdown>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow transition-colors duration-300">
       <div className="border-b border-gray-200 dark:border-gray-700">
         <nav className="flex">
+          {readmeContent && (
+            <button
+              className={`px-4 py-2 border-b-2 font-medium text-sm transition-colors duration-300 ${
+                activeTab === "documentation"
+                  ? "border-blue-500 text-blue-600 dark:text-blue-400"
+                  : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300"
+              }`}
+              onClick={() => setActiveTab("documentation")}
+            >
+              文档
+            </button>
+          )}
           <button
             className={`px-4 py-2 border-b-2 font-medium text-sm transition-colors duration-300 ${
               activeTab === "structure"
@@ -398,6 +445,7 @@ export default function ResultDisplay() {
       </div>
 
       <div className="p-4">
+        {activeTab === "documentation" && renderDocumentation()}
         {activeTab === "structure" && renderStructure()}
         {activeTab === "changes" && renderChanges()}
         {activeTab === "details" && renderDetails()}

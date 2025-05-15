@@ -13,6 +13,7 @@ import {
   monitorIntervalAtom,
   lastScanTimeAtom,
   showAllFilesAtom,
+  readmeContentAtom,
 } from "../lib/store";
 import {
   performScan,
@@ -36,6 +37,7 @@ export default function ScanControls() {
   const [monitorInterval] = useAtom(monitorIntervalAtom);
   const [lastScanTime, setLastScanTime] = useAtom(lastScanTimeAtom);
   const [showAllFiles, setShowAllFiles] = useAtom(showAllFilesAtom);
+  const [readmeContent, setReadmeContent] = useAtom(readmeContentAtom);
 
   const [isDownloading, setIsDownloading] = useState(false);
   const [isUsingObserver, setIsUsingObserver] = useState(false);
@@ -56,6 +58,21 @@ export default function ScanControls() {
     try {
       setScanStatus("scanning");
       setErrorMessage(null);
+
+      // 尝试读取README.md文件
+      try {
+        const readmeHandle = await directoryHandle.getFileHandle("README.md", {
+          create: false,
+        });
+        const readmeFile = await readmeHandle.getFile();
+        const readmeContent = await readmeFile.text();
+        // 存储README内容
+        setReadmeContent(readmeContent);
+        console.log("README.md 文件已读取");
+      } catch (error) {
+        console.log("未找到README.md文件或无法读取");
+        setReadmeContent(null);
+      }
 
       // 执行扫描
       const scanResult = await performScan(directoryHandle);
@@ -271,15 +288,20 @@ export default function ScanControls() {
         </button>
 
         {changeReport && (
-          <button
-            onClick={handleDownloadReport}
-            disabled={isDownloading}
-            className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 disabled:opacity-50 transition-colors dark:bg-purple-700 dark:hover:bg-purple-800 dark:focus:ring-purple-600"
-          >
-            {isDownloading
-              ? t("scanControls.downloading")
-              : t("scanControls.download")}
-          </button>
+          <>
+            <button
+              onClick={handleDownloadReport}
+              disabled={isDownloading}
+              className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 disabled:opacity-50 transition-colors dark:bg-purple-700 dark:hover:bg-purple-800 dark:focus:ring-purple-600"
+            >
+              {isDownloading
+                ? t("scanControls.downloading")
+                : t("scanControls.download")}
+            </button>
+            <span className="text-xs text-pink-500 dark:text-pink-400 font-medium animate-pulse ml-2 self-center bg-pink-100 dark:bg-pink-900/30 px-3 py-1.5 rounded-full shadow-sm border border-pink-200 dark:border-pink-800">
+              报告投喂给AI更方便 💖
+            </span>
+          </>
         )}
       </div>
 

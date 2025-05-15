@@ -9,7 +9,6 @@ export default function SettingsButton() {
 
   return (
     <a
-      href="/settings"
       onClick={(e) => {
         e.preventDefault();
         router.push("/settings", {

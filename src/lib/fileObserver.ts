@@ -96,7 +96,12 @@ async function getAllSubdirectories(
       // 遍历当前目录的所有条目
       for await (const [name, handle] of currentDir.entries()) {
         // 跳过 .fe 版本管理目录
-        if (name === ".fe" || name.startsWith(".fe/")) {
+        if (
+          name === ".fe" ||
+          name.startsWith(".fe/") ||
+          name === ".git" ||
+          name.startsWith(".git/")
+        ) {
           continue;
         }
 

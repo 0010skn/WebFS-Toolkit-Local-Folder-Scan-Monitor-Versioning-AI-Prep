@@ -1,7 +1,7 @@
 {
   "app": {
     "title": "Folda-Scan",
-    "description": "Local Folder Scanning & Monitoring Tool"
+    "description": "Local Code Project Scanner & Monitor"
   },
   "settings": {
     "title": "Settings",
@@ -14,20 +14,22 @@
     "back": "Back",
     "backToHome": "Back to Home",
     "languageDescription": "Choose the display language for the application",
-    "themeDescription": "Select your preferred application theme",
-    "lightModeDescription": "Suitable for use in well-lit environments",
-    "darkModeDescription": "Reduces eye strain, ideal for night-time use"
+    "themeDescription": "Choose a theme that works best for you",
+    "lightModeDescription": "Best for well-lit environments",
+    "darkModeDescription": "Reduces eye strain, good for nighttime use",
+    "pwaInstall": "Install as App",
+    "pwaInstallDescription": "Install this app on your device for offline use and better experience"
   },
   "pwa": {
-    "install": "Install Application",
-    "installSuccess": "Application installed successfully",
-    "installFailed": "Application installation failed",
-    "alreadyInstalled": "Application already installed",
+    "install": "Install App",
+    "installSuccess": "App installed successfully",
+    "installFailed": "App installation failed",
+    "alreadyInstalled": "App is already installed",
     "offline": "You are currently offline"
   },
   "about": {
     "title": "About Folda-Scan",
-    "description": "Folda-Scan is a local folder scanning tool that allows you to monitor changes in your project folders in real-time. It supports .gitignore rules and provides project structure reports and version management.",
+    "description": "Folda-Scan is a local folder scanning tool that can monitor changes in your project folder in real-time. It supports .gitignore rules and provides project structure reporting and version management features.",
     "version": "Version",
     "developer": "Developer",
     "copyright": "© 2024 Folda-Scan Team. All rights reserved."
@@ -35,8 +37,8 @@
   "folderPicker": {
     "selectFolder": "Select Folder",
     "selecting": "Selecting...",
-    "noPermission": "Unable to get folder access permission",
-    "gitignoreFound": "Found .gitignore file",
+    "noPermission": "Failed to get folder access permission",
+    "gitignoreFound": ".gitignore file found",
     "gitignoreNotFound": "No .gitignore file found",
     "viewRules": "View Rules"
   },
@@ -51,29 +53,29 @@
     "showAllFiles": "Show All Files",
     "download": "Download Report",
     "monitoring": "Monitoring...",
-    "usingObserver": "Using real-time file system observer",
-    "usingPolling": "Auto-scanning every",
-    "observerFallback": "Note: File system observer is available but failed to enable, falling back to polling mode",
+    "usingObserver": "Using real-time FileSystemObserver",
+    "usingPolling": "Automatic scanning every",
+    "observerFallback": "Note: FileSystemObserver available but not enabled, falling back to polling",
     "lastScanTime": "Last scan time",
     "changeDetected": "File changes detected",
     "downloading": "Downloading..."
   },
   "versionManager": {
-    "title": "Version Management",
+    "title": "Versions",
     "createBackup": "Create Backup",
-    "backupInfo": "Describe this version's changes, e.g. 'Completed login module'",
+    "backupInfo": "Describe the changes in this version, e.g. 'Completed login module'",
     "backingUp": "Backing up...",
-    "backupCurrentVersion": "Backup Current Version",
+    "backupCurrentVersion": "Backup",
     "versionHistory": "Version History",
     "restore": "Restore",
-    "confirmRestore": "Are you sure you want to restore this version? Current changes will be lost.",
+    "confirmRestore": "Are you sure you want to restore this version? Current unbacked changes will be lost.",
     "cancel": "Cancel",
     "confirm": "Confirm",
     "restoring": "Restoring..."
   },
   "resultDisplay": {
     "waitingForScan": "Scanning, please wait...",
-    "selectFolderPrompt": "Please select a folder and click \"Start Scan\" button",
+    "selectFolderPrompt": "Please select a folder and click the 'Start Scan' button",
     "structure": "Structure",
     "changes": "Changes",
     "details": "Details",
@@ -82,10 +84,58 @@
     "addedFiles": "Added",
     "deletedFiles": "Deleted",
     "modifiedFiles": "Modified",
-    "filesAndFoldersCount": "Found {count}",
+    "filesAndFoldersCount": "Found {count} items",
     "directoryType": "Directory",
     "fileType": "File",
     "noContent": "No content to display",
     "directoryContent": "Directory"
+  },
+  "statistics": {
+    "title": "Project Statistics",
+    "rescan": "Rescan",
+    "scanning": "Scanning...",
+    "showComments": "Show Comments",
+    "hideComments": "Hide Comments",
+    "overallStatistics": "Overall Statistics",
+    "fileStatistics": "Files",
+    "codeFiles": "Code Files",
+    "totalFiles": "Total Files",
+    "lineStatistics": "Lines",
+    "codeLines": "Code Lines",
+    "totalLines": "Total Lines",
+    "commentStatistics": "Comment Lines",
+    "commentPercentage": "Comment Ratio",
+    "fileTypeStatistics": "Statistics by File Type",
+    "extension": "Extension",
+    "fileCount": "File Count",
+    "totalLineCount": "Total Lines",
+    "codeLineCount": "Code Lines",
+    "commentLineCount": "Comment Lines",
+    "blankLineCount": "Blank Lines",
+    "commentRatio": "Comment Ratio",
+    "projectComments": "Project Comments",
+    "commentsHelp": "Shows all comments in the project to help you understand code documentation",
+    "noComments": "No comments found in the project",
+    "blockComment": "Block Comment",
+    "lineComment": "Line Comment",
+    "noFolder": "Please select a project folder first",
+    "startScan": "Click the \"Rescan\" button to start analyzing the project"
+  },
+  "codeStructure": {
+    "noStructuresFound": "No code structures found. Please ensure your project contains supported code files.",
+    "totalStructures": "Total Structures",
+    "classes": "Classes",
+    "interfaces": "Interfaces",
+    "structs": "Structs",
+    "enums": "Enums",
+    "members": "Members",
+    "methods": "Methods",
+    "avgPerStructure": "Avg per Structure",
+    "structureComposition": "Structure Composition",
+    "visualization": "Code Structure Visualization",
+    "visualizationHelp": "Drag nodes to adjust positions. Shows relationships between code structures.",
+    "show": "Show Code Structure",
+    "hide": "Hide Code Structure",
+    "count": "{count} code structures"
   }
 }
