@@ -23,7 +23,7 @@ import {
   restoreVersion,
 } from "../lib/versionService";
 import { performScan, compareScans } from "../lib/scanService";
-import { VersionHistoryItem } from "@/types";
+import { VersionHistoryItem } from "../../types";
 import { useTranslations } from "./LocaleProvider";
 
 export default function VersionManager() {
@@ -293,7 +293,7 @@ export default function VersionManager() {
           <>
             {renderProgressBar(backupProgress)}
             <p className="text-blue-600 dark:text-blue-400">
-              {operationMessage} ({backupProgress}%)
+              {operationMessage} ({Math.round(backupProgress)}%)
             </p>
           </>
         )}
@@ -301,7 +301,7 @@ export default function VersionManager() {
           <>
             {renderProgressBar(restoreProgress)}
             <p className="text-blue-600 dark:text-blue-400">
-              {operationMessage} ({restoreProgress}%)
+              {operationMessage} ({Math.round(restoreProgress)}%)
             </p>
           </>
         )}

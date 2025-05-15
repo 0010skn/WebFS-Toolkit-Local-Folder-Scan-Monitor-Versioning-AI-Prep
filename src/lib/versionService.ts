@@ -1,4 +1,4 @@
-import { VersionInfo, VersionHistoryItem, FileSystemEntry } from "@/types";
+import { VersionInfo, VersionHistoryItem, FileSystemEntry } from "../../types";
 import { createGitignoreFilter } from "./scanUtils";
 
 // 获取或创建 .fe 隐藏文件夹
@@ -64,7 +64,7 @@ export async function createVersionBackup(
     // 创建.gitignore过滤器
     const shouldInclude = await createGitignoreFilter(rootHandle);
 
-    // 递归备份文件
+    // 递归备份文件，忽略返回值
     await backupFiles(
       rootHandle,
       versionFolderHandle,
@@ -72,6 +72,9 @@ export async function createVersionBackup(
       shouldInclude,
       progressCallback
     );
+
+    // 确保最后的进度是100%
+    progressCallback(100);
 
     return folderName;
   } catch (error) {
@@ -89,7 +92,7 @@ async function backupFiles(
   progressCallback: (progress: number) => void = () => {},
   totalFiles: number = 0,
   processedFiles: number = 0
-): Promise<void> {
+): Promise<number> {
   // 第一次调用时，计算总文件数
   if (totalFiles === 0) {
     totalFiles = await countFiles(sourceHandle, shouldInclude);
@@ -139,8 +142,8 @@ async function backupFiles(
             create: true,
           });
 
-          // 递归备份子文件夹
-          await backupFiles(
+          // 递归备份子文件夹，并更新处理的文件数
+          processedFiles = await backupFiles(
             handle as FileSystemDirectoryHandle,
             subDirHandle,
             path,
@@ -157,6 +160,8 @@ async function backupFiles(
   } catch (error) {
     console.error(`处理路径 ${currentPath} 时出错:`, error);
   }
+
+  return processedFiles;
 }
 
 // 计算需要备份的文件总数
@@ -266,6 +271,9 @@ export async function restoreVersion(
       currentProjectFiles.length + backupVersionFiles.length;
     let completedOperations = 0;
 
+    // 初始化进度
+    progressCallback(0);
+
     // 1. 删除当前项目中不存在于备份版本中的文件
     for (const filePath of currentProjectFiles) {
       // 跳过 .fe 文件夹及其内容
@@ -286,7 +294,7 @@ export async function restoreVersion(
       // 更新进度
       completedOperations++;
       progressCallback(
-        Math.round((completedOperations / totalOperations) * 100)
+        Math.min(Math.round((completedOperations / totalOperations) * 100), 99)
       );
     }
 
@@ -301,10 +309,14 @@ export async function restoreVersion(
 
       // 更新进度
       completedOperations++;
-      progressCallback(
-        Math.round((completedOperations / totalOperations) * 100)
+      const progress = Math.round(
+        (completedOperations / totalOperations) * 100
       );
+      progressCallback(Math.min(progress, 99));
     }
+
+    // 所有操作完成，设置进度为100%
+    progressCallback(100);
   } catch (error) {
     console.error("恢复版本时出错:", error);
     throw error;
