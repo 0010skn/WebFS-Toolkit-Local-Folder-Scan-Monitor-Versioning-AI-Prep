@@ -6,6 +6,12 @@
   <a href="https://github.com/0010skn/WebFS-Toolkit-Local-Folder-Scan-Monitor-Versioning-AI-Prep/blob/main/LICENSE"><img src="https://img.shields.io/github/license/0010skn/WebFS-Toolkit-Local-Folder-Scan-Monitor-Versioning-AI-Prep" alt="GitHub license"></a>
 </p>
 
+<p align="center">
+  <a href="https://github.com/0010skn/WebFS-Toolkit-Local-Folder-Scan-Monitor-Versioning-AI-Prep/blob/main/preview.md">
+    <img src="https://img.shields.io/badge/Preview-Click%20Here-blue" alt="Preview">
+  </a>
+</p>
+
 # 📂 Folda-Scan
 
 **Your Modern Local File Companion in the Browser! 🚀**
