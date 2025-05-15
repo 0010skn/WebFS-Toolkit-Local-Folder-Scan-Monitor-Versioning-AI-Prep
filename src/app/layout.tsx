@@ -3,7 +3,6 @@ import localFont from "next/font/local";
 import "./globals.css";
 import { Providers } from "./providers";
 import { ViewTransitions } from "next-view-transitions";
-import ViewportManager from "@/components/ViewportManager";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -56,6 +55,13 @@ export const metadata: Metadata = {
     images: ["/og-image.png"],
     creator: "@folda_scan",
   },
+  manifest: "/manifest.json",
+  themeColor: "#4f46e5",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Folda-Scan",
+  },
 };
 
 export default function RootLayout({
@@ -66,10 +72,25 @@ export default function RootLayout({
   return (
     <ViewTransitions>
       <html lang="zh">
+        <head>
+          <meta name="application-name" content="Folda-Scan" />
+          <meta name="apple-mobile-web-app-capable" content="yes" />
+          <meta
+            name="apple-mobile-web-app-status-bar-style"
+            content="default"
+          />
+          <meta name="apple-mobile-web-app-title" content="Folda-Scan" />
+          <meta name="format-detection" content="telephone=no" />
+          <meta name="mobile-web-app-capable" content="yes" />
+          <meta name="msapplication-TileColor" content="#4f46e5" />
+          <meta name="msapplication-tap-highlight" content="no" />
+          <meta name="theme-color" content="#4f46e5" />
+          <link rel="manifest" href="/manifest.json" />
+          <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+        </head>
         <body
           className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         >
-          <ViewportManager />
           <Providers>{children}</Providers>
         </body>
       </html>

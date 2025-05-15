@@ -18,6 +18,13 @@
     "lightModeDescription": "Suitable for use in well-lit environments",
     "darkModeDescription": "Reduces eye strain, ideal for night-time use"
   },
+  "pwa": {
+    "install": "Install Application",
+    "installSuccess": "Application installed successfully",
+    "installFailed": "Application installation failed",
+    "alreadyInstalled": "Application already installed",
+    "offline": "You are currently offline"
+  },
   "about": {
     "title": "About Folda-Scan",
     "description": "Folda-Scan is a local folder scanning tool that allows you to monitor changes in your project folders in real-time. It supports .gitignore rules and provides project structure reports and version management.",

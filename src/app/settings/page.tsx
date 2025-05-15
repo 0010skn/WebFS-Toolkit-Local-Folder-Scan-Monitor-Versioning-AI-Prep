@@ -8,6 +8,7 @@ import { useTranslations } from "@/components/LocaleProvider";
 import { locales, Locale } from "@/lib/i18n";
 import { useTransitionRouter } from "next-view-transitions";
 import { slideInOut } from "@/lib/publicCutscene";
+import InstallPwaButton from "@/components/InstallPwaButton";
 
 export default function SettingsPage() {
   const router = useTransitionRouter();
@@ -219,6 +220,36 @@ export default function SettingsPage() {
                       </div>
                     </div>
                   </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="border-t border-gray-200 dark:border-gray-700 pt-8">
+              {/* PWA安装部分 */}
+              <div className="space-y-4">
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    strokeWidth={1.5}
+                    stroke="currentColor"
+                    className="w-6 h-6"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M9 17.25v1.007a3 3 0 0 1-.879 2.122L7.5 21h9l-.621-.621A3 3 0 0 1 15 18.257V17.25m6-12V15a2.25 2.25 0 0 1-2.25 2.25H5.25A2.25 2.25 0 0 1 3 15V5.25m18 0A2.25 2.25 0 0 0 18.75 3H5.25A2.25 2.25 0 0 0 3 5.25m18 0V12a2.25 2.25 0 0 1-2.25 2.25H5.25A2.25 2.25 0 0 1 3 12V5.25"
+                    />
+                  </svg>
+                  {t("settings.pwaInstall") || "将网页安装为应用"}
+                </h2>
+                <p className="text-gray-600 dark:text-gray-300">
+                  {t("settings.pwaInstallDescription") ||
+                    "安装此应用到您的设备，以便离线使用和更好的体验"}
+                </p>
+                <div className="mt-4">
+                  <InstallPwaButton />
                 </div>
               </div>
             </div>

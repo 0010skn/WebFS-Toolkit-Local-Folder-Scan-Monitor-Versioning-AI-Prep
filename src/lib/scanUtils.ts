@@ -90,62 +90,79 @@ export async function scanDirectory(
 ): Promise<FileSystemEntry[]> {
   const entries: FileSystemEntry[] = [];
 
-  for await (const [name, handle] of dirHandle.entries()) {
-    const path = basePath ? `${basePath}/${name}` : name;
-
-    // 跳过 .fe 版本管理目录
-    if (name === ".fe" || path.startsWith(".fe/")) {
-      continue;
+  try {
+    // 获取目录条目
+    const dirEntriesArray: Array<[string, FileSystemHandle]> = [];
+    for await (const entry of dirHandle.entries()) {
+      dirEntriesArray.push(entry);
     }
 
-    // 如果该路径应该被忽略，则跳过
-    if (!shouldInclude(path)) {
-      continue;
-    }
+    // 处理每个条目
+    await Promise.all(
+      dirEntriesArray.map(async ([name, handle]) => {
+        const path = basePath ? `${basePath}/${name}` : name;
 
-    if (handle.kind === "file") {
-      try {
-        const fileHandle = handle as FileSystemFileHandle;
-        const file = await fileHandle.getFile();
-
-        const entry: FileSystemEntry = {
-          name,
-          kind: "file",
-          path,
-          lastModified: file.lastModified,
-          size: file.size,
-        };
-
-        // 对于文本文件，读取内容
-        if (file.size < maxContentSize && isTextFile(file)) {
-          entry.content = await file.text();
+        // 跳过 .fe 版本管理目录
+        if (name === ".fe" || path.startsWith(".fe/")) {
+          return;
         }
 
-        entries.push(entry);
-      } catch (error) {
-        console.error(`无法读取文件 ${path}:`, error);
-      }
-    } else if (handle.kind === "directory") {
-      // 对于文件夹，递归扫描
-      try {
-        const dirHandle = handle as FileSystemDirectoryHandle;
-        entries.push({
-          name,
-          kind: "directory",
-          path,
-        });
+        // 如果该路径应该被忽略，则跳过
+        if (!shouldInclude(path)) {
+          return;
+        }
 
-        const subEntries = await scanDirectory(
-          dirHandle,
-          shouldInclude,
-          path,
-          maxContentSize
-        );
-        entries.push(...subEntries);
-      } catch (error) {
-        console.error(`无法扫描文件夹 ${path}:`, error);
-      }
-    }
+        try {
+          if (handle.kind === "file") {
+            const fileHandle = handle as FileSystemFileHandle;
+            const file = await fileHandle.getFile();
+
+            const entry: FileSystemEntry = {
+              name,
+              kind: "file",
+              path,
+              lastModified: file.lastModified,
+              size: file.size,
+            };
+
+            // 对于文本文件，读取内容
+            if (file.size < maxContentSize && isTextFile(file)) {
+              entry.content = await file.text();
+            }
+
+            entries.push(entry);
+          } else if (handle.kind === "directory") {
+            // 对于文件夹，递归扫描
+            const dirHandle = handle as FileSystemDirectoryHandle;
+            const dirEntry: FileSystemEntry = {
+              name,
+              kind: "directory",
+              path,
+            };
+
+            // 先添加目录本身
+            entries.push(dirEntry);
+
+            // 然后递归扫描子目录
+            try {
+              const subEntries = await scanDirectory(
+                dirHandle,
+                shouldInclude,
+                path,
+                maxContentSize
+              );
+              entries.push(...subEntries);
+            } catch (subError) {
+              console.error(`无法扫描子文件夹 ${path}:`, subError);
+            }
+          }
+        } catch (itemError) {
+          console.error(`处理项目 ${path} 时出错:`, itemError);
+        }
+      })
+    );
+  } catch (error) {
+    console.error(`扫描目录 ${basePath || "根目录"} 时出错:`, error);
   }
 
   return entries;

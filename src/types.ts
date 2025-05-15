@@ -19,7 +19,7 @@ export interface ScanResult {
 
 // 文件变化记录类型
 export interface FileSystemChangeRecord {
-  type: "added" | "deleted" | "modified" | "renamed";
+  type: "added" | "deleted" | "modified" | "renamed" | "appeared";
   changedHandle: FileSystemHandle;
   oldName?: string; // 用于重命名操作
 }

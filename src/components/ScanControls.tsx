@@ -63,29 +63,38 @@ export default function ScanControls() {
       // 如果之前已有扫描结果，则前一次结果变为上一次结果
       if (currentScan) {
         setPreviousScan(currentScan);
+
+        // 生成差异报告
+        const report = compareScans(currentScan, scanResult, showAllFiles);
+        setChangeReport(report);
+      } else {
+        // 首次扫描,创建一个与自身比较的报告(显示所有文件)
+        const report = compareScans(scanResult, scanResult, true);
+        setChangeReport(report);
       }
 
       // 更新当前扫描结果
       setCurrentScan(scanResult);
       setLastScanTime(scanResult.timestamp);
 
-      // 如果有上一次结果，生成差异报告
-      if (previousScan) {
-        const report = compareScans(previousScan, scanResult, showAllFiles);
-        setChangeReport(report);
-      }
+      // 如果正在监控,每次扫描后都重新初始化监控以包含新的文件夹
+      if (isMonitoring && directoryHandle) {
+        console.log("扫描完成，重新初始化文件系统监控以包含新目录");
 
-      // 如果正在使用观察器，在扫描后重新初始化观察器以包含可能的新目录
-      if (isMonitoring && isUsingObserver && directoryHandle) {
-        console.log("扫描完成，重新初始化文件系统观察器以包含新目录");
+        // 无论是否使用观察器，都重新初始化
         const stillUsingObserver = await startFileSystemMonitoring(
           directoryHandle,
           handleFileChange
         );
 
-        // 如果观察器初始化失败，回退到轮询
-        if (!stillUsingObserver && isUsingObserver) {
-          setIsUsingObserver(false);
+        // 更新观察器状态
+        setIsUsingObserver(stillUsingObserver);
+
+        // 如果使用轮询，重置定时器
+        if (!stillUsingObserver) {
+          if (monitorTimerRef.current) {
+            clearInterval(monitorTimerRef.current);
+          }
           monitorTimerRef.current = setInterval(handleScan, monitorInterval);
         }
       }
@@ -131,6 +140,24 @@ export default function ScanControls() {
 
     // 执行扫描并更新UI
     await handleScan();
+
+    // 强制重新初始化文件观察器，确保新文件夹被监控
+    if (isMonitoring && directoryHandle && isObserverChange) {
+      console.log("检测到文件变化，强制重新初始化文件观察器");
+
+      // 延迟一小段时间，确保文件系统状态已稳定
+      setTimeout(async () => {
+        const stillUsingObserver = await startFileSystemMonitoring(
+          directoryHandle,
+          handleFileChange
+        );
+
+        // 更新观察器状态
+        setIsUsingObserver(stillUsingObserver);
+
+        console.log("文件观察器已重新初始化");
+      }, 500);
+    }
   };
 
   // 监控效果
@@ -151,8 +178,16 @@ export default function ScanControls() {
   useEffect(() => {
     if (directoryHandle) {
       console.log("检测到目录句柄变化,自动执行扫描");
-      handleScan();
+      // 重置扫描状态,确保新文件夹的扫描能正确执行
+      setCurrentScan(null);
+      setPreviousScan(null);
+      setChangeReport(null);
+      // 执行扫描
+      setTimeout(() => {
+        handleScan();
+      }, 100);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [directoryHandle]);
 
   // 当目录句柄或监控间隔变化时，重启监控
@@ -184,7 +219,8 @@ export default function ScanControls() {
       setIsMonitoring(false);
       setIsUsingObserver(false);
     } else {
-      // 先执行一次手动扫描
+      // 开始监控前先执行一次完整扫描,确保能捕获所有文件夹
+      console.log("开始监控前执行完整扫描");
       await handleScan();
 
       // 开始监控

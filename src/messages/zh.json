@@ -16,7 +16,16 @@
     "languageDescription": "选择应用界面的显示语言",
     "themeDescription": "选择适合您的应用主题",
     "lightModeDescription": "适合在光线充足的环境中使用",
-    "darkModeDescription": "减少眼睛疲劳，适合夜间使用"
+    "darkModeDescription": "减少眼睛疲劳，适合夜间使用",
+    "pwaInstall": "将网页安装为应用",
+    "pwaInstallDescription": "安装此应用到您的设备，以便离线使用和获得更好的体验"
+  },
+  "pwa": {
+    "install": "安装应用",
+    "installSuccess": "应用安装成功",
+    "installFailed": "应用安装失败",
+    "alreadyInstalled": "应用已安装",
+    "offline": "您当前处于离线状态"
   },
   "about": {
     "title": "关于 Folda-Scan",
