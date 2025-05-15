@@ -119,7 +119,11 @@
     "blockComment": "块注释",
     "lineComment": "行注释",
     "noFolder": "请先选择一个项目文件夹",
-    "startScan": "点击\"重新统计\"按钮开始分析项目"
+    "startScan": "点击\"重新统计\"按钮开始分析项目",
+    "search_comments": "搜索注释...",
+    "no_comments_found": "未找到匹配的注释",
+    "show_context": "显示上下文",
+    "hide_context": "隐藏上下文"
   },
   "codeStructure": {
     "noStructuresFound": "未找到代码结构，请确保项目中包含支持的代码文件",
@@ -137,5 +141,44 @@
     "show": "显示代码结构",
     "hide": "隐藏代码结构",
     "count": "{count} 个代码结构"
+  },
+  "projectConfig": {
+    "title": "项目架构图表",
+    "description": "此图表展示了项目的配置文件和整体架构",
+    "showConfig": "显示项目架构图",
+    "hideConfig": "隐藏项目架构图",
+    "configFiles": "配置文件",
+    "projectStructure": "项目结构",
+    "pages": "页面",
+    "components": "组件",
+    "libraries": "库函数",
+    "staticAssets": "静态资源",
+    "apis": "API",
+    "noConfigFiles": "未找到配置文件",
+    "dragHelp": "您可以拖动节点、缩放视图，点击配置文件节点可以查看文件内容"
+  },
+  "codeAnalysis": {
+    "title": "项目代码分析图表",
+    "description": "此图表展示了项目中所有函数、方法和类型的关系，支持多种编程语言",
+    "showAnalysis": "显示代码分析图表",
+    "hideAnalysis": "隐藏代码分析图表",
+    "languageFilter": "语言过滤器",
+    "typeFilter": "类型过滤器",
+    "displayOptions": "显示选项",
+    "showRelationLabels": "显示关系标签",
+    "dragHelp": "您可以使用左侧面板过滤不同的语言和代码结构类型",
+    "fileCount": "文件数量",
+    "type": "类型",
+    "language": "语言",
+    "inheritance": "继承",
+    "implementation": "实现",
+    "static": "静态",
+    "instance": "实例",
+    "visibility": "可见性",
+    "parameters": "参数",
+    "returnType": "返回类型",
+    "memberCount": "成员数量",
+    "methodCount": "方法数量",
+    "noAnalysisData": "未找到可分析的代码结构"
   }
 }

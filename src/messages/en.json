@@ -119,7 +119,12 @@
     "blockComment": "Block Comment",
     "lineComment": "Line Comment",
     "noFolder": "Please select a project folder first",
-    "startScan": "Click the \"Rescan\" button to start analyzing the project"
+    "startScan": "Click the \"Rescan\" button to start analyzing the project",
+    "search_comments": "Search Comments",
+    "search_code": "Search Code",
+    "no_results": "No results found",
+    "show_context": "Show Context",
+    "hide_context": "Hide Context"
   },
   "codeStructure": {
     "noStructuresFound": "No code structures found. Please ensure your project contains supported code files.",
@@ -137,5 +142,44 @@
     "show": "Show Code Structure",
     "hide": "Hide Code Structure",
     "count": "{count} code structures"
+  },
+  "projectConfig": {
+    "title": "Project Architecture Diagram",
+    "description": "This diagram shows the project's configuration files and overall architecture",
+    "showConfig": "Show Project Architecture",
+    "hideConfig": "Hide Project Architecture",
+    "configFiles": "Configuration Files",
+    "projectStructure": "Project Structure",
+    "pages": "Pages",
+    "components": "Components",
+    "libraries": "Libraries",
+    "staticAssets": "Static Assets",
+    "apis": "APIs",
+    "noConfigFiles": "No configuration files found",
+    "dragHelp": "You can drag nodes, zoom the view, and click on config file nodes to view their content"
+  },
+  "codeAnalysis": {
+    "title": "Project Code Analysis Chart",
+    "description": "This chart shows the relationships between all functions, methods, and types in the project, supporting multiple programming languages",
+    "showAnalysis": "Show Code Analysis Chart",
+    "hideAnalysis": "Hide Code Analysis Chart",
+    "languageFilter": "Language Filter",
+    "typeFilter": "Type Filter",
+    "displayOptions": "Display Options",
+    "showRelationLabels": "Show Relation Labels",
+    "dragHelp": "You can use the left panel to filter different languages and code structure types",
+    "fileCount": "File Count",
+    "type": "Type",
+    "language": "Language",
+    "inheritance": "Inheritance",
+    "implementation": "Implementation",
+    "static": "Static",
+    "instance": "Instance",
+    "visibility": "Visibility",
+    "parameters": "Parameters",
+    "returnType": "Return Type",
+    "memberCount": "Member Count",
+    "methodCount": "Method Count",
+    "noAnalysisData": "No analyzable code structures found"
   }
 }

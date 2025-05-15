@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useAtom } from "jotai";
 import { directoryHandleAtom, themeAtom } from "../lib/store";
 import { isTextFile, getFileExtension } from "../lib/utils";
@@ -11,6 +11,8 @@ import {
   CodeStructureVisualizer,
   CodeStructureStats,
 } from "./CodeStructureVisualizer";
+import ProjectConfigVisualizer from "./ProjectConfigVisualizer";
+import ProjectAnalysisChart from "./ProjectAnalysisChart";
 
 // 代码文件类型
 const CODE_EXTENSIONS = [
@@ -63,6 +65,18 @@ interface Comment {
   file: string;
   line: number;
   isBlock: boolean;
+  contextCode: string[]; // 注释周围的代码
+  contextLineStart: number; // 上下文代码的起始行号
+}
+
+// 声明 FileSystemEntry 类型，确保与ProjectConfigVisualizer组件中的定义一致
+interface FileSystemEntry {
+  name: string;
+  kind: "file" | "directory";
+  path: string;
+  lastModified?: number;
+  size?: number;
+  content?: string;
 }
 
 export default function StatisticsContent() {
@@ -73,9 +87,36 @@ export default function StatisticsContent() {
   const [comments, setComments] = useState<Comment[]>([]);
   const [showComments, setShowComments] = useState(false);
   const [showCodeStructure, setShowCodeStructure] = useState(false);
+  const [showProjectConfig, setShowProjectConfig] = useState(false);
+  const [showProjectAnalysis, setShowProjectAnalysis] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [codeStructures, setCodeStructures] = useState<CodeStructure[]>([]);
+  const [entries, setEntries] = useState<FileSystemEntry[]>([]);
   const [theme] = useAtom(themeAtom);
+  const [commentSearchQuery, setCommentSearchQuery] = useState<string>("");
+  const [expandedComments, setExpandedComments] = useState<
+    Record<number, boolean>
+  >({});
+
+  // 过滤注释
+  const filteredComments = useMemo(() => {
+    if (!commentSearchQuery || !comments.length) return comments;
+
+    const query = commentSearchQuery.toLowerCase();
+    return comments.filter(
+      (comment) =>
+        comment.text.toLowerCase().includes(query) ||
+        comment.file.toLowerCase().includes(query)
+    );
+  }, [comments, commentSearchQuery]);
+
+  // 切换注释上下文显示
+  const toggleCommentContext = (index: number) => {
+    setExpandedComments((prev) => ({
+      ...prev,
+      [index]: !prev[index],
+    }));
+  };
 
   // 扫描并统计项目
   const scanProject = async () => {
@@ -100,17 +141,28 @@ export default function StatisticsContent() {
 
       const allComments: Comment[] = [];
       const structures: CodeStructure[] = [];
+      const allEntries: FileSystemEntry[] = [];
 
       // 递归扫描文件夹
-      await scanDirectory(directoryHandle, "", stats, allComments, structures);
+      await scanDirectory(
+        directoryHandle,
+        "",
+        stats,
+        allComments,
+        structures,
+        allEntries
+      );
 
       setStatistics(stats);
       setComments(allComments);
       setCodeStructures(structures);
+      setEntries(allEntries);
 
       // 重置显示状态
       setShowComments(false);
       setShowCodeStructure(false);
+      setShowProjectConfig(false);
+      setShowProjectAnalysis(false);
     } catch (err) {
       console.error("统计过程中出错:", err);
       setError(
@@ -127,7 +179,8 @@ export default function StatisticsContent() {
     path: string,
     stats: StatisticsData,
     comments: Comment[],
-    structures: CodeStructure[]
+    structures: CodeStructure[],
+    allEntries: FileSystemEntry[]
   ) => {
     try {
       // 检查 .gitignore
@@ -181,13 +234,22 @@ export default function StatisticsContent() {
         if (shouldIgnore) continue;
 
         if (handle.kind === "directory") {
+          // 添加目录条目
+          const dirEntry: FileSystemEntry = {
+            name,
+            path: filePath,
+            kind: "directory",
+          };
+          allEntries.push(dirEntry);
+
           // 递归扫描子目录
           await scanDirectory(
             handle as FileSystemDirectoryHandle,
             filePath,
             stats,
             comments,
-            structures
+            structures,
+            allEntries
           );
         } else if (handle.kind === "file") {
           stats.totalFiles++;
@@ -196,6 +258,15 @@ export default function StatisticsContent() {
           const fileHandle = handle as FileSystemFileHandle;
           const file = await fileHandle.getFile();
           const extension = getFileExtension(name).toLowerCase();
+
+          // 添加文件条目
+          const fileEntry: FileSystemEntry = {
+            name,
+            path: filePath,
+            kind: "file",
+            lastModified: file.lastModified,
+            size: file.size,
+          };
 
           // 检查是否为代码文件
           if (CODE_EXTENSIONS.includes(extension) && isTextFile(name)) {
@@ -216,6 +287,9 @@ export default function StatisticsContent() {
 
             try {
               const content = await file.text();
+
+              // 保存文件内容
+              fileEntry.content = content;
 
               // 尝试解析代码结构
               if (
@@ -285,11 +359,21 @@ export default function StatisticsContent() {
 
                     // 保存有效注释内容
                     if (commentText && commentText.trim()) {
+                      // 提取上下文代码（注释前后各3行）
+                      const contextStart = Math.max(0, i - 3);
+                      const contextEnd = Math.min(lines.length - 1, i + 3);
+                      const contextCode = lines.slice(
+                        contextStart,
+                        contextEnd + 1
+                      );
+
                       comments.push({
                         text: commentText.trim(),
                         file: filePath,
                         line: i + 1,
                         isBlock: inBlockComment || isStartBlockComment,
+                        contextCode,
+                        contextLineStart: contextStart + 1,
                       });
                     }
                   } else {
@@ -302,7 +386,22 @@ export default function StatisticsContent() {
             } catch (err) {
               console.warn(`无法读取文件内容: ${filePath}`, err);
             }
+          } else {
+            // 对于非代码文件，尝试读取内容（针对配置文件）
+            if (
+              name.includes("config") ||
+              name.endsWith(".json") ||
+              name.startsWith(".")
+            ) {
+              try {
+                fileEntry.content = await file.text();
+              } catch (err) {
+                console.warn(`无法读取非代码文件内容: ${filePath}`, err);
+              }
+            }
           }
+
+          allEntries.push(fileEntry);
         }
       }
     } catch (err) {
@@ -337,7 +436,7 @@ export default function StatisticsContent() {
         </div>
       )}
 
-      <div className="flex items-center space-x-4 mb-4">
+      <div className="flex flex-wrap items-center gap-4 mb-4">
         <button
           onClick={scanProject}
           disabled={isLoading}
@@ -364,6 +463,26 @@ export default function StatisticsContent() {
           {showCodeStructure
             ? t("codeStructure.hide")
             : t("codeStructure.show")}
+        </button>
+
+        <button
+          onClick={() => setShowProjectConfig(!showProjectConfig)}
+          disabled={isLoading || !statistics || entries.length === 0}
+          className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md transition-colors duration-300 disabled:bg-green-400"
+        >
+          {showProjectConfig
+            ? t("projectConfig.hideConfig")
+            : t("projectConfig.showConfig")}
+        </button>
+
+        <button
+          onClick={() => setShowProjectAnalysis(!showProjectAnalysis)}
+          disabled={isLoading || !statistics || codeStructures.length === 0}
+          className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-md transition-colors duration-300 disabled:bg-teal-400"
+        >
+          {showProjectAnalysis
+            ? t("codeAnalysis.hideAnalysis")
+            : t("codeAnalysis.showAnalysis")}
         </button>
       </div>
 
@@ -424,6 +543,37 @@ export default function StatisticsContent() {
               </div>
             </div>
           </div>
+
+          {/* 项目代码分析图表 */}
+          {entries.length > 0 &&
+            codeStructures.length > 0 &&
+            showProjectAnalysis && (
+              <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
+                <h2 className="text-xl font-semibold mb-4 dark:text-white">
+                  {t("codeAnalysis.title")}
+                </h2>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                  {t("codeAnalysis.description")}. {t("codeAnalysis.dragHelp")}
+                </p>
+                <ProjectAnalysisChart
+                  entries={entries}
+                  structures={codeStructures}
+                />
+              </div>
+            )}
+
+          {/* 项目架构图表 */}
+          {entries.length > 0 && showProjectConfig && (
+            <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
+              <h2 className="text-xl font-semibold mb-4 dark:text-white">
+                {t("projectConfig.title")}
+              </h2>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                {t("projectConfig.dragHelp")}
+              </p>
+              <ProjectConfigVisualizer entries={entries} />
+            </div>
+          )}
 
           {/* 代码结构统计 - 始终显示，有数据时 */}
           {codeStructures.length > 0 && (
@@ -549,23 +699,106 @@ export default function StatisticsContent() {
                     </p>
                   </div>
 
-                  <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2">
-                    {comments.map((comment, index) => (
-                      <div
-                        key={index}
-                        className="border-l-4 border-purple-500 pl-4 py-2"
-                      >
-                        <div className="text-sm text-gray-500 dark:text-gray-400 mb-1">
-                          {comment.file}:{comment.line}{" "}
-                          {comment.isBlock
-                            ? t("statistics.blockComment")
-                            : t("statistics.lineComment")}
-                        </div>
-                        <p className="text-gray-800 dark:text-gray-200">
-                          {comment.text}
-                        </p>
+                  {/* 搜索框 */}
+                  <div className="mb-4">
+                    <div className="relative">
+                      <input
+                        type="text"
+                        placeholder={t("statistics.search_comments")}
+                        className="w-full p-2 pl-10 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200"
+                        value={commentSearchQuery || ""}
+                        onChange={(e) => setCommentSearchQuery(e.target.value)}
+                      />
+                      <div className="absolute left-3 top-2.5 text-gray-500 dark:text-gray-400">
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-5 w-5"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                          />
+                        </svg>
                       </div>
-                    ))}
+                    </div>
+                  </div>
+
+                  <div className="space-y-6 max-h-[600px] overflow-y-auto pr-2">
+                    {filteredComments.length > 0 ? (
+                      filteredComments.map((comment, index) => (
+                        <div
+                          key={index}
+                          className="border rounded-lg overflow-hidden dark:border-gray-700"
+                        >
+                          {/* 注释元信息 */}
+                          <div className="bg-purple-50 dark:bg-purple-900/30 px-4 py-2 border-b dark:border-gray-700 flex justify-between items-center">
+                            <div className="flex items-center gap-2">
+                              <span className="text-purple-600 dark:text-purple-400">
+                                {comment.file}:{comment.line}
+                              </span>
+                              <span className="text-xs px-2 py-0.5 rounded-full bg-purple-100 dark:bg-purple-800 text-purple-800 dark:text-purple-200">
+                                {comment.isBlock
+                                  ? t("statistics.blockComment")
+                                  : t("statistics.lineComment")}
+                              </span>
+                            </div>
+                            <button
+                              onClick={() => toggleCommentContext(index)}
+                              className="text-xs px-2 py-1 bg-purple-200 dark:bg-purple-800 rounded hover:bg-purple-300 dark:hover:bg-purple-700 text-purple-800 dark:text-purple-200"
+                            >
+                              {expandedComments[index]
+                                ? t("statistics.hide_context")
+                                : t("statistics.show_context")}
+                            </button>
+                          </div>
+
+                          {/* 注释内容 */}
+                          <div className="p-4 bg-white dark:bg-gray-800">
+                            <p className="text-gray-800 dark:text-gray-200 font-medium">
+                              {comment.text}
+                            </p>
+                          </div>
+
+                          {/* 代码上下文 */}
+                          {expandedComments[index] && comment.contextCode && (
+                            <div className="border-t dark:border-gray-700">
+                              <pre className="p-4 bg-gray-50 dark:bg-gray-900 text-sm font-mono overflow-x-auto relative">
+                                {comment.contextCode.map((line, lineIndex) => {
+                                  const currentLineNumber =
+                                    (comment.contextLineStart || 1) + lineIndex;
+                                  return (
+                                    <div
+                                      key={lineIndex}
+                                      className={`${
+                                        comment.line === currentLineNumber
+                                          ? "bg-yellow-100 dark:bg-yellow-900/30 -mx-4 px-4"
+                                          : ""
+                                      }`}
+                                    >
+                                      <span className="inline-block w-8 text-right mr-4 text-gray-500 select-none">
+                                        {currentLineNumber}
+                                      </span>
+                                      {line}
+                                    </div>
+                                  );
+                                })}
+                              </pre>
+                            </div>
+                          )}
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-gray-600 dark:text-gray-400">
+                        {commentSearchQuery
+                          ? t("statistics.no_results")
+                          : t("statistics.noComments")}
+                      </p>
+                    )}
                   </div>
                 </div>
               ) : (
