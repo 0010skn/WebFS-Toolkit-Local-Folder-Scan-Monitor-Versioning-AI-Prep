@@ -68,8 +68,19 @@ export async function createGitignoreFilter(
     // 使用 ignore 库解析 .gitignore 规则
     const ig = ignore().add(content);
 
-    // 返回过滤函数
-    return (path: string) => !ig.ignores(path);
+    // 创建一个缓存来存储已经检查过的路径结果
+    const cache = new Map<string, boolean>();
+
+    // 返回带缓存的过滤函数
+    return (path: string) => {
+      if (cache.has(path)) {
+        return cache.get(path)!;
+      }
+
+      const result = !ig.ignores(path);
+      cache.set(path, result);
+      return result;
+    };
   } catch (error) {
     // 如果没有 .gitignore 文件或出错，则不过滤任何文件
     console.log("未找到 .gitignore 文件或解析出错，将扫描所有文件");
@@ -87,94 +98,155 @@ function isTextFile(file: File): boolean {
   return TEXT_FILE_EXTENSIONS.includes(extension);
 }
 
-// 递归扫描文件夹
+// 递归扫描文件夹 - 优化版本
 export async function scanDirectory(
   dirHandle: FileSystemDirectoryHandle,
   shouldInclude: (path: string) => boolean,
   basePath: string = "",
-  maxContentSize: number = 1024 * 1024 * 10 // 默认限制文本文件内容为10MB
+  maxContentSize: number = 1024 * 1024 * 1 // 减小默认限制为1MB以提高性能
 ): Promise<FileSystemEntry[]> {
   const entries: FileSystemEntry[] = [];
+  const BATCH_SIZE = 50; // 批处理大小
+  const MAX_CONCURRENT_DIRS = 8; // 最大并行处理目录数
 
-  try {
-    // 获取目录条目
-    const dirEntriesArray: Array<[string, FileSystemHandle]> = [];
-    for await (const entry of dirHandle.entries()) {
-      dirEntriesArray.push(entry);
+  // 创建一个工作队列来控制并发
+  const dirQueue: { handle: FileSystemDirectoryHandle; path: string }[] = [];
+  let activeWorkers = 0;
+
+  // 处理单个目录的函数
+  async function processDirectory(
+    dirHandle: FileSystemDirectoryHandle,
+    basePath: string
+  ): Promise<FileSystemEntry[]> {
+    const localEntries: FileSystemEntry[] = [];
+
+    try {
+      // 获取目录条目
+      const dirEntriesArray: Array<[string, FileSystemHandle]> = [];
+      for await (const entry of dirHandle.entries()) {
+        dirEntriesArray.push(entry);
+      }
+
+      // 添加目录本身（如果不是根目录）
+      if (basePath) {
+        const dirEntry: FileSystemEntry = {
+          name: dirHandle.name,
+          kind: "directory",
+          path: basePath,
+        };
+        localEntries.push(dirEntry);
+      }
+
+      // 分批处理文件，每批BATCH_SIZE个
+      const batches: Array<Array<[string, FileSystemHandle]>> = [];
+      for (let i = 0; i < dirEntriesArray.length; i += BATCH_SIZE) {
+        batches.push(dirEntriesArray.slice(i, i + BATCH_SIZE));
+      }
+
+      // 按批次处理文件
+      for (const batch of batches) {
+        await Promise.all(
+          batch.map(async ([name, handle]) => {
+            const path = basePath ? `${basePath}/${name}` : name;
+
+            // 跳过 .fe 版本管理目录和 .git 目录
+            if (
+              name === ".fe" ||
+              path.startsWith(".fe/") ||
+              name === ".git" ||
+              path.startsWith(".git/")
+            ) {
+              return;
+            }
+
+            // 如果该路径应该被忽略，则跳过
+            if (!shouldInclude(path)) {
+              return;
+            }
+
+            try {
+              if (handle.kind === "file") {
+                const fileHandle = handle as FileSystemFileHandle;
+                const file = await fileHandle.getFile();
+
+                // 创建基本文件条目，不包含内容
+                const entry: FileSystemEntry = {
+                  name,
+                  kind: "file",
+                  path,
+                  lastModified: file.lastModified,
+                  size: file.size,
+                };
+
+                // 只读取小型文本文件的内容，提高性能
+                if (
+                  file.size < maxContentSize &&
+                  isTextFile(file) &&
+                  file.size < 100 * 1024
+                ) {
+                  // 只读取小于100KB的文本文件
+                  try {
+                    entry.content = await file.text();
+                  } catch (contentError) {
+                    console.log(`无法读取文件内容 ${path}: ${contentError}`);
+                  }
+                }
+
+                localEntries.push(entry);
+              } else if (handle.kind === "directory") {
+                // 将子目录添加到队列中，而不是立即处理
+                dirQueue.push({
+                  handle: handle as FileSystemDirectoryHandle,
+                  path,
+                });
+              }
+            } catch (itemError) {
+              console.error(`处理项目 ${path} 时出错:`, itemError);
+            }
+          })
+        );
+      }
+    } catch (error) {
+      console.error(`扫描目录 ${basePath || "根目录"} 时出错:`, error);
     }
 
-    // 处理每个条目
-    await Promise.all(
-      dirEntriesArray.map(async ([name, handle]) => {
-        const path = basePath ? `${basePath}/${name}` : name;
-
-        // 跳过 .fe 版本管理目录
-        if (
-          name === ".fe" ||
-          path.startsWith(".fe/") ||
-          name === ".git" ||
-          path.startsWith(".git/")
-        ) {
-          return;
-        }
-
-        // 如果该路径应该被忽略，则跳过
-        if (!shouldInclude(path)) {
-          return;
-        }
-
-        try {
-          if (handle.kind === "file") {
-            const fileHandle = handle as FileSystemFileHandle;
-            const file = await fileHandle.getFile();
-
-            const entry: FileSystemEntry = {
-              name,
-              kind: "file",
-              path,
-              lastModified: file.lastModified,
-              size: file.size,
-            };
-
-            // 对于文本文件，读取内容
-            if (file.size < maxContentSize && isTextFile(file)) {
-              entry.content = await file.text();
-            }
-
-            entries.push(entry);
-          } else if (handle.kind === "directory") {
-            // 对于文件夹，递归扫描
-            const dirHandle = handle as FileSystemDirectoryHandle;
-            const dirEntry: FileSystemEntry = {
-              name,
-              kind: "directory",
-              path,
-            };
-
-            // 先添加目录本身
-            entries.push(dirEntry);
-
-            // 然后递归扫描子目录
-            try {
-              const subEntries = await scanDirectory(
-                dirHandle,
-                shouldInclude,
-                path,
-                maxContentSize
-              );
-              entries.push(...subEntries);
-            } catch (subError) {
-              console.error(`无法扫描子文件夹 ${path}:`, subError);
-            }
-          }
-        } catch (itemError) {
-          console.error(`处理项目 ${path} 时出错:`, itemError);
-        }
-      })
-    );
-  } catch (error) {
-    console.error(`扫描目录 ${basePath || "根目录"} 时出错:`, error);
+    return localEntries;
   }
+
+  // 使用工作队列处理目录
+  async function processQueue(): Promise<void> {
+    // 初始处理根目录
+    const rootEntries = await processDirectory(dirHandle, basePath);
+    entries.push(...rootEntries);
+
+    // 处理队列中的目录
+    while (dirQueue.length > 0 || activeWorkers > 0) {
+      // 如果有空闲工作槽位且队列中有目录，则处理下一个目录
+      while (activeWorkers < MAX_CONCURRENT_DIRS && dirQueue.length > 0) {
+        const nextDir = dirQueue.shift()!;
+        activeWorkers++;
+
+        // 异步处理目录
+        processDirectory(nextDir.handle, nextDir.path)
+          .then((dirEntries) => {
+            entries.push(...dirEntries);
+            activeWorkers--;
+          })
+          .catch((error) => {
+            console.error(`处理目录 ${nextDir.path} 时出错:`, error);
+            activeWorkers--;
+          });
+      }
+
+      // 等待一小段时间，让其他任务有机会执行
+      if (dirQueue.length > 0 || activeWorkers > 0) {
+        await new Promise((resolve) => setTimeout(resolve, 0));
+      }
+    }
+  }
+
+  // 开始处理队列
+  await processQueue();
 
   return entries;
 }

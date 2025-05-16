@@ -15,6 +15,7 @@ import {
   changeReportAtom,
   scanStatusAtom,
   lastScanTimeAtom,
+  isMonitoringAtom,
 } from "../lib/store";
 import {
   getVersionHistory,
@@ -56,6 +57,9 @@ export default function VersionManager({ onClose }: VersionManagerProps) {
   const [changeReport, setChangeReport] = useAtom(changeReportAtom);
   const [scanStatus, setScanStatus] = useAtom(scanStatusAtom);
   const [lastScanTime, setLastScanTime] = useAtom(lastScanTimeAtom);
+
+  // 监控相关状态
+  const [isMonitoring, setIsMonitoring] = useAtom(isMonitoringAtom);
 
   // 执行一次扫描
   const performProjectScan = async () => {
@@ -115,6 +119,14 @@ export default function VersionManager({ onClose }: VersionManagerProps) {
     if (!directoryHandle) return;
 
     try {
+      // 保存当前监控状态
+      const wasMonitoring = isMonitoring;
+
+      // 先暂停监控，避免在备份过程中触发监控
+      if (wasMonitoring) {
+        setIsMonitoring(false);
+      }
+
       setOperationStatus("backing-up");
       setBackupProgress(0);
       setOperationMessage("正在创建版本备份...");
@@ -127,12 +139,26 @@ export default function VersionManager({ onClose }: VersionManagerProps) {
       // 重新加载版本历史
       await loadVersionHistory();
 
+      // 如果之前正在监控，则恢复监控状态
+      if (wasMonitoring) {
+        setTimeout(() => {
+          setIsMonitoring(true);
+        }, 1000); // 延迟1秒恢复监控
+      }
+
       setOperationMessage("版本备份成功！");
       setBackupInfo(""); // 清空备份信息输入
     } catch (error) {
       console.error("创建版本备份失败:", error);
       setOperationMessage("创建版本备份失败");
       setOperationStatus("error");
+
+      // 发生错误时也尝试恢复监控状态
+      setTimeout(() => {
+        if (isMonitoring === false) {
+          setIsMonitoring(true);
+        }
+      }, 2000);
     } finally {
       setTimeout(() => {
         setOperationStatus("idle");
@@ -152,6 +178,14 @@ export default function VersionManager({ onClose }: VersionManagerProps) {
     if (!directoryHandle || !versionToRestore) return;
 
     try {
+      // 保存当前监控状态
+      const wasMonitoring = isMonitoring;
+
+      // 先暂停监控，避免在恢复过程中触发监控
+      if (wasMonitoring) {
+        setIsMonitoring(false);
+      }
+
       setShowConfirmDialog(false);
       setOperationStatus("restoring");
       setRestoreProgress(0);
@@ -171,6 +205,13 @@ export default function VersionManager({ onClose }: VersionManagerProps) {
       // 恢复成功后立即进行一次扫描
       await performProjectScan();
 
+      // 如果之前正在监控，则恢复监控状态
+      if (wasMonitoring) {
+        setTimeout(() => {
+          setIsMonitoring(true);
+        }, 1000); // 延迟1秒恢复监控，确保扫描已完成
+      }
+
       setOperationMessage(
         `项目已成功恢复到版本 '${versionToRestore.versionTitle}'！`
       );
@@ -178,6 +219,13 @@ export default function VersionManager({ onClose }: VersionManagerProps) {
       console.error("恢复版本失败:", error);
       setOperationMessage("恢复版本失败");
       setOperationStatus("error");
+
+      // 发生错误时也尝试恢复监控状态
+      setTimeout(() => {
+        if (isMonitoring === false) {
+          setIsMonitoring(true);
+        }
+      }, 2000);
     } finally {
       setTimeout(() => {
         setOperationStatus("idle");
@@ -203,6 +251,14 @@ export default function VersionManager({ onClose }: VersionManagerProps) {
     if (!directoryHandle || !versionToDelete) return;
 
     try {
+      // 保存当前监控状态
+      const wasMonitoring = isMonitoring;
+
+      // 先暂停监控，避免在删除过程中触发监控
+      if (wasMonitoring) {
+        setIsMonitoring(false);
+      }
+
       setShowDeleteConfirmDialog(false);
       setOperationStatus("backing-up"); // 复用现有的状态，表示正在操作中
       setOperationMessage(`正在删除版本: ${versionToDelete.versionTitle}...`);
@@ -213,6 +269,13 @@ export default function VersionManager({ onClose }: VersionManagerProps) {
       // 重新加载版本历史
       await loadVersionHistory();
 
+      // 如果之前正在监控，则恢复监控状态
+      if (wasMonitoring) {
+        setTimeout(() => {
+          setIsMonitoring(true);
+        }, 1000); // 延迟1秒恢复监控
+      }
+
       setOperationMessage(
         `版本 '${versionToDelete.versionTitle}' 已成功删除！`
       );
@@ -220,6 +283,13 @@ export default function VersionManager({ onClose }: VersionManagerProps) {
       console.error("删除版本失败:", error);
       setOperationMessage("删除版本失败");
       setOperationStatus("error");
+
+      // 发生错误时也尝试恢复监控状态
+      setTimeout(() => {
+        if (isMonitoring === false) {
+          setIsMonitoring(true);
+        }
+      }, 2000);
     } finally {
       setTimeout(() => {
         setOperationStatus("idle");

@@ -84,3 +84,82 @@ export interface VersionHistoryItem {
   backupTime: string; // 版本备份时间
   folderName: string; // 版本文件夹名称
 }
+
+// Docker相关类型
+export interface Port {
+  number: number;
+  protocol: "tcp" | "udp";
+}
+
+export interface Instruction {
+  type: string;
+  value: string;
+}
+
+export interface Stage {
+  name: string;
+  baseImage: string;
+  instructions: Instruction[];
+}
+
+export interface Dockerfile {
+  baseImage: string;
+  stages: Stage[];
+  workdir: string;
+  exposedPorts: Port[];
+  entrypoint: string;
+  cmd: string;
+  env: Record<string, string>;
+  labels: Record<string, string>;
+  hasError: boolean;
+  errors: string[];
+}
+
+// 环境变量文件类型
+export interface EnvVariable {
+  key: string;
+  value: string;
+  description?: string; // 描述或注释
+  line: number; // 在文件中的行号
+  isComment: boolean; // 是否为注释行
+  isSensitive: boolean; // 是否包含敏感信息
+}
+
+export interface EnvFile {
+  path: string;
+  name: string;
+  variables: EnvVariable[];
+  hasError: boolean;
+  errors: string[];
+}
+
+// Docker Compose 相关类型
+export interface DockerComposeService {
+  name: string;
+  image?: string;
+  build?: {
+    context: string;
+    dockerfile?: string;
+  };
+  ports?: string[];
+  volumes?: string[];
+  environment?: Record<string, string>;
+  env_file?: string[];
+  depends_on?: string[];
+  networks?: string[];
+}
+
+export interface DockerComposeConfig {
+  version: string;
+  services: DockerComposeService[];
+  networks?: Record<string, any>;
+  volumes?: Record<string, any>;
+  hasError: boolean;
+  errors: string[];
+}
+
+// 扫描状态类型
+export type ScanStatus = "idle" | "scanning" | "error";
+
+// 操作状态类型
+export type OperationStatus = "idle" | "backing-up" | "restoring" | "error";

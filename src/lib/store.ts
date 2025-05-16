@@ -1,5 +1,15 @@
 import { atom } from "jotai";
-import { ScanResult, ChangeReport, VersionHistoryItem } from "../types";
+import {
+  FileSystemEntry,
+  ScanResult,
+  ChangeReport,
+  ScanStatus,
+  VersionHistoryItem,
+  OperationStatus,
+  Dockerfile,
+  EnvFile,
+  DockerComposeConfig,
+} from "../types";
 import { Locale, getDefaultLocale } from "./i18n";
 
 // 文件夹句柄
@@ -74,3 +84,39 @@ export const restoreProgressAtom = atom<number>(0);
 
 // README文件内容
 export const readmeContentAtom = atom<string | null>(null);
+
+// Docker相关状态
+export const dockerfilesAtom = atom<{ exists: boolean; paths: string[] }>({
+  exists: false,
+  paths: [],
+});
+
+export const selectedDockerfileAtom = atom<string>("");
+export const dockerfileContentAtom = atom<string>("");
+export const parsedDockerfileAtom = atom<Dockerfile | null>(null);
+export const dockerfileErrorsAtom = atom<string[]>([]);
+
+// Docker Compose相关状态
+export const dockerComposeFilesAtom = atom<{
+  exists: boolean;
+  paths: string[];
+}>({
+  exists: false,
+  paths: [],
+});
+
+export const selectedDockerComposeAtom = atom<string>("");
+export const dockerComposeContentAtom = atom<string>("");
+export const parsedDockerComposeAtom = atom<DockerComposeConfig | null>(null);
+export const dockerComposeErrorsAtom = atom<string[]>([]);
+
+// 环境变量文件相关状态
+export const envFilesAtom = atom<{ exists: boolean; paths: string[] }>({
+  exists: false,
+  paths: [],
+});
+
+export const selectedEnvFileAtom = atom<string>("");
+export const envFileContentAtom = atom<string>("");
+export const parsedEnvFileAtom = atom<EnvFile | null>(null);
+export const envFileErrorsAtom = atom<string[]>([]);

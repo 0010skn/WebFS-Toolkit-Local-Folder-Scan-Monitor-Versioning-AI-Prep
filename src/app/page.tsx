@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useAtom } from "jotai";
-import { directoryHandleAtom } from "../lib/store";
+import { directoryHandleAtom, dockerfilesAtom } from "../lib/store";
 import { useTranslations } from "@/components/LocaleProvider";
 import { useTransitionRouter } from "next-view-transitions";
 import { slideInOut } from "../lib/publicCutscene";
@@ -17,10 +17,12 @@ import BrowserCompatCheck from "../components/BrowserCompatCheck";
 
 export default function Home() {
   const [directoryHandle] = useAtom(directoryHandleAtom);
+  const [dockerfiles] = useAtom(dockerfilesAtom);
   const { t } = useTranslations();
   const router = useTransitionRouter();
   const [mounted, setMounted] = useState(false);
   const [showVersionModal, setShowVersionModal] = useState(false);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
 
   // 确保组件在客户端挂载后才渲染，避免水合错误
   useEffect(() => {
@@ -30,6 +32,27 @@ export default function Home() {
   // 跳转到统计页面
   const handleGoToStatistics = () => {
     router.push("/statistics", {
+      onTransitionReady: slideInOut,
+    });
+  };
+
+  // Docker页面跳转
+  const handleGoToDocker = () => {
+    router.push("/docker", {
+      onTransitionReady: slideInOut,
+    });
+  };
+
+  // Docker Compose页面跳转
+  const handleGoToDockerCompose = () => {
+    router.push("/docker?tab=compose", {
+      onTransitionReady: slideInOut,
+    });
+  };
+
+  // 环境变量页面跳转
+  const handleGoToEnvFile = () => {
+    router.push("/docker?tab=env", {
       onTransitionReady: slideInOut,
     });
   };
@@ -68,40 +91,183 @@ export default function Home() {
               </h1>
             </div>
 
-            {/* 右侧工具区 */}
-            <div className="flex items-center space-x-4">
+            {/* 右侧工具区 - 改进响应式布局 */}
+            <div className="flex flex-wrap items-center gap-2 sm:gap-4">
               <ThemeToggle />
               <SettingsButton />
 
               {directoryHandle && (
                 <>
-                  <button
-                    onClick={handleGoToStatistics}
-                    className="text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white px-3 py-2 rounded-md text-sm font-medium flex items-center"
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-5 w-5 mr-1"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
+                  {/* 在小屏幕上使用下拉菜单 */}
+                  <div className="sm:hidden relative">
+                    <button
+                      className="px-3 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600"
+                      onClick={() => setShowMobileMenu(!showMobileMenu)}
+                      aria-label="Menu"
                     >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-                      />
-                    </svg>
-                    {t("nav.statistics")}
-                  </button>
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-5 w-5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M4 6h16M4 12h16M4 18h16"
+                        />
+                      </svg>
+                    </button>
 
-                  <button
-                    onClick={() => setShowVersionModal(true)}
-                    className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition-colors dark:bg-purple-700 dark:hover:bg-purple-800"
-                  >
-                    {t("versionManager.title")}
-                  </button>
+                    {/* 移动端下拉菜单 */}
+                    {showMobileMenu && (
+                      <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white dark:bg-gray-800 ring-1 ring-black ring-opacity-5 z-50">
+                        <div className="py-1">
+                          <button
+                            onClick={handleGoToStatistics}
+                            className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+                          >
+                            {t("nav.statistics")}
+                          </button>
+
+                          {dockerfiles.exists && (
+                            <>
+                              <button
+                                onClick={handleGoToDocker}
+                                className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+                              >
+                                {t("docker.title")}
+                              </button>
+
+                              <button
+                                onClick={handleGoToDockerCompose}
+                                className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+                              >
+                                {t("dockerCompose.title")}
+                              </button>
+                            </>
+                          )}
+
+                          <button
+                            onClick={handleGoToEnvFile}
+                            className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+                          >
+                            {t("envFile.title")}
+                          </button>
+
+                          <button
+                            onClick={() => setShowVersionModal(true)}
+                            className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+                          >
+                            {t("versionManager.title")}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* 在大屏幕上显示常规按钮 */}
+                  <div className="hidden sm:flex sm:items-center sm:space-x-4">
+                    <button
+                      onClick={handleGoToStatistics}
+                      className="text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white px-3 py-2 rounded-md text-sm font-medium flex items-center"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-5 w-5 mr-1"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                        />
+                      </svg>
+                      {t("nav.statistics")}
+                    </button>
+
+                    {/* Docker标签，仅当检测到Docker文件时显示 */}
+                    {dockerfiles.exists && (
+                      <>
+                        <button
+                          onClick={handleGoToDocker}
+                          className="text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white px-3 py-2 rounded-md text-sm font-medium flex items-center"
+                        >
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="h-5 w-5 mr-1"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z"
+                            />
+                          </svg>
+                          {t("docker.title")}
+                        </button>
+
+                        {/* Docker Compose按钮 */}
+                        <button
+                          onClick={handleGoToDockerCompose}
+                          className="text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white px-3 py-2 rounded-md text-sm font-medium flex items-center"
+                        >
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="h-5 w-5 mr-1"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
+                            />
+                          </svg>
+                          {t("dockerCompose.title")}
+                        </button>
+                      </>
+                    )}
+
+                    {/* 环境变量按钮 */}
+                    <button
+                      onClick={handleGoToEnvFile}
+                      className="text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white px-3 py-2 rounded-md text-sm font-medium flex items-center"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-5 w-5 mr-1"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
+                        />
+                      </svg>
+                      {t("envFile.title")}
+                    </button>
+
+                    <button
+                      onClick={() => setShowVersionModal(true)}
+                      className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition-colors dark:bg-purple-700 dark:hover:bg-purple-800 whitespace-nowrap"
+                    >
+                      {t("versionManager.title")}
+                    </button>
+                  </div>
                 </>
               )}
             </div>

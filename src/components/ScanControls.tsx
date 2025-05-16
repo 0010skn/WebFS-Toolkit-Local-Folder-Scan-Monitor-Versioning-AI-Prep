@@ -14,6 +14,7 @@ import {
   lastScanTimeAtom,
   showAllFilesAtom,
   readmeContentAtom,
+  dockerfilesAtom,
 } from "../lib/store";
 import {
   performScan,
@@ -25,6 +26,7 @@ import {
 import { isFileSystemObserverSupported } from "../lib/fileObserver";
 import { useTranslations } from "./LocaleProvider";
 import { motion, AnimatePresence } from "framer-motion";
+import { detectDockerfile } from "../lib/dockerService";
 
 export default function ScanControls() {
   const { t } = useTranslations();
@@ -39,6 +41,7 @@ export default function ScanControls() {
   const [lastScanTime, setLastScanTime] = useAtom(lastScanTimeAtom);
   const [showAllFiles, setShowAllFiles] = useAtom(showAllFilesAtom);
   const [readmeContent, setReadmeContent] = useAtom(readmeContentAtom);
+  const [_, setDockerfiles] = useAtom(dockerfilesAtom);
 
   const [isDownloading, setIsDownloading] = useState(false);
   const [isUsingObserver, setIsUsingObserver] = useState(false);
@@ -114,6 +117,25 @@ export default function ScanControls() {
       }
     };
   }, [isMonitoring]);
+
+  // 检测是否包含Dockerfile
+  useEffect(() => {
+    if (!directoryHandle) return;
+
+    const checkForDockerfiles = async () => {
+      try {
+        const result = await detectDockerfile(directoryHandle);
+        setDockerfiles(result);
+        if (result.exists) {
+          console.log("项目中检测到Docker文件:", result.paths);
+        }
+      } catch (error) {
+        console.error("检测Docker文件时出错:", error);
+      }
+    };
+
+    checkForDockerfiles();
+  }, [directoryHandle, setDockerfiles]);
 
   // 扫描函数
   const handleScan = async () => {
