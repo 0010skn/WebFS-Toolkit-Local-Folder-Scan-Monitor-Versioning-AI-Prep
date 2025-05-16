@@ -1,4 +1,4 @@
-import { VersionInfo, VersionHistoryItem, FileSystemEntry } from "../../types";
+import { VersionInfo, VersionHistoryItem, FileSystemEntry } from "../types";
 import { createGitignoreFilter } from "./scanUtils";
 
 // 获取或创建 .fe 隐藏文件夹
@@ -467,5 +467,67 @@ async function copyFile(
     } catch (dirError) {
       console.error(`无法复制路径 ${path}:`, dirError);
     }
+  }
+}
+
+// 删除版本
+export async function deleteVersion(
+  rootHandle: FileSystemDirectoryHandle,
+  versionFolderName: string
+): Promise<void> {
+  try {
+    // 获取.fe文件夹
+    const feHandle = await getOrCreateVersionFolder(rootHandle);
+
+    // 递归删除版本文件夹中的所有内容
+    await deleteVersionFolder(feHandle, versionFolderName);
+
+    console.log(`版本 ${versionFolderName} 删除成功`);
+  } catch (error) {
+    console.error(`删除版本时出错:`, error);
+    throw error;
+  }
+}
+
+// 递归删除文件夹
+async function deleteVersionFolder(
+  parentHandle: FileSystemDirectoryHandle,
+  folderName: string
+): Promise<void> {
+  try {
+    // 获取要删除的文件夹句柄
+    const folderHandle = await parentHandle.getDirectoryHandle(folderName, {
+      create: false,
+    });
+
+    // 删除文件夹中的所有内容
+    for await (const [name, handle] of folderHandle.entries()) {
+      if (handle.kind === "file") {
+        // 删除文件
+        await deleteFile(folderHandle, name);
+      } else if (handle.kind === "directory") {
+        // 递归删除子文件夹
+        await deleteVersionFolder(folderHandle, name);
+      }
+    }
+
+    // 删除空文件夹 - 使用removeEntry
+    await parentHandle.removeEntry(folderName, { recursive: true });
+  } catch (error) {
+    console.error(`删除文件夹 ${folderName} 时出错:`, error);
+    throw error;
+  }
+}
+
+// 删除单个文件
+async function deleteFile(
+  parentHandle: FileSystemDirectoryHandle,
+  fileName: string
+): Promise<void> {
+  try {
+    await parentHandle.removeEntry(fileName);
+  } catch (error) {
+    console.error(`删除文件 ${fileName} 时出错:`, error);
+    throw error;
   }
 }

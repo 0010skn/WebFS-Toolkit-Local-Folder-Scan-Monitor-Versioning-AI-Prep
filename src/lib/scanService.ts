@@ -194,16 +194,54 @@ export function compareScans(
 
 // 下载文本报告
 export function downloadTextReport(report: ChangeReport): void {
+  console.log("开始生成扫描报告内容...");
+
+  // 生成报告内容
   const reportText = generateTextReport(report);
-  const blob = new Blob([reportText], { type: "text/plain" });
+  console.log("扫描报告内容已生成，准备下载...");
+
+  // 生成文件名
+  const now = new Date();
+  const timestamp = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(
+    2,
+    "0"
+  )}${String(now.getDate()).padStart(2, "0")}_${String(now.getHours()).padStart(
+    2,
+    "0"
+  )}${String(now.getMinutes()).padStart(2, "0")}`;
+  const filename = `FS_Report_${timestamp}.txt`;
+
+  // 创建Blob对象并生成URL
+  const blob = new Blob([reportText], { type: "text/plain;charset=utf-8" });
   const url = URL.createObjectURL(blob);
 
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `项目扫描报告_${new Date()
-    .toISOString()
-    .replace(/[:.]/g, "-")}.txt`;
-  a.click();
+  // 使用浏览器兼容方法
+  try {
+    // 创建隐藏的链接元素并添加到页面
+    const a = document.createElement("a");
+    document.body.appendChild(a);
+    a.style.position = "absolute";
+    a.style.left = "-9999px";
+    a.href = url;
+    a.download = filename;
 
-  URL.revokeObjectURL(url);
+    // 触发点击事件
+    a.click();
+
+    // 清理资源
+    setTimeout(() => {
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      console.log("扫描报告下载完成");
+    }, 1000);
+  } catch (error) {
+    console.error("下载报告时出错:", error);
+    // 使用其他浏览器兼容方法
+    const link = document.createElement("a");
+    link.href =
+      "data:text/plain;charset=utf-8," + encodeURIComponent(reportText);
+    link.download = filename;
+    link.click();
+    console.log("使用其他浏览器兼容方法下载");
+  }
 }

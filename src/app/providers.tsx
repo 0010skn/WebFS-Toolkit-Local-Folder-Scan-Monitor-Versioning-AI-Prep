@@ -2,10 +2,10 @@
 
 import { Provider as JotaiProvider } from "jotai";
 import { ReactNode, useEffect } from "react";
-import { LocaleProvider } from "@/components/LocaleProvider";
-import { useViewport } from "@/lib/useViewport";
-import { setupGlobalViewport } from "@/lib/viewportScript";
-import { registerServiceWorker, captureInstallPrompt } from "@/lib/pwaUtils";
+import { LocaleProvider } from "../components/LocaleProvider";
+import { useViewport } from "../lib/useViewport";
+import { setupGlobalViewport } from "../lib/viewportScript";
+import { registerServiceWorker, captureInstallPrompt } from "../lib/pwaUtils";
 
 export function Providers({ children }: { children: ReactNode }) {
   // 直接在Providers组件中调用useViewport hook

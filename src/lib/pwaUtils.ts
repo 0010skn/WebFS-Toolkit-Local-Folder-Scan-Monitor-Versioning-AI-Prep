@@ -5,10 +5,19 @@ export function isServiceWorkerSupported(): boolean {
 
 // 检查是否支持安装PWA
 export function isPwaInstallable(): boolean {
-  return (
-    window.matchMedia("(display-mode: browser)").matches &&
-    "BeforeInstallPromptEvent" in window
-  );
+  // 检查是否在浏览器模式下运行
+  const isBrowserMode = window.matchMedia("(display-mode: browser)").matches;
+
+  // 判断是否支持PWA安装
+  // 注意：Edge浏览器可能没有BeforeInstallPromptEvent，但仍然支持PWA安装
+  // 使用更通用的方法判断安装能力
+  const hasInstallCapability =
+    "BeforeInstallPromptEvent" in window ||
+    (navigator.userAgent.includes("Edg") &&
+      "serviceWorker" in navigator &&
+      "caches" in window);
+
+  return isBrowserMode && hasInstallCapability;
 }
 
 // 注册Service Worker

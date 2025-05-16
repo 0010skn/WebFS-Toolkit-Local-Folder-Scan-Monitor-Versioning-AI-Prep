@@ -1,5 +1,5 @@
 import { atom } from "jotai";
-import { ScanResult, ChangeReport, VersionHistoryItem } from "@/types";
+import { ScanResult, ChangeReport, VersionHistoryItem } from "../types";
 import { Locale, getDefaultLocale } from "./i18n";
 
 // 文件夹句柄
@@ -21,7 +21,9 @@ export const hasGitignoreAtom = atom<boolean>(false);
 export const gitignoreContentAtom = atom<string | null>(null);
 
 // 扫描状态
-export const scanStatusAtom = atom<"idle" | "scanning" | "error">("idle");
+export const scanStatusAtom = atom<"idle" | "scanning" | "preparing" | "error">(
+  "idle"
+);
 
 // 错误信息
 export const errorMessageAtom = atom<string | null>(null);

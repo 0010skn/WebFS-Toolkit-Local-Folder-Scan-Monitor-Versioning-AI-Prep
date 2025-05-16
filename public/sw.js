@@ -2,13 +2,7 @@
 const CACHE_NAME = "folda-scan-cache-v1";
 
 // 需要缓存的资源列表
-const urlsToCache = [
-  "/",
-  "/index.html",
-  "/manifest.json",
-  "/icons/icon-192x192.png",
-  "/icons/icon-512x512.png",
-];
+const urlsToCache = ["/", "/index.html", "/manifest.json"];
 
 // 安装Service Worker
 self.addEventListener("install", (event) => {

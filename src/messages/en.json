@@ -3,6 +3,9 @@
     "title": "Folda-Scan",
     "description": "Local Code Project Scanner & Monitor"
   },
+  "nav": {
+    "statistics": "Statistics"
+  },
   "settings": {
     "title": "Settings",
     "language": "Language",
@@ -40,7 +43,11 @@
     "noPermission": "Failed to get folder access permission",
     "gitignoreFound": ".gitignore file found",
     "gitignoreNotFound": "No .gitignore file found",
-    "viewRules": "View Rules"
+    "viewRules": "View Rules",
+    "welcomeTitle": "Welcome to Folda-Scan",
+    "welcomeDescription": "Please select a project folder to start scanning and monitoring",
+    "privacyNote": "All operations are performed locally, your files will not be uploaded",
+    "changeFolder": "Change Folder"
   },
   "scanControls": {
     "startScan": "Start Scan",
@@ -58,7 +65,8 @@
     "observerFallback": "Note: FileSystemObserver available but not enabled, falling back to polling",
     "lastScanTime": "Last scan time",
     "changeDetected": "File changes detected",
-    "downloading": "Downloading..."
+    "downloading": "Downloading...",
+    "preparingReport": "Preparing report..."
   },
   "versionManager": {
     "title": "Versions",

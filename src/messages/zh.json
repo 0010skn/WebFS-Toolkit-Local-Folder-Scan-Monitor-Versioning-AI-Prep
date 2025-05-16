@@ -3,6 +3,9 @@
     "title": "Folda-Scan",
     "description": "代码项目扫描与监控"
   },
+  "nav": {
+    "statistics": "统计"
+  },
   "settings": {
     "title": "设置",
     "language": "语言",
@@ -40,7 +43,11 @@
     "noPermission": "未能获取文件夹访问权限",
     "gitignoreFound": "已找到 .gitignore 文件",
     "gitignoreNotFound": "未找到 .gitignore 文件",
-    "viewRules": "查看规则"
+    "viewRules": "查看规则",
+    "welcomeTitle": "欢迎使用 Folda-Scan",
+    "welcomeDescription": "请选择一个项目文件夹开始扫描和监控",
+    "privacyNote": "所有操作均在本地进行，不会上传您的文件",
+    "changeFolder": "更换文件夹"
   },
   "scanControls": {
     "startScan": "开始扫描",
@@ -58,7 +65,8 @@
     "observerFallback": "注意：文件系统观察器可用但未成功启用，已回退到轮询模式",
     "lastScanTime": "上次扫描时间",
     "changeDetected": "检测到文件变化",
-    "downloading": "下载中..."
+    "downloading": "下载中...",
+    "preparingReport": "正在准备报告..."
   },
   "versionManager": {
     "title": "版本",

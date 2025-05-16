@@ -24,6 +24,7 @@ import {
 } from "../lib/scanService";
 import { isFileSystemObserverSupported } from "../lib/fileObserver";
 import { useTranslations } from "./LocaleProvider";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function ScanControls() {
   const { t } = useTranslations();
@@ -42,14 +43,77 @@ export default function ScanControls() {
   const [isDownloading, setIsDownloading] = useState(false);
   const [isUsingObserver, setIsUsingObserver] = useState(false);
   const [observerSupported, setObserverSupported] = useState(false);
+  const [scanProgress, setScanProgress] = useState(0);
+  const [scanCompleted, setScanCompleted] = useState(false);
+  const [showPulse, setShowPulse] = useState(false);
 
   // 监控定时器引用
   const monitorTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const pulseTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // 检查FileSystemObserver是否被支持
   useEffect(() => {
     setObserverSupported(isFileSystemObserverSupported());
   }, []);
+
+  // 模拟扫描进度动画
+  useEffect(() => {
+    let progress = 0;
+    let interval: NodeJS.Timeout | null = null;
+    let timer: NodeJS.Timeout | null = null;
+
+    if (scanStatus === "scanning") {
+      setScanProgress(0);
+      setScanCompleted(false);
+
+      interval = setInterval(() => {
+        if (progress < 95) {
+          progress += Math.random() * 10;
+          progress = Math.min(progress, 95);
+          setScanProgress(progress);
+        } else {
+          if (interval) clearInterval(interval);
+        }
+      }, 150);
+    } else if (scanStatus === "idle" && scanProgress > 0) {
+      setScanProgress(100);
+      setScanCompleted(true);
+
+      timer = setTimeout(() => {
+        setScanProgress(0);
+      }, 1500);
+    }
+
+    return () => {
+      if (interval) clearInterval(interval);
+      if (timer) clearTimeout(timer);
+    };
+  }, [scanStatus]);
+
+  // 监控脉冲动画
+  useEffect(() => {
+    if (isMonitoring) {
+      setShowPulse(true);
+      if (pulseTimerRef.current) {
+        clearInterval(pulseTimerRef.current);
+      }
+      pulseTimerRef.current = setInterval(() => {
+        setShowPulse((prev) => !prev);
+      }, 2000);
+    } else {
+      setShowPulse(false);
+      if (pulseTimerRef.current) {
+        clearInterval(pulseTimerRef.current);
+        pulseTimerRef.current = null;
+      }
+    }
+
+    return () => {
+      if (pulseTimerRef.current) {
+        clearInterval(pulseTimerRef.current);
+      }
+    };
+  }, [isMonitoring]);
 
   // 扫描函数
   const handleScan = async () => {
@@ -131,15 +195,23 @@ export default function ScanControls() {
     if (!changeReport) return;
 
     setIsDownloading(true);
+    setScanStatus("preparing"); // 设置状态为正在准备下载报告
 
     try {
+      // 使用下载报告的函数
       downloadTextReport(changeReport);
+
+      // 在下载完成后重置状态
+      setTimeout(() => {
+        setScanStatus("idle");
+        setIsDownloading(false);
+      }, 1500); // 给足够的时间完成下载
     } catch (error) {
       console.error("下载报告时出错:", error);
       setErrorMessage(
         error instanceof Error ? error.message : "下载报告时出错"
       );
-    } finally {
+      setScanStatus("error");
       setIsDownloading(false);
     }
   };
@@ -250,101 +322,491 @@ export default function ScanControls() {
           handleFileChange
         );
 
+        // 更新观察器状态
         setIsUsingObserver(usingObserver);
 
-        // 如果不支持或失败，使用轮询
+        // 如果不支持观察器或启用失败，则使用轮询
         if (!usingObserver) {
+          console.log(
+            "FileSystemObserver不支持或启用失败，使用轮询监控，间隔:",
+            monitorInterval
+          );
           monitorTimerRef.current = setInterval(handleScan, monitorInterval);
         }
       }
     }
   };
 
+  // 如果没有目录句柄，不显示控制器
+  if (!directoryHandle) return null;
+
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap gap-3">
-        <button
+    <div>
+      <AnimatePresence mode="wait">
+        {scanProgress > 0 && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.3 }}
+            className="mb-4"
+          >
+            <div className="relative pt-1">
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full text-blue-600 bg-blue-200 dark:bg-blue-900 dark:text-blue-300">
+                    {scanCompleted
+                      ? "扫描完成"
+                      : `${Math.round(scanProgress)}% 完成`}
+                  </span>
+                </div>
+                <div className="text-right">
+                  <span className="text-xs font-semibold inline-block">
+                    {scanCompleted ? (
+                      <motion.span
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="text-green-500"
+                      >
+                        ✓ 已完成
+                      </motion.span>
+                    ) : (
+                      `${Math.round(scanProgress)}%`
+                    )}
+                  </span>
+                </div>
+              </div>
+              <div className="overflow-hidden h-2 mb-1 text-xs flex rounded bg-blue-100 dark:bg-gray-700">
+                <motion.div
+                  animate={{ width: `${scanProgress}%` }}
+                  initial={{ width: "0%" }}
+                  transition={{
+                    duration: scanCompleted ? 0.3 : 0.5,
+                    ease: scanCompleted ? "easeOut" : "easeInOut",
+                  }}
+                  className={`shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center relative ${
+                    scanCompleted ? "bg-green-500" : "bg-blue-500"
+                  }`}
+                >
+                  {/* 扫描中的波纹效果 */}
+                  {!scanCompleted && scanStatus === "scanning" && (
+                    <>
+                      <motion.div
+                        className="absolute top-0 left-0 h-full w-full bg-white opacity-30"
+                        animate={{ x: ["0%", "100%"] }}
+                        transition={{
+                          duration: 1.5,
+                          repeat: Infinity,
+                          ease: "linear",
+                        }}
+                      />
+                      <motion.div
+                        className="absolute top-0 left-0 h-full w-full bg-white opacity-20"
+                        animate={{ x: ["-100%", "100%"] }}
+                        transition={{
+                          duration: 2,
+                          repeat: Infinity,
+                          ease: "linear",
+                          delay: 0.5,
+                        }}
+                      />
+                    </>
+                  )}
+
+                  {/* 完成时的闪光效果 */}
+                  {scanCompleted && (
+                    <motion.div
+                      initial={{ width: 0, opacity: 0.7 }}
+                      animate={{ width: "100%", opacity: 0 }}
+                      className="absolute top-0 left-0 h-full bg-green-200"
+                      transition={{
+                        duration: 0.7,
+                        repeat: 1,
+                        repeatType: "reverse",
+                      }}
+                    />
+                  )}
+                </motion.div>
+              </div>
+              {scanStatus === "scanning" && (
+                <div className="text-xs text-gray-500 dark:text-gray-400 italic animate-pulse">
+                  正在扫描文件...
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <div className="flex flex-wrap gap-3 mb-3">
+        <motion.button
           onClick={handleScan}
-          disabled={!directoryHandle || scanStatus === "scanning"}
-          className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 transition-colors dark:bg-green-700 dark:hover:bg-green-800 dark:focus:ring-green-600"
+          disabled={scanStatus === "scanning"}
+          className={`px-4 py-2 rounded-md text-white transition-colors ${
+            scanStatus === "scanning"
+              ? "bg-gray-400 cursor-not-allowed"
+              : "bg-blue-600 hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+          }`}
+          whileHover={{ scale: scanStatus === "scanning" ? 1 : 1.05 }}
+          whileTap={{ scale: scanStatus === "scanning" ? 1 : 0.95 }}
+          transition={{ type: "spring", stiffness: 400, damping: 10 }}
         >
-          {scanStatus === "scanning"
-            ? t("scanControls.scanning")
-            : t("scanControls.startScan")}
-        </button>
+          <span className="flex items-center">
+            {scanStatus === "scanning" ? (
+              <>
+                <motion.svg
+                  className="-ml-1 mr-2 h-5 w-5 text-white"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  animate={{
+                    rotate: 360,
+                    scale: [1, 1.1, 1],
+                  }}
+                  transition={{
+                    rotate: {
+                      duration: 1.5,
+                      repeat: Infinity,
+                      ease: "linear",
+                    },
+                    scale: {
+                      duration: 1,
+                      repeat: Infinity,
+                      ease: "easeInOut",
+                    },
+                  }}
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
+                </motion.svg>
+                <motion.span
+                  animate={{ opacity: [0.6, 1, 0.6] }}
+                  transition={{
+                    duration: 1.5,
+                    repeat: Infinity,
+                    ease: "easeInOut",
+                  }}
+                >
+                  {t("scanControls.scanning")}
+                </motion.span>
+              </>
+            ) : (
+              <>
+                <motion.svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5 mr-2"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  animate={{ scale: [1, 1.1, 1] }}
+                  transition={{
+                    duration: 2,
+                    repeat: Infinity,
+                    ease: "easeInOut",
+                  }}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                  />
+                </motion.svg>
+                {t("scanControls.startScan")}
+              </>
+            )}
+          </span>
+        </motion.button>
 
-        <button
+        <motion.button
           onClick={toggleMonitoring}
-          disabled={!directoryHandle}
-          className={`px-4 py-2 ${
-            isMonitoring
-              ? "bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-800"
-              : "bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800"
-          } text-white rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 transition-colors`}
+          disabled={scanStatus === "scanning"}
+          className={`px-4 py-2 rounded-md text-white transition-colors flex items-center relative ${
+            scanStatus === "scanning"
+              ? "bg-gray-400 cursor-not-allowed"
+              : isMonitoring
+              ? "bg-red-500 hover:bg-red-600 focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+              : "bg-green-600 hover:bg-green-700 focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+          }`}
+          whileHover={{ scale: scanStatus === "scanning" ? 1 : 1.05 }}
+          whileTap={{ scale: scanStatus === "scanning" ? 1 : 0.95 }}
+          transition={{ type: "spring", stiffness: 400, damping: 10 }}
         >
-          {isMonitoring
-            ? t("scanControls.stopMonitoring")
-            : t("scanControls.startMonitoring")}
-        </button>
+          {isMonitoring && showPulse && (
+            <motion.span
+              initial={{ opacity: 0.7, scale: 1 }}
+              animate={{ opacity: 0, scale: 1.5 }}
+              transition={{ duration: 1, repeat: Infinity }}
+              className="absolute inset-0 bg-red-400 rounded-md z-0"
+            ></motion.span>
+          )}
+          <span className="flex items-center relative z-10">
+            {isMonitoring ? (
+              <>
+                <motion.svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5 mr-2"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  animate={{ scale: [1, 1.2, 1] }}
+                  transition={{
+                    duration: 1,
+                    repeat: Infinity,
+                    ease: "easeInOut",
+                  }}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"
+                  />
+                </motion.svg>
+                <motion.span
+                  animate={{ opacity: [0.6, 1, 0.6] }}
+                  transition={{
+                    duration: 1.5,
+                    repeat: Infinity,
+                    ease: "easeInOut",
+                  }}
+                >
+                  {t("scanControls.stopMonitoring")}
+                </motion.span>
+              </>
+            ) : (
+              <>
+                <motion.svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5 mr-2"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  animate={{
+                    rotate: [0, 10, 0, -10, 0],
+                    scale: [1, 1.1, 1],
+                  }}
+                  transition={{
+                    rotate: {
+                      duration: 1.5,
+                      repeat: Infinity,
+                      ease: "easeInOut",
+                    },
+                    scale: { duration: 2, repeat: Infinity, ease: "easeInOut" },
+                  }}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
+                  />
+                </motion.svg>
+                {t("scanControls.startMonitoring")}
+              </>
+            )}
+          </span>
+        </motion.button>
 
-        {changeReport && (
-          <>
-            <button
-              onClick={handleDownloadReport}
-              disabled={isDownloading}
-              className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 disabled:opacity-50 transition-colors dark:bg-purple-700 dark:hover:bg-purple-800 dark:focus:ring-purple-600"
-            >
-              {isDownloading
-                ? t("scanControls.downloading")
-                : t("scanControls.download")}
-            </button>
-            <span className="text-xs text-pink-500 dark:text-pink-400 font-medium animate-pulse ml-2 self-center bg-pink-100 dark:bg-pink-900/30 px-3 py-1.5 rounded-full shadow-sm border border-pink-200 dark:border-pink-800">
-              报告投喂给AI更方便 💖
+        {currentScan && (
+          <motion.button
+            onClick={handleDownloadReport}
+            disabled={isDownloading || !changeReport}
+            className={`px-4 py-2 rounded-md text-white transition-colors ${
+              isDownloading || !changeReport
+                ? "bg-gray-400 cursor-not-allowed"
+                : "bg-indigo-600 hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+            }`}
+            whileHover={{ scale: isDownloading || !changeReport ? 1 : 1.05 }}
+            whileTap={{ scale: isDownloading || !changeReport ? 1 : 0.95 }}
+            transition={{ type: "spring", stiffness: 400, damping: 10 }}
+          >
+            <span className="flex items-center">
+              {isDownloading || scanStatus === "preparing" ? (
+                <>
+                  <motion.svg
+                    className="-ml-1 mr-2 h-5 w-5 text-white"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    animate={{
+                      rotate: 360,
+                      scale: [1, 1.1, 1],
+                    }}
+                    transition={{
+                      rotate: {
+                        duration: 1.5,
+                        repeat: Infinity,
+                        ease: "linear",
+                      },
+                      scale: {
+                        duration: 1,
+                        repeat: Infinity,
+                        ease: "easeInOut",
+                      },
+                    }}
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
+                  </motion.svg>
+                  <motion.span
+                    animate={{ opacity: [0.6, 1, 0.6] }}
+                    transition={{
+                      duration: 1.5,
+                      repeat: Infinity,
+                      ease: "easeInOut",
+                    }}
+                  >
+                    {scanStatus === "preparing"
+                      ? t("scanControls.preparingReport")
+                      : t("scanControls.downloading")}
+                  </motion.span>
+                </>
+              ) : (
+                <>
+                  <motion.svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-5 w-5 mr-2"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    animate={{
+                      y: [0, -2, 0, 2, 0],
+                    }}
+                    transition={{
+                      duration: 2,
+                      repeat: Infinity,
+                      ease: "easeInOut",
+                    }}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                    />
+                  </motion.svg>
+                  {t("scanControls.download")}
+                </>
+              )}
             </span>
-          </>
+          </motion.button>
         )}
       </div>
 
-      <div className="flex items-center space-x-2">
-        <input
-          type="checkbox"
-          id="showAllFiles"
-          checked={showAllFiles}
-          onChange={() => setShowAllFiles(!showAllFiles)}
-          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded dark:border-gray-700 dark:bg-gray-800 dark:checked:bg-blue-600"
-        />
-        <label
-          htmlFor="showAllFiles"
-          className="text-sm text-gray-700 dark:text-gray-300"
-        >
-          {t("scanControls.showAllFiles")}
-        </label>
-      </div>
-
-      {lastScanTime && (
-        <p className="text-sm text-gray-600 dark:text-gray-400">
-          {t("scanControls.lastScanTime")}:{" "}
-          {new Date(lastScanTime).toLocaleString()}
-        </p>
-      )}
-
-      {isMonitoring && (
-        <div className="text-sm">
-          <p className="text-green-600 dark:text-green-500 animate-pulse">
-            {t("scanControls.monitoring")}{" "}
-            {isUsingObserver
-              ? t("scanControls.usingObserver")
-              : `${t("scanControls.usingPolling")} ${
-                  monitorInterval / 1000
-                } ${t("scanControls.seconds")}`}
-          </p>
-          {observerSupported && !isUsingObserver && (
-            <p className="text-yellow-600 dark:text-yellow-500 mt-1">
-              {t("scanControls.observerFallback")}
-            </p>
-          )}
-        </div>
-      )}
+      {/* 监控状态指示器 */}
+      <AnimatePresence>
+        {isMonitoring && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.3 }}
+            className="mb-4 p-3 rounded-md bg-gray-100 dark:bg-gray-800 text-sm"
+          >
+            <div className="flex items-center">
+              <div className="mr-2 flex-shrink-0">
+                <motion.div
+                  className={`h-3 w-3 rounded-full ${
+                    isUsingObserver ? "bg-green-500" : "bg-yellow-500"
+                  }`}
+                  animate={{
+                    scale: [1, 1.2, 1],
+                    opacity: [0.7, 1, 0.7],
+                  }}
+                  transition={{
+                    duration: 2,
+                    repeat: Infinity,
+                    ease: "easeInOut",
+                  }}
+                />
+              </div>
+              <div className="flex-grow">
+                <p className="font-medium text-gray-700 dark:text-gray-300 flex items-center">
+                  {t("scanControls.monitoring")}{" "}
+                  <motion.span
+                    className="inline-block ml-1"
+                    animate={{ opacity: [0, 1, 0] }}
+                    transition={{ duration: 1.5, repeat: Infinity }}
+                  >
+                    •••
+                  </motion.span>
+                </p>
+                <p className="text-gray-600 dark:text-gray-400">
+                  {isUsingObserver
+                    ? t("scanControls.usingObserver")
+                    : `${t("scanControls.usingPolling")} ${
+                        monitorInterval / 1000
+                      } ${t("scanControls.seconds")}`}
+                </p>
+                {lastScanTime && (
+                  <p className="text-gray-600 dark:text-gray-400 mt-1">
+                    {t("scanControls.lastScanTime")}:{" "}
+                    {new Date(lastScanTime).toLocaleTimeString()}
+                  </p>
+                )}
+              </div>
+              <div className="flex-shrink-0">
+                <motion.div
+                  className="w-12 h-12 rounded-full border-2 border-gray-300 dark:border-gray-600 relative"
+                  animate={{ rotate: 360 }}
+                  transition={{
+                    duration: 10,
+                    repeat: Infinity,
+                    ease: "linear",
+                  }}
+                >
+                  <motion.div
+                    className="absolute top-0 left-1/2 w-1 h-1 bg-green-500 rounded-full transform -translate-x-1/2"
+                    style={{ marginTop: "-2px" }}
+                  />
+                  <motion.div
+                    className="w-2 h-2 bg-blue-500 rounded-full absolute"
+                    animate={{
+                      x: ["0%", "100%", "0%", "-100%", "0%"],
+                      y: ["0%", "100%", "0%", "-100%", "0%"],
+                    }}
+                    transition={{
+                      duration: 8,
+                      repeat: Infinity,
+                      ease: "easeInOut",
+                    }}
+                    style={{ left: "calc(50% - 4px)", top: "calc(50% - 4px)" }}
+                  />
+                </motion.div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
