@@ -99,20 +99,31 @@ export async function chatCompletion(
  * 使用AI测试向量化结果（多轮对话版本）
  * @param prompt 向量化生成的Markdown文本
  * @param onUpdate 流式更新回调函数
+ * @param singleRound 是否只进行第一轮对话
+ * @param customHistory 自定义对话历史
+ * @param customSystemPrompt 自定义系统提示
  * @returns 完整的AI响应
  */
 export async function testWithAI(
   prompt: string,
-  onUpdate?: (chunk: string) => void
+  onUpdate?: (chunk: string) => void,
+  singleRound?: boolean,
+  customHistory?: Array<{ role: string; content: string }>,
+  customSystemPrompt?: string
 ): Promise<string> {
   try {
     // 保存对话历史
-    const conversationHistory: Array<{ role: string; content: string }> = [];
+    const conversationHistory: Array<{ role: string; content: string }> =
+      customHistory || [];
     let currentRound = 0;
-    const maxRounds = 5;
+    const maxRounds = 20;
 
-    // 构建系统提示
-    const systemPrompt = `你是一个强大的AI编码助手，正在帮助用户解决一个编程任务。这是一个多轮对话测试，最多进行${maxRounds}轮。
+    // 如果没有提供自定义历史，则创建新的对话历史
+    if (!customHistory) {
+      // 构建系统提示
+      const systemPrompt =
+        customSystemPrompt ||
+        `你是一个强大的AI编码助手，正在帮助用户解决一个编程任务。这是一个多轮对话测试，最多进行${maxRounds}轮。
     
 在回复中，你必须遵循以下格式要求：
 
@@ -137,12 +148,24 @@ export async function testWithAI(
 
 请基于用户提供的项目信息开始第一轮对话。`;
 
-    // 构建用户提示
-    const userPrompt = prompt;
+      // 构建用户提示
+      const userPrompt = prompt;
 
-    // 添加初始消息到历史记录
-    conversationHistory.push({ role: "system", content: systemPrompt });
-    conversationHistory.push({ role: "user", content: userPrompt });
+      // 添加初始消息到历史记录
+      conversationHistory.push({ role: "system", content: systemPrompt });
+      conversationHistory.push({ role: "user", content: userPrompt });
+    }
+
+    // 如果是自定义历史，但没有提供自定义系统提示，则添加轮次信息
+    if (customHistory && customSystemPrompt) {
+      // 使用提供的自定义系统提示
+      // 不做任何修改，直接使用
+    } else if (customHistory && !customSystemPrompt) {
+      // 添加默认的轮次提示
+      currentRound = Math.floor(
+        customHistory.filter((msg) => msg.role === "user").length
+      );
+    }
 
     // 第一轮对话
     currentRound++;
@@ -150,9 +173,24 @@ export async function testWithAI(
       conversationHistory,
       currentRound,
       maxRounds,
-      onUpdate
+      onUpdate,
+      customSystemPrompt
     );
-    conversationHistory.push({ role: "assistant", content: response });
+
+    // 如果不是使用自定义历史，则添加到对话历史中
+    if (!customHistory) {
+      conversationHistory.push({ role: "assistant", content: response });
+    }
+
+    // 如果只需要单轮对话，直接返回
+    if (singleRound) {
+      return response;
+    }
+
+    // 如果是使用自定义历史，则不进行后续轮次
+    if (customHistory) {
+      return response;
+    }
 
     // 模拟用户输入，继续对话
     for (let i = 1; i < maxRounds; i++) {
@@ -200,20 +238,24 @@ export async function testWithAI(
  * @param currentRound 当前轮次
  * @param maxRounds 最大轮次
  * @param onUpdate 更新回调
+ * @param customSystemPrompt 自定义系统提示
  * @returns 助手响应
  */
 async function simulateRound(
   history: Array<{ role: string; content: string }>,
   currentRound: number,
   maxRounds: number,
-  onUpdate?: (chunk: string) => void
+  onUpdate?: (chunk: string) => void,
+  customSystemPrompt?: string
 ): Promise<string> {
   // 构建提示，包含轮次信息
-  const roundPrompt = `这是第${currentRound}/${maxRounds}轮对话。请根据项目信息提供分析，并在回复中包含至少一个工具调用卡片的模拟展示。${
-    currentRound === maxRounds
-      ? "这是最后一轮对话，请在回复结束时提醒用户测试完毕并做出总结。"
-      : ""
-  }`;
+  const roundPrompt =
+    customSystemPrompt ||
+    `这是第${currentRound}/${maxRounds}轮对话。请根据项目信息提供分析，并在回复中包含至少一个工具调用卡片的模拟展示。${
+      currentRound === maxRounds
+        ? "这是最后一轮对话，请在回复结束时提醒用户测试完毕并做出总结。"
+        : ""
+    }`;
 
   // 添加轮次提示到历史
   const conversationWithRound = [

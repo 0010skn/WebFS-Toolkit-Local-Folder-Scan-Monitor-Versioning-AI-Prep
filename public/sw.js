@@ -11,7 +11,7 @@ self.addEventListener("install", (event) => {
       .open(CACHE_NAME)
       .then((cache) => {
         console.log("打开缓存");
-        return cache.addAll(urlsToCache);
+        return;
       })
       .then(() => self.skipWaiting())
   );

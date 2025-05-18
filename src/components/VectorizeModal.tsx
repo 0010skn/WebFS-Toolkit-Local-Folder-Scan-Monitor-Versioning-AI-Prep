@@ -8,8 +8,8 @@ import { currentScanAtom, readmeContentAtom } from "../lib/store";
 import {
   findRelevantFiles,
   parseFilePathsResult,
-  testWithAI,
 } from "../lib/vectorizeService";
+import AITestDialog from "./AITestDialog";
 
 interface VectorizeModalProps {
   onClose: () => void;
@@ -129,9 +129,8 @@ export default function VectorizeModal({ onClose }: VectorizeModalProps) {
   const [processingPhase, setProcessingPhase] = useState<string>("");
   const [tokensSaved, setTokensSaved] = useState<number>(0);
   const [showSuccessToast, setShowSuccessToast] = useState(false);
-  const [isTesting, setIsTesting] = useState(false);
-  const [testResult, setTestResult] = useState("");
-  const [showTestResult, setShowTestResult] = useState(false);
+  const [showAITestDialog, setShowAITestDialog] = useState(false);
+  const [filePaths, setFilePaths] = useState<string[]>([]);
 
   // 计算预估节省的tokens
   useEffect(() => {
@@ -297,6 +296,8 @@ export default function VectorizeModal({ onClose }: VectorizeModalProps) {
       });
       // 生成可视化结果显示，但实际使用文本格式
       setResult(textResult);
+
+      setFilePaths(filePaths);
     } catch (error) {
       console.error("解析文件路径结果出错:", error);
       setError(t("vectorReport.error"));
@@ -322,21 +323,7 @@ export default function VectorizeModal({ onClose }: VectorizeModalProps) {
   // 使用AI测试向量化结果
   const handleTestWithAI = async () => {
     if (!result) return;
-
-    setIsTesting(true);
-    setTestResult("");
-    setShowTestResult(true);
-
-    try {
-      await testWithAI(result, (chunk) => {
-        setTestResult((prev) => prev + chunk);
-      });
-    } catch (error) {
-      console.error("AI测试出错:", error);
-      setTestResult(t("vectorReport.error"));
-    } finally {
-      setIsTesting(false);
-    }
+    setShowAITestDialog(true);
   };
 
   // 渲染文件列表
@@ -382,6 +369,15 @@ export default function VectorizeModal({ onClose }: VectorizeModalProps) {
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl overflow-hidden max-w-2xl w-full mx-4 max-h-[90vh] flex flex-col relative">
+      {/* AI测试对话框 */}
+      {showAITestDialog && (
+        <AITestDialog
+          onClose={() => setShowAITestDialog(false)}
+          initialPrompt={result}
+          projectFilePaths={filePaths}
+        />
+      )}
+
       {/* 成功提示 */}
       <AnimatePresence>
         {showSuccessToast && (
@@ -554,7 +550,7 @@ export default function VectorizeModal({ onClose }: VectorizeModalProps) {
                       {t("vectorReport.result")} (
                       {(result.length / 1024).toFixed(1)} KB)
                     </span>
-                    <div className="flex space-x-2">
+                    <div className="flex justify-end space-x-2">
                       <button
                         onClick={copyResultToClipboard}
                         className="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded-md transition-colors flex items-center text-sm"
@@ -570,63 +566,30 @@ export default function VectorizeModal({ onClose }: VectorizeModalProps) {
                             strokeLinecap="round"
                             strokeLinejoin="round"
                             strokeWidth={2}
-                            d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-2M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"
+                            d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
                           />
                         </svg>
                         {t("vectorReport.copyPrompt")}
                       </button>
                       <button
                         onClick={handleTestWithAI}
-                        disabled={isTesting}
-                        className={`px-3 py-1 ${
-                          isTesting
-                            ? "bg-gray-400 cursor-not-allowed"
-                            : "bg-green-500 hover:bg-green-600"
-                        } text-white rounded-md transition-colors flex items-center text-sm`}
+                        className="px-3 py-1 bg-green-500 hover:bg-green-600 text-white rounded-md transition-colors flex items-center text-sm"
                       >
-                        {isTesting ? (
-                          <span className="flex items-center">
-                            <svg
-                              className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
-                              xmlns="http://www.w3.org/2000/svg"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                            >
-                              <circle
-                                className="opacity-25"
-                                cx="12"
-                                cy="12"
-                                r="10"
-                                stroke="currentColor"
-                                strokeWidth="4"
-                              ></circle>
-                              <path
-                                className="opacity-75"
-                                fill="currentColor"
-                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                              ></path>
-                            </svg>
-                            {t("vectorReport.testingPrompt")}
-                          </span>
-                        ) : (
-                          <>
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              className="h-4 w-4 mr-1"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M13 10V3L4 14h7v7l9-11h-7z"
-                              />
-                            </svg>
-                            {t("vectorReport.testPrompt")}
-                          </>
-                        )}
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-4 w-4 mr-1"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M13 10V3L4 14h7v7l9-11h-7z"
+                          />
+                        </svg>
+                        {t("vectorReport.testPrompt")}
                       </button>
                     </div>
                   </div>
@@ -667,182 +630,6 @@ export default function VectorizeModal({ onClose }: VectorizeModalProps) {
                       </p>
                     </div>
                   </div>
-
-                  {/* AI测试结果 */}
-                  {showTestResult && (
-                    <div className="mb-3">
-                      <div className="flex items-center justify-between mb-1">
-                        <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                          {t("vectorReport.testResult")}
-                        </h4>
-                        <button
-                          onClick={() => setShowTestResult(false)}
-                          className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-                        >
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            className="h-4 w-4"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M6 18L18 6M6 6l12 12"
-                            />
-                          </svg>
-                        </button>
-                      </div>
-                      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md p-3 max-h-[400px] overflow-y-auto">
-                        {testResult ? (
-                          <div className="prose prose-sm dark:prose-invert max-w-none">
-                            {(() => {
-                              console.log("解析Markdown开始");
-                              const blocks =
-                                processMarkdownWithCards(testResult);
-                              console.log("解析结果:", blocks.length, "个块");
-
-                              return blocks.map((block, i) => {
-                                if (block.type === "text") {
-                                  return (
-                                    <div key={i} className="mb-4">
-                                      {block.content
-                                        .split("\n")
-                                        .map((line, j) => (
-                                          <div key={j}>{line || <br />}</div>
-                                        ))}
-                                    </div>
-                                  );
-                                } else if (block.type === "tool-card") {
-                                  return (
-                                    <div
-                                      key={i}
-                                      className="my-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30 rounded-lg border border-blue-200 dark:border-blue-800 overflow-hidden"
-                                    >
-                                      <div className="bg-blue-600 dark:bg-blue-800 text-white px-4 py-2 font-medium flex items-center justify-between">
-                                        <div className="flex items-center">
-                                          <svg
-                                            xmlns="http://www.w3.org/2000/svg"
-                                            className="h-5 w-5 mr-2"
-                                            viewBox="0 0 20 20"
-                                            fill="currentColor"
-                                          >
-                                            <path
-                                              fillRule="evenodd"
-                                              d="M5 2a1 1 0 011 1v1h1a1 1 0 010 2H6v1a1 1 0 01-2 0V6H3a1 1 0 010-2h1V3a1 1 0 011-1zm0 10a1 1 0 011 1v1h1a1 1 0 110 2H6v1a1 1 0 11-2 0v-1H3a1 1 0 110-2h1v-1a1 1 0 011-1zM12 2a1 1 0 01.967.744L14.146 7.2 17.5 9.134a1 1 0 010 1.732l-3.354 1.935-1.18 4.455a1 1 0 01-1.933 0L9.854 12.8 6.5 10.866a1 1 0 010-1.732l3.354-1.935 1.18-4.455A1 1 0 0112 2z"
-                                              clipRule="evenodd"
-                                            />
-                                          </svg>
-                                          <span>工具调用: {block.title}</span>
-                                        </div>
-                                        <span className="text-xs opacity-70">
-                                          AI模拟
-                                        </span>
-                                      </div>
-                                      <div className="p-4">
-                                        {block.params && (
-                                          <div className="mb-3">
-                                            <div className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                              参数:
-                                            </div>
-                                            <div className="bg-white/50 dark:bg-gray-800/50 rounded p-2 text-sm">
-                                              {block.params
-                                                .split("\n")
-                                                .map((param, k) => (
-                                                  <div
-                                                    key={k}
-                                                    className="font-mono text-xs text-gray-700 dark:text-gray-300"
-                                                  >
-                                                    {param}
-                                                  </div>
-                                                ))}
-                                            </div>
-                                          </div>
-                                        )}
-                                        {block.result && (
-                                          <div>
-                                            <div className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                              结果:
-                                            </div>
-                                            <div className="bg-white/50 dark:bg-gray-800/50 rounded p-2 text-sm">
-                                              {block.result
-                                                .split("\n")
-                                                .map((line, k) => (
-                                                  <div
-                                                    key={k}
-                                                    className="font-mono text-xs text-gray-700 dark:text-gray-300"
-                                                  >
-                                                    {line}
-                                                  </div>
-                                                ))}
-                                            </div>
-                                          </div>
-                                        )}
-                                      </div>
-                                    </div>
-                                  );
-                                } else if (block.type === "code") {
-                                  return (
-                                    <div
-                                      key={i}
-                                      className="bg-gray-100 dark:bg-gray-700 rounded-md overflow-hidden my-2"
-                                    >
-                                      <div className="bg-gray-200 dark:bg-gray-600 px-4 py-1 text-xs font-medium text-gray-700 dark:text-gray-300 flex items-center justify-between">
-                                        <span>{block.language || "code"}</span>
-                                        <button
-                                          onClick={() => {
-                                            navigator.clipboard.writeText(
-                                              block.content || ""
-                                            );
-                                            setShowSuccessToast(true);
-                                            setTimeout(
-                                              () => setShowSuccessToast(false),
-                                              2000
-                                            );
-                                          }}
-                                          className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-                                        >
-                                          <svg
-                                            xmlns="http://www.w3.org/2000/svg"
-                                            className="h-4 w-4"
-                                            fill="none"
-                                            viewBox="0 0 24 24"
-                                            stroke="currentColor"
-                                          >
-                                            <path
-                                              strokeLinecap="round"
-                                              strokeLinejoin="round"
-                                              strokeWidth={2}
-                                              d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
-                                            />
-                                          </svg>
-                                        </button>
-                                      </div>
-                                      <pre className="p-4 text-sm overflow-x-auto whitespace-pre">
-                                        <code className="font-mono text-gray-800 dark:text-gray-200">
-                                          {block.content}
-                                        </code>
-                                      </pre>
-                                    </div>
-                                  );
-                                }
-                                return null;
-                              });
-                            })()}
-                          </div>
-                        ) : (
-                          <p className="text-gray-500 dark:text-gray-400 italic text-sm">
-                            {t("vectorReport.testPlaceholder")}
-                          </p>
-                        )}
-                      </div>
-                      <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                        {t("vectorReport.testInstructions")}
-                      </div>
-                    </div>
-                  )}
 
                   {/* 结果预览区域 */}
                   <div className="mb-3">
