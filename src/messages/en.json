@@ -59,6 +59,7 @@
     "seconds": "seconds",
     "showAllFiles": "Show All Files",
     "download": "Download Report",
+    "vectorize": "Vectorize Report",
     "monitoring": "Monitoring...",
     "usingObserver": "Using real-time FileSystemObserver",
     "usingPolling": "Automatic scanning every",
@@ -255,5 +256,16 @@
     "memberCount": "Member Count",
     "methodCount": "Method Count",
     "noAnalysisData": "No analyzable code structures found"
+  },
+  "vectorReport": {
+    "title": "Vectorize Report",
+    "description": "Get project information through natural language questions",
+    "placeholder": "Enter your question, e.g.: 'What are the main features of this project?'",
+    "submit": "Vectorize",
+    "processing": "Processing...",
+    "result": "Vectorization Result",
+    "close": "Close",
+    "noResult": "No results yet, please submit a question first",
+    "error": "Processing error, please try again"
   }
 }

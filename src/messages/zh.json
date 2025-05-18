@@ -59,6 +59,7 @@
     "seconds": "秒",
     "showAllFiles": "显示所有文件",
     "download": "下载报告",
+    "vectorize": "向量化报告",
     "monitoring": "监控中...",
     "usingObserver": "使用实时文件系统观察器",
     "usingPolling": "自动扫描，每",
@@ -254,5 +255,16 @@
     "memberCount": "成员数量",
     "methodCount": "方法数量",
     "noAnalysisData": "未找到可分析的代码结构"
+  },
+  "vectorReport": {
+    "title": "向量化报告",
+    "description": "通过自然语言提问，获取项目信息",
+    "placeholder": "请输入您的问题，例如：'项目中有哪些主要功能？'",
+    "submit": "向量化",
+    "processing": "处理中...",
+    "result": "向量化结果",
+    "close": "关闭",
+    "noResult": "暂无结果，请先提交问题",
+    "error": "处理出错，请重试"
   }
 }
