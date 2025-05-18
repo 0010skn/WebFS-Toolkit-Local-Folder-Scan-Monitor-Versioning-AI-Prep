@@ -29,6 +29,12 @@ Folda-Scan leverages the File System Access API to bring powerful local folder e
 - 📜 **.gitignore Aware:** Respects your project's ignore rules for cleaner scans and backups.
 - ⏱️ **Simple Version Management:** Easily create backups of your project's current state and restore to previous versions. All stored locally in a `.fe` folder.
 - 🤖 **AI-Ready Reports:** Generate Markdown reports of your project structure, file contents, and changes – perfect for feeding to AI assistants or for documentation.
+- 🧠 **Semantic Vectorization Engine:** Transform your project into an optimized knowledge graph through advanced semantic analysis and vector embedding technology.
+  - **Natural Language Queries:** Interact with your codebase using natural language to locate relevant files and code sections.
+  - **Intelligent Resource Identification:** Proprietary algorithms identify the most semantically relevant resources based on your query intent.
+  - **Content-Aware Matching:** Optional deep content analysis for enhanced precision in complex codebases.
+  - **Token Optimization:** Sophisticated filtering reduces token consumption by orders of magnitude when working with large language models.
+  - **Markdown-Ready Output:** Generates structured, context-rich output optimized for AI assistants and documentation.
 - 🗂️ **View Project Structure, Changes, and File Content** directly in the app.
 
 ---
@@ -38,6 +44,7 @@ Folda-Scan leverages the File System Access API to bring powerful local folder e
 - Next.js 14
 - File System Access API
 - FileSystemObserver API (with fallback for unsupported browsers)
+- Advanced Semantic Vector Analysis
 
 Ideal for developers, designers, and anyone needing a quick, lightweight tool for local project management without the overhead of complex setups.
 
@@ -75,6 +82,12 @@ Open source and privacy-focused – all operations happen locally in your browse
 - 📜 **.gitignore 知道：** 尊重你项目里头的忽略规则，扫得干净，备份利索。
 - ⏱️ **简单版本管理：** 轻轻松松备份项目当前状态，想回哪个版本就回哪个版本。都保存在本地一个 `.fe` 文件夹里头。
 - 🤖 **AI 准备好了报告：** 生成项目结构、文件内容、变化情况的 Markdown 报告，给 AI 助手喂食或者做文档正好。
+- 🧠 **语义向量化引擎：** 通过先进的语义分析和向量嵌入技术，将您的项目转化为优化的知识图谱。
+  - **自然语言查询：** 使用自然语言与代码库交互，精准定位相关文件和代码段。
+  - **智能资源识别：** 专有算法基于查询意图识别语义上最相关的资源。
+  - **内容感知匹配：** 可选的深度内容分析，为复杂代码库提供增强精度。
+  - **Token 优化：** 先进的过滤机制在与大型语言模型协作时，将 token 消耗降低数量级。
+  - **Markdown 就绪输出：** 生成结构化、上下文丰富的输出，为 AI 助手和文档编制优化。
 - 🗂️ **注意啊这不是分布式的**
 
 ---
@@ -84,6 +97,7 @@ Open source and privacy-focused – all operations happen locally in your browse
 - Next.js 14
 - 文件系统访问 API (File System Access API)
 - 文件系统观察器 API (FileSystemObserver API)（不支持的浏览器会自动回退）
+- 高级语义向量分析技术
 
 对开发者、设计师还有那些需要快速、轻量级工具管理本地项目的人来说，是理想选择。别提那些复杂设置啦，累死个人。
 

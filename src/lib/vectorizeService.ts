@@ -19,14 +19,17 @@ export async function chatCompletion(
     seed?: number;
     private?: boolean;
     referrer?: string;
+    stream?: boolean;
+    onUpdate?: (chunk: string) => void;
   } = {}
 ) {
   const payload = {
-    model: options.model || "openai",
+    model: options.model || "",
     messages: messages,
     seed: options.seed,
     private: options.private,
     referrer: options.referrer || "FoldaScan",
+    stream: options.stream || false,
   };
 
   try {
@@ -45,12 +48,193 @@ export async function chatCompletion(
       );
     }
 
+    // 处理流式响应
+    if (options.stream && options.onUpdate && response.body) {
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder("utf-8");
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+
+        // 处理缓冲区中的完整事件
+        let lines = buffer.split("\n");
+        buffer = lines.pop() || ""; // 保留最后一个可能不完整的行
+
+        for (const line of lines) {
+          if (line.startsWith("data: ")) {
+            const data = line.slice(6);
+            if (data === "[DONE]") {
+              break;
+            }
+
+            try {
+              const parsed = JSON.parse(data);
+              const content = parsed.choices?.[0]?.delta?.content || "";
+              if (content) {
+                options.onUpdate(content);
+              }
+            } catch (e) {
+              console.error("Error parsing SSE data:", e);
+            }
+          }
+        }
+      }
+
+      return { choices: [{ message: { content: "Stream completed" } }] };
+    }
+
     const result = await response.json();
     return result;
   } catch (error) {
     console.error("Error posting chat completion:", error);
     throw error;
   }
+}
+
+/**
+ * 使用AI测试向量化结果（多轮对话版本）
+ * @param prompt 向量化生成的Markdown文本
+ * @param onUpdate 流式更新回调函数
+ * @returns 完整的AI响应
+ */
+export async function testWithAI(
+  prompt: string,
+  onUpdate?: (chunk: string) => void
+): Promise<string> {
+  try {
+    // 保存对话历史
+    const conversationHistory: Array<{ role: string; content: string }> = [];
+    let currentRound = 0;
+    const maxRounds = 5;
+
+    // 构建系统提示
+    const systemPrompt = `你是一个强大的AI编码助手，正在帮助用户解决一个编程任务。这是一个多轮对话测试，最多进行${maxRounds}轮。
+    
+在回复中，你必须遵循以下格式要求：
+
+1. 每轮对话都应该包含至少一个工具调用卡片的模拟展示，格式如下：
+\`\`\`tool-card
+工具名称: codebase_search/read_file/edit_file等
+参数: 
+  - 参数1: 值1
+  - 参数2: 值2
+结果:
+  这里是工具调用的模拟结果...
+\`\`\`
+
+2. 每轮对话结束时，你应该总结当前的进展，并提示用户继续对话。
+
+3. 在第${maxRounds}轮对话结束后，你必须提醒用户"测试已完成5轮对话，测试完毕。如需继续，请重新开始测试。"
+
+4. 每轮对话中，你应该参考之前轮次的上下文，表现出连贯的思考过程。
+
+5. 你的回复应该是有帮助的、专业的，并且与用户提供的项目信息相关。
+
+
+请基于用户提供的项目信息开始第一轮对话。`;
+
+    // 构建用户提示
+    const userPrompt = prompt;
+
+    // 添加初始消息到历史记录
+    conversationHistory.push({ role: "system", content: systemPrompt });
+    conversationHistory.push({ role: "user", content: userPrompt });
+
+    // 第一轮对话
+    currentRound++;
+    let response = await simulateRound(
+      conversationHistory,
+      currentRound,
+      maxRounds,
+      onUpdate
+    );
+    conversationHistory.push({ role: "assistant", content: response });
+
+    // 模拟用户输入，继续对话
+    for (let i = 1; i < maxRounds; i++) {
+      currentRound++;
+      // 模拟用户输入
+      const userFollowUp = `请继续分析项目，提供第${currentRound}轮的见解。`;
+      conversationHistory.push({ role: "user", content: userFollowUp });
+
+      // 获取助手响应
+      response = await simulateRound(
+        conversationHistory,
+        currentRound,
+        maxRounds,
+        onUpdate
+      );
+      conversationHistory.push({ role: "assistant", content: response });
+
+      // 在每轮结束后添加分隔符
+      if (onUpdate) {
+        onUpdate("\n\n---\n\n");
+      }
+    }
+
+    // 最终提醒
+    if (onUpdate) {
+      onUpdate("\n\n测试已完成5轮对话，测试完毕。如需继续，请重新开始测试。");
+    }
+
+    // 返回完整对话历史
+    return conversationHistory
+      .filter((msg) => msg.role !== "system")
+      .map(
+        (msg) => `${msg.role === "user" ? "用户" : "AI助手"}：${msg.content}`
+      )
+      .join("\n\n---\n\n");
+  } catch (error) {
+    console.error("Error testing with AI:", error);
+    return "测试过程中发生错误，请重试。";
+  }
+}
+
+/**
+ * 模拟单轮对话
+ * @param history 对话历史
+ * @param currentRound 当前轮次
+ * @param maxRounds 最大轮次
+ * @param onUpdate 更新回调
+ * @returns 助手响应
+ */
+async function simulateRound(
+  history: Array<{ role: string; content: string }>,
+  currentRound: number,
+  maxRounds: number,
+  onUpdate?: (chunk: string) => void
+): Promise<string> {
+  // 构建提示，包含轮次信息
+  const roundPrompt = `这是第${currentRound}/${maxRounds}轮对话。请根据项目信息提供分析，并在回复中包含至少一个工具调用卡片的模拟展示。${
+    currentRound === maxRounds
+      ? "这是最后一轮对话，请在回复结束时提醒用户测试完毕并做出总结。"
+      : ""
+  }`;
+
+  // 添加轮次提示到历史
+  const conversationWithRound = [
+    ...history,
+    { role: "system", content: roundPrompt },
+  ];
+
+  // 调用API获取响应
+  let response = "";
+  await chatCompletion(conversationWithRound, {
+    model: "",
+    stream: true,
+    onUpdate: (chunk) => {
+      response += chunk;
+      if (onUpdate) {
+        onUpdate(chunk);
+      }
+    },
+  });
+
+  return response;
 }
 
 /**
@@ -248,7 +432,7 @@ file_paths_list: ${JSON.stringify(filePaths, null, 2)}`;
   try {
     // 调用API获取结果
     const result = await chatCompletion(messages, {
-      model: "openai",
+      model: "",
       seed: Math.floor(Math.random() * 1000),
     });
 

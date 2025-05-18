@@ -260,12 +260,37 @@
   "vectorReport": {
     "title": "Vectorize Report",
     "description": "Get project information through natural language questions",
-    "placeholder": "Enter your question, e.g.: 'What are the main features of this project?'",
+    "placeholder": "Enter your query, e.g.: 'Project architecture analysis', 'Find authentication module', or 'Locate API implementation'",
     "submit": "Vectorize",
     "processing": "Processing...",
     "result": "Vectorization Result",
     "close": "Close",
     "noResult": "No results yet, please submit a question first",
-    "error": "Processing error, please try again"
+    "error": "Processing error, please try again",
+    "enableContentMatching": "Enable precise Mode (may increase processing time)",
+    "copyPrompt": "Copy Prompt",
+    "resultCopied": "Vectorization result copied to clipboard!",
+    "resultPreview": "Result Preview",
+    "markdownFormat": "Markdown format",
+    "resultDescription": "Structured Markdown text containing query, related file list, file contents, and optimization statistics",
+    "copyInstructions": "Click the button above to copy the result, which can be directly pasted into large language models",
+    "testPrompt": "Test with AI",
+    "testingPrompt": "Testing with AI...",
+    "testResult": "AI Response",
+    "testInstructions": "Test how this prompt performs with the AI model",
+    "testPlaceholder": "AI response will appear here...",
+    "processingPhases": {
+      "initializing": "Initializing vectorization engine",
+      "collecting": "Collecting project file data",
+      "analyzing": "Analyzing file content features",
+      "computing": "Performing semantic vector calculation",
+      "parsing": "Parsing vector matching results",
+      "extracting": "Extracting relevant resource content",
+      "generating": "Generating optimized data structure"
+    },
+    "optimization": {
+      "title": "Smart Vector Optimization",
+      "description": "Through semantic vector analysis, {relevantCount} relevant resources have been precisely located from {totalCount} project files, estimated to save approximately {tokenCount} tokens for large models, improving processing efficiency by about {efficiencyFactor}x."
+    }
   }
 }

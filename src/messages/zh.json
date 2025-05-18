@@ -259,12 +259,48 @@
   "vectorReport": {
     "title": "向量化报告",
     "description": "通过自然语言提问，获取项目信息",
-    "placeholder": "请输入您的问题，例如：'项目中有哪些主要功能？'",
+    "placeholder": "输入语义查询，如「项目架构分析」、「查找认证模块」或「定位API实现」",
     "submit": "向量化",
     "processing": "处理中...",
     "result": "向量化结果",
     "close": "关闭",
     "noResult": "暂无结果，请先提交问题",
-    "error": "处理出错，请重试"
+    "error": "处理出错，请重试",
+    "enableContentMatching": "启用精准模式（可能会增加处理时间）",
+    "copyPrompt": "复制Prompt",
+    "resultCopied": "向量化结果已复制到剪贴板！",
+    "resultPreview": "结果预览",
+    "markdownFormat": "Markdown格式",
+    "resultDescription": "已生成结构化的Markdown文本，包含查询内容、相关文件列表、文件内容和优化统计",
+    "copyInstructions": "点击上方按钮复制结果，可直接粘贴到大模型中使用",
+    "testPrompt": "AI测试",
+    "testingPrompt": "AI测试中...",
+    "testResult": "AI响应",
+    "testInstructions": "测试此Prompt在AI模型中的表现，支持多轮对话",
+    "testPlaceholder": "AI响应将显示在这里...",
+    "processingPhases": {
+      "initializing": "初始化向量化引擎",
+      "collecting": "收集项目文件数据",
+      "analyzing": "分析文件内容特征",
+      "computing": "执行语义向量计算",
+      "parsing": "解析向量匹配结果",
+      "extracting": "提取相关资源内容",
+      "generating": "生成优化数据结构"
+    },
+    "optimization": {
+      "title": "智能向量优化",
+      "description": "通过语义向量分析，已从 {totalCount} 个项目文件中精确定位 {relevantCount} 个相关资源，预计为大模型节省约 {tokenCount} tokens，提高处理效率约 {efficiencyFactor} 倍"
+    },
+    "toolCard": {
+      "title": "工具调用",
+      "params": "参数",
+      "result": "结果",
+      "simulation": "AI模拟"
+    },
+    "codeBlock": {
+      "copy": "复制代码",
+      "copied": "代码已复制"
+    },
+    "testComplete": "测试已完成5轮对话，测试完毕。如需继续，请重新开始测试。"
   }
 }

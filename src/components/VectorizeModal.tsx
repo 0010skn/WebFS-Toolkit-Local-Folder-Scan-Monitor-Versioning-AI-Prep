@@ -8,10 +8,109 @@ import { currentScanAtom, readmeContentAtom } from "../lib/store";
 import {
   findRelevantFiles,
   parseFilePathsResult,
+  testWithAI,
 } from "../lib/vectorizeService";
 
 interface VectorizeModalProps {
   onClose: () => void;
+}
+
+// 定义Markdown解析后的块类型
+type MarkdownBlock =
+  | { type: "text"; content: string }
+  | { type: "tool-card"; title: string; params?: string; result?: string }
+  | { type: "code"; language?: string; content: string };
+
+/**
+ * 处理Markdown文本，解析工具调用卡片和代码块
+ * @param markdown Markdown文本
+ * @returns 解析后的块数组
+ */
+function processMarkdownWithCards(markdown: string): MarkdownBlock[] {
+  // 如果输入为空，返回空数组
+  if (!markdown) return [];
+
+  const blocks: MarkdownBlock[] = [];
+  console.log("开始处理Markdown，长度:", markdown.length);
+
+  try {
+    // 将文本按三个反引号分割
+    const parts = markdown.split("```");
+
+    // 第一部分是文本（如果不为空）
+    if (parts[0].trim()) {
+      blocks.push({ type: "text", content: parts[0].trim() });
+    }
+
+    // 处理剩余部分
+    for (let i = 1; i < parts.length; i += 2) {
+      // 奇数索引是代码块类型和内容
+      if (i < parts.length) {
+        const codeBlockHeader = parts[i].split("\n")[0].trim();
+        const codeContent = parts[i]
+          .substring(parts[i].indexOf("\n") + 1)
+          .trim();
+
+        // 处理工具调用卡片
+        if (codeBlockHeader === "tool-card") {
+          const lines = codeContent.split("\n");
+          let title = "未知工具";
+          let params = "";
+          let result = "";
+          let currentSection = "";
+
+          for (const line of lines) {
+            if (line.startsWith("工具名称:")) {
+              title = line.substring("工具名称:".length).trim();
+            } else if (line === "参数:") {
+              currentSection = "params";
+            } else if (line === "结果:") {
+              currentSection = "result";
+            } else if (currentSection === "params") {
+              params += line + "\n";
+            } else if (currentSection === "result") {
+              result += line + "\n";
+            }
+          }
+
+          blocks.push({
+            type: "tool-card",
+            title,
+            params: params.trim(),
+            result: result.trim(),
+          });
+          console.log(`添加了工具卡片: ${title}`);
+        }
+        // 处理普通代码块
+        else if (codeContent) {
+          blocks.push({
+            type: "code",
+            language: codeBlockHeader || undefined,
+            content: codeContent,
+          });
+          console.log(
+            `添加了代码块，语言:${codeBlockHeader || "无"}, 内容长度:${
+              codeContent.length
+            }`
+          );
+        }
+      }
+
+      // 偶数索引是文本内容
+      if (i + 1 < parts.length && parts[i + 1].trim()) {
+        blocks.push({ type: "text", content: parts[i + 1].trim() });
+      }
+    }
+
+    console.log(`Markdown处理完成，共${blocks.length}个块`);
+  } catch (error) {
+    console.error("解析Markdown出错:", error);
+    // 出错时返回整个文本作为一个块
+    blocks.push({ type: "text", content: markdown });
+    console.log("解析出错，将整个文本作为一个块返回");
+  }
+
+  return blocks;
 }
 
 export default function VectorizeModal({ onClose }: VectorizeModalProps) {
@@ -30,6 +129,9 @@ export default function VectorizeModal({ onClose }: VectorizeModalProps) {
   const [processingPhase, setProcessingPhase] = useState<string>("");
   const [tokensSaved, setTokensSaved] = useState<number>(0);
   const [showSuccessToast, setShowSuccessToast] = useState(false);
+  const [isTesting, setIsTesting] = useState(false);
+  const [testResult, setTestResult] = useState("");
+  const [showTestResult, setShowTestResult] = useState(false);
 
   // 计算预估节省的tokens
   useEffect(() => {
@@ -58,7 +160,7 @@ export default function VectorizeModal({ onClose }: VectorizeModalProps) {
     setResult("");
     setRelevantFiles([]);
     setFileContents({});
-    setProcessingPhase("初始化向量化引擎");
+    setProcessingPhase(t("vectorReport.processingPhases.initializing"));
 
     try {
       // 所有查询都使用文件路径定位功能
@@ -78,20 +180,20 @@ export default function VectorizeModal({ onClose }: VectorizeModalProps) {
     if (!currentScan) return;
 
     // 提取所有文件路径和内容（如果启用了内容匹配）
-    setProcessingPhase("收集项目文件数据");
+    setProcessingPhase(t("vectorReport.processingPhases.collecting"));
     const filePaths = currentScan.entries
       .filter((entry) => entry.kind === "file")
       .map((entry) => entry.path);
 
     if (filePaths.length === 0) {
-      setError("未找到任何文件，请先扫描项目");
+      setError(t("vectorReport.noResult"));
       return;
     }
 
     // 如果启用了内容匹配，准备文件内容数据
     const fileContentMap: { [path: string]: string } = {};
     if (enableContentMatching) {
-      setProcessingPhase("分析文件内容特征");
+      setProcessingPhase(t("vectorReport.processingPhases.analyzing"));
       currentScan.entries
         .filter((entry) => entry.kind === "file" && entry.content)
         .forEach((entry) => {
@@ -101,7 +203,7 @@ export default function VectorizeModal({ onClose }: VectorizeModalProps) {
 
     try {
       // 调用文件路径定位API，传递内容匹配选项
-      setProcessingPhase("执行语义向量计算");
+      setProcessingPhase(t("vectorReport.processingPhases.computing"));
       const jsonResult = await findRelevantFiles(
         query,
         filePaths,
@@ -110,7 +212,7 @@ export default function VectorizeModal({ onClose }: VectorizeModalProps) {
       console.log("API返回结果:", jsonResult);
 
       // 解析返回的JSON结果
-      setProcessingPhase("解析向量匹配结果");
+      setProcessingPhase(t("vectorReport.processingPhases.parsing"));
       const parsedResult = parseFilePathsResult(jsonResult);
       console.log("解析后的结果:", parsedResult);
 
@@ -122,7 +224,7 @@ export default function VectorizeModal({ onClose }: VectorizeModalProps) {
       setRelevantFiles(parsedResult.relevant_paths);
 
       // 读取相关文件的内容
-      setProcessingPhase("提取相关资源内容");
+      setProcessingPhase(t("vectorReport.processingPhases.extracting"));
       const contents: { [path: string]: string } = {};
 
       // 查找文件内容
@@ -165,26 +267,39 @@ export default function VectorizeModal({ onClose }: VectorizeModalProps) {
       setFileContents(contents);
 
       // 生成结果文本
-      setProcessingPhase("生成优化数据结构");
-      const filesJson = JSON.stringify(
-        {
-          query: parsedResult.query,
-          project_files: allFilePaths,
-          markdown_docs: mdFiles,
-          relevant_files: Object.entries(contents).map(([path, content]) => ({
-            path,
-            content,
-          })),
-        },
-        null,
-        2
-      );
+      setProcessingPhase(t("vectorReport.processingPhases.generating"));
 
-      // 生成可视化结果显示
-      setResult(filesJson);
+      let textResult = `# 新任务\n\n`;
+      textResult += `## 任务\n${parsedResult.query}\n\n`;
+      textResult += `## 用户语言\n${navigator.language}\n\n`;
+
+      textResult += `## 项目结构\n`;
+      currentScan.entries.forEach((entry) => {
+        textResult += `${entry.path}\n`;
+      });
+      textResult += "\n";
+
+      if (readmeContent) {
+        textResult += `## 项目README\n${readmeContent}\n\n`;
+      }
+
+      // 添加相关文件列表
+      textResult += `## 相关文件 (${parsedResult.relevant_paths.length}个)\n`;
+      parsedResult.relevant_paths.forEach((path, index) => {
+        textResult += `${index + 1}. ${path}\n`;
+      });
+      textResult += "\n";
+
+      // 添加文件内容
+      textResult += `## 文件内容\n`;
+      Object.entries(contents).forEach(([path, content]) => {
+        textResult += `\n### ${path}\n\`\`\`\n${content}\n\`\`\`\n`;
+      });
+      // 生成可视化结果显示，但实际使用文本格式
+      setResult(textResult);
     } catch (error) {
       console.error("解析文件路径结果出错:", error);
-      setError("向量化过程中发生错误，请检查查询语句或重试");
+      setError(t("vectorReport.error"));
     }
   };
 
@@ -200,8 +315,28 @@ export default function VectorizeModal({ onClose }: VectorizeModalProps) {
       })
       .catch((err) => {
         console.error("复制失败:", err);
-        alert("复制失败，请手动复制");
+        alert(t("vectorReport.error"));
       });
+  };
+
+  // 使用AI测试向量化结果
+  const handleTestWithAI = async () => {
+    if (!result) return;
+
+    setIsTesting(true);
+    setTestResult("");
+    setShowTestResult(true);
+
+    try {
+      await testWithAI(result, (chunk) => {
+        setTestResult((prev) => prev + chunk);
+      });
+    } catch (error) {
+      console.error("AI测试出错:", error);
+      setTestResult(t("vectorReport.error"));
+    } finally {
+      setIsTesting(false);
+    }
   };
 
   // 渲染文件列表
@@ -211,7 +346,9 @@ export default function VectorizeModal({ onClose }: VectorizeModalProps) {
     return (
       <div className="mt-4 mb-6">
         <h4 className="text-md font-medium text-gray-800 dark:text-gray-200 mb-2">
-          已找到 {relevantFiles.length} 个相关资源:
+          {t("resultDisplay.filesAndFoldersCount", {
+            count: String(relevantFiles.length),
+          })}
         </h4>
         <div className="bg-gray-50 dark:bg-gray-700/50 rounded-md p-3 max-h-[200px] overflow-y-auto">
           <ul className="list-disc pl-5 space-y-1">
@@ -266,7 +403,7 @@ export default function VectorizeModal({ onClose }: VectorizeModalProps) {
                 clipRule="evenodd"
               />
             </svg>
-            向量化结果已复制到剪贴板！
+            {t("vectorReport.resultCopied")}
           </motion.div>
         )}
       </AnimatePresence>
@@ -288,7 +425,7 @@ export default function VectorizeModal({ onClose }: VectorizeModalProps) {
               d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
             />
           </svg>
-          项目语义向量化
+          {t("vectorReport.title")}
         </h2>
         <button
           onClick={onClose}
@@ -314,7 +451,7 @@ export default function VectorizeModal({ onClose }: VectorizeModalProps) {
       {/* 模态窗口内容 */}
       <div className="p-6 flex-1 overflow-y-auto">
         <p className="text-gray-600 dark:text-gray-300 mb-4">
-          输入关键词或自然语言查询，系统将通过语义向量检索技术定位相关代码资源，并生成结构化数据用于大模型分析。
+          {t("vectorReport.description")}
         </p>
 
         <form onSubmit={handleSubmit} className="mb-6">
@@ -323,7 +460,7 @@ export default function VectorizeModal({ onClose }: VectorizeModalProps) {
               value={question}
               onChange={(e) => setQuestion(e.target.value)}
               className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 min-h-[100px] resize-y"
-              placeholder="输入语义查询，如「项目架构分析」、「查找认证模块」或「定位API实现」"
+              placeholder={t("vectorReport.placeholder")}
               disabled={isProcessing}
             />
           </div>
@@ -341,7 +478,7 @@ export default function VectorizeModal({ onClose }: VectorizeModalProps) {
               htmlFor="enableContentMatching"
               className="ml-2 block text-sm text-gray-700 dark:text-gray-300"
             >
-              启用文件内容匹配（可能会增加处理时间）
+              {t("vectorReport.enableContentMatching")}
             </label>
           </div>
 
@@ -377,10 +514,10 @@ export default function VectorizeModal({ onClose }: VectorizeModalProps) {
                       d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                     ></path>
                   </svg>
-                  执行向量化...
+                  {t("vectorReport.processing")}
                 </span>
               ) : (
-                "执行向量化"
+                t("vectorReport.submit")
               )}
             </button>
           </div>
@@ -389,7 +526,7 @@ export default function VectorizeModal({ onClose }: VectorizeModalProps) {
 
         <div className="mt-6">
           <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
-            向量化结果
+            {t("vectorReport.result")}
           </h3>
 
           <AnimatePresence mode="wait">
@@ -414,28 +551,84 @@ export default function VectorizeModal({ onClose }: VectorizeModalProps) {
                 <div className="bg-gray-100 dark:bg-gray-700 p-4 rounded-md">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-gray-700 dark:text-gray-300 font-medium">
-                      已生成向量化结果 ({(result.length / 1024).toFixed(1)} KB)
+                      {t("vectorReport.result")} (
+                      {(result.length / 1024).toFixed(1)} KB)
                     </span>
-                    <button
-                      onClick={copyResultToClipboard}
-                      className="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded-md transition-colors flex items-center text-sm"
-                    >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-4 w-4 mr-1"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={copyResultToClipboard}
+                        className="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded-md transition-colors flex items-center text-sm"
                       >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-2M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"
-                        />
-                      </svg>
-                      复制向量化结果
-                    </button>
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-4 w-4 mr-1"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-2M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"
+                          />
+                        </svg>
+                        {t("vectorReport.copyPrompt")}
+                      </button>
+                      <button
+                        onClick={handleTestWithAI}
+                        disabled={isTesting}
+                        className={`px-3 py-1 ${
+                          isTesting
+                            ? "bg-gray-400 cursor-not-allowed"
+                            : "bg-green-500 hover:bg-green-600"
+                        } text-white rounded-md transition-colors flex items-center text-sm`}
+                      >
+                        {isTesting ? (
+                          <span className="flex items-center">
+                            <svg
+                              className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                              xmlns="http://www.w3.org/2000/svg"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                            >
+                              <circle
+                                className="opacity-25"
+                                cx="12"
+                                cy="12"
+                                r="10"
+                                stroke="currentColor"
+                                strokeWidth="4"
+                              ></circle>
+                              <path
+                                className="opacity-75"
+                                fill="currentColor"
+                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                              ></path>
+                            </svg>
+                            {t("vectorReport.testingPrompt")}
+                          </span>
+                        ) : (
+                          <>
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              className="h-4 w-4 mr-1"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M13 10V3L4 14h7v7l9-11h-7z"
+                              />
+                            </svg>
+                            {t("vectorReport.testPrompt")}
+                          </>
+                        )}
+                      </button>
+                    </div>
                   </div>
 
                   {/* 优化提示 */}
@@ -456,28 +649,225 @@ export default function VectorizeModal({ onClose }: VectorizeModalProps) {
                     </div>
                     <div>
                       <h4 className="text-sm font-medium text-blue-800 dark:text-blue-300">
-                        智能向量优化
+                        {t("vectorReport.optimization.title")}
                       </h4>
                       <p className="text-xs text-blue-700 dark:text-blue-400 mt-1">
-                        通过语义向量分析，已从{" "}
-                        {currentScan?.entries.filter(
-                          (entry) => entry.kind === "file"
-                        ).length || 0}{" "}
-                        个项目文件中精确定位 {relevantFiles.length} 个相关资源，
-                        预计为大模型节省约{" "}
-                        <span className="font-bold">
-                          {tokensSaved.toLocaleString()}
-                        </span>{" "}
-                        tokens，提高处理效率约 {Math.round(tokensSaved / 1000)}K
-                        倍。
+                        {t("vectorReport.optimization.description", {
+                          totalCount: String(
+                            currentScan?.entries.filter(
+                              (entry) => entry.kind === "file"
+                            ).length || 0
+                          ),
+                          relevantCount: String(relevantFiles.length),
+                          tokenCount: tokensSaved.toLocaleString(),
+                          efficiencyFactor: String(
+                            Math.round(tokensSaved / 1000)
+                          ),
+                        })}
                       </p>
                     </div>
                   </div>
 
+                  {/* AI测试结果 */}
+                  {showTestResult && (
+                    <div className="mb-3">
+                      <div className="flex items-center justify-between mb-1">
+                        <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                          {t("vectorReport.testResult")}
+                        </h4>
+                        <button
+                          onClick={() => setShowTestResult(false)}
+                          className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                        >
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="h-4 w-4"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M6 18L18 6M6 6l12 12"
+                            />
+                          </svg>
+                        </button>
+                      </div>
+                      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md p-3 max-h-[400px] overflow-y-auto">
+                        {testResult ? (
+                          <div className="prose prose-sm dark:prose-invert max-w-none">
+                            {(() => {
+                              console.log("解析Markdown开始");
+                              const blocks =
+                                processMarkdownWithCards(testResult);
+                              console.log("解析结果:", blocks.length, "个块");
+
+                              return blocks.map((block, i) => {
+                                if (block.type === "text") {
+                                  return (
+                                    <div key={i} className="mb-4">
+                                      {block.content
+                                        .split("\n")
+                                        .map((line, j) => (
+                                          <div key={j}>{line || <br />}</div>
+                                        ))}
+                                    </div>
+                                  );
+                                } else if (block.type === "tool-card") {
+                                  return (
+                                    <div
+                                      key={i}
+                                      className="my-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30 rounded-lg border border-blue-200 dark:border-blue-800 overflow-hidden"
+                                    >
+                                      <div className="bg-blue-600 dark:bg-blue-800 text-white px-4 py-2 font-medium flex items-center justify-between">
+                                        <div className="flex items-center">
+                                          <svg
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            className="h-5 w-5 mr-2"
+                                            viewBox="0 0 20 20"
+                                            fill="currentColor"
+                                          >
+                                            <path
+                                              fillRule="evenodd"
+                                              d="M5 2a1 1 0 011 1v1h1a1 1 0 010 2H6v1a1 1 0 01-2 0V6H3a1 1 0 010-2h1V3a1 1 0 011-1zm0 10a1 1 0 011 1v1h1a1 1 0 110 2H6v1a1 1 0 11-2 0v-1H3a1 1 0 110-2h1v-1a1 1 0 011-1zM12 2a1 1 0 01.967.744L14.146 7.2 17.5 9.134a1 1 0 010 1.732l-3.354 1.935-1.18 4.455a1 1 0 01-1.933 0L9.854 12.8 6.5 10.866a1 1 0 010-1.732l3.354-1.935 1.18-4.455A1 1 0 0112 2z"
+                                              clipRule="evenodd"
+                                            />
+                                          </svg>
+                                          <span>工具调用: {block.title}</span>
+                                        </div>
+                                        <span className="text-xs opacity-70">
+                                          AI模拟
+                                        </span>
+                                      </div>
+                                      <div className="p-4">
+                                        {block.params && (
+                                          <div className="mb-3">
+                                            <div className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                              参数:
+                                            </div>
+                                            <div className="bg-white/50 dark:bg-gray-800/50 rounded p-2 text-sm">
+                                              {block.params
+                                                .split("\n")
+                                                .map((param, k) => (
+                                                  <div
+                                                    key={k}
+                                                    className="font-mono text-xs text-gray-700 dark:text-gray-300"
+                                                  >
+                                                    {param}
+                                                  </div>
+                                                ))}
+                                            </div>
+                                          </div>
+                                        )}
+                                        {block.result && (
+                                          <div>
+                                            <div className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                              结果:
+                                            </div>
+                                            <div className="bg-white/50 dark:bg-gray-800/50 rounded p-2 text-sm">
+                                              {block.result
+                                                .split("\n")
+                                                .map((line, k) => (
+                                                  <div
+                                                    key={k}
+                                                    className="font-mono text-xs text-gray-700 dark:text-gray-300"
+                                                  >
+                                                    {line}
+                                                  </div>
+                                                ))}
+                                            </div>
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  );
+                                } else if (block.type === "code") {
+                                  return (
+                                    <div
+                                      key={i}
+                                      className="bg-gray-100 dark:bg-gray-700 rounded-md overflow-hidden my-2"
+                                    >
+                                      <div className="bg-gray-200 dark:bg-gray-600 px-4 py-1 text-xs font-medium text-gray-700 dark:text-gray-300 flex items-center justify-between">
+                                        <span>{block.language || "code"}</span>
+                                        <button
+                                          onClick={() => {
+                                            navigator.clipboard.writeText(
+                                              block.content || ""
+                                            );
+                                            setShowSuccessToast(true);
+                                            setTimeout(
+                                              () => setShowSuccessToast(false),
+                                              2000
+                                            );
+                                          }}
+                                          className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                                        >
+                                          <svg
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            className="h-4 w-4"
+                                            fill="none"
+                                            viewBox="0 0 24 24"
+                                            stroke="currentColor"
+                                          >
+                                            <path
+                                              strokeLinecap="round"
+                                              strokeLinejoin="round"
+                                              strokeWidth={2}
+                                              d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                                            />
+                                          </svg>
+                                        </button>
+                                      </div>
+                                      <pre className="p-4 text-sm overflow-x-auto whitespace-pre">
+                                        <code className="font-mono text-gray-800 dark:text-gray-200">
+                                          {block.content}
+                                        </code>
+                                      </pre>
+                                    </div>
+                                  );
+                                }
+                                return null;
+                              });
+                            })()}
+                          </div>
+                        ) : (
+                          <p className="text-gray-500 dark:text-gray-400 italic text-sm">
+                            {t("vectorReport.testPlaceholder")}
+                          </p>
+                        )}
+                      </div>
+                      <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                        {t("vectorReport.testInstructions")}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 结果预览区域 */}
+                  <div className="mb-3">
+                    <div className="flex items-center justify-between mb-1">
+                      <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        {t("vectorReport.resultPreview")}
+                      </h4>
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                        {t("vectorReport.markdownFormat")}
+                      </span>
+                    </div>
+                    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md p-3 max-h-[200px] overflow-y-auto">
+                      <pre className="text-xs text-gray-700 dark:text-gray-300 whitespace-pre-wrap font-mono">
+                        {result.length > 500
+                          ? result.substring(0, 500) +
+                            "...\n\n[内容已截断，完整内容请复制后查看]"
+                          : result}
+                      </pre>
+                    </div>
+                  </div>
+
                   <div className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded p-2 text-xs text-gray-500 dark:text-gray-400">
-                    已生成完整向量化数据，包含查询、项目文件结构、Markdown文档和相关文件内容。
+                    {t("vectorReport.resultDescription")}
                     <br />
-                    点击上方按钮复制结果，可直接粘贴到大模型中使用。
+                    {t("vectorReport.copyInstructions")}
                   </div>
                 </div>
               </motion.div>
@@ -488,7 +878,7 @@ export default function VectorizeModal({ onClose }: VectorizeModalProps) {
                 exit={{ opacity: 0, y: -10 }}
                 className="text-gray-500 dark:text-gray-400 italic"
               >
-                请输入查询并点击"执行向量化"按钮
+                {t("vectorReport.noResult")}
               </motion.div>
             )}
           </AnimatePresence>
@@ -501,7 +891,7 @@ export default function VectorizeModal({ onClose }: VectorizeModalProps) {
           onClick={onClose}
           className="px-4 py-2 bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-md hover:bg-gray-400 dark:hover:bg-gray-500 transition-colors"
         >
-          关闭
+          {t("vectorReport.close")}
         </button>
       </div>
     </div>
