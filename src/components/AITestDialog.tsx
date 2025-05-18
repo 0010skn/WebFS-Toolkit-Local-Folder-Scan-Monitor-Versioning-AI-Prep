@@ -227,7 +227,16 @@ export default function AITestDialog({
   projectFilePaths = [],
 }: AITestDialogProps) {
   const { t } = useTranslations();
-  const [testResult, setTestResult] = useState("");
+  // 定义对话轮次类型
+  interface DialogRound {
+    userInput: string;
+    aiResponse: string;
+    files?: string[];
+    responseFiles?: string[];
+  }
+
+  // 移除单一testResult状态，改为存储每轮对话的数组
+  const [dialogRounds, setDialogRounds] = useState<DialogRound[]>([]);
   const [isTesting, setIsTesting] = useState(false);
   const [isComplete, setIsComplete] = useState(false);
   const [currentRound, setCurrentRound] = useState(0);
@@ -246,13 +255,15 @@ export default function AITestDialog({
   const [filePaths] = useState<string[]>(projectFilePaths);
   const [lastChar, setLastChar] = useState<string>("");
   const [animationKey, setAnimationKey] = useState<number>(0);
+  // 当前正在构建的响应
+  const [currentResponse, setCurrentResponse] = useState("");
 
   // 自动滚动到底部
   useEffect(() => {
     if (contentRef.current) {
       contentRef.current.scrollTop = contentRef.current.scrollHeight;
     }
-  }, [testResult]);
+  }, [dialogRounds, currentResponse]);
 
   // 开始测试
   useEffect(() => {
@@ -264,7 +275,7 @@ export default function AITestDialog({
   // 开始测试
   const startTest = async () => {
     setIsTesting(true);
-    setTestResult("");
+    setDialogRounds([]);
     setCurrentRound(0);
     setIsComplete(false);
     setConversationHistory([{ role: "user", content: initialPrompt }]);
@@ -272,30 +283,26 @@ export default function AITestDialog({
     setIndexedFiles([]);
     setLastChar("");
     setAnimationKey(0);
+    setCurrentResponse("");
 
     try {
-      // 获取项目文件路径列表（这里需要从父组件传入或者从全局状态获取）
-      // 这里假设我们有一个全局状态或者从父组件传入的文件路径列表
-      // 在实际实现中，您需要确保这个列表是可用的
+      // 获取项目文件路径列表
       const paths = filePaths.length > 0 ? filePaths : [];
-
-      // 创建新的结果字符串
-      let newTestResult = "";
 
       // 查找相关文件
       const jsonResult = await findRelevantFiles(initialPrompt, paths);
       const parsedResult = parseFilePathsResult(jsonResult);
       setIndexedFiles(parsedResult.relevant_paths);
 
-      // 将初始文件索引卡片添加到结果中
-      if (parsedResult.relevant_paths.length > 0) {
-        const fileCardMarkdown = `\`\`\`file-index-card
-${parsedResult.relevant_paths.join("\n")}
-\`\`\``;
-        // 使用更友好的提示
-        newTestResult += "初始相关文件索引:\n" + fileCardMarkdown + "\n\n";
-        setTestResult(newTestResult);
-      }
+      // 创建第一轮对话对象
+      const firstRound: DialogRound = {
+        userInput: initialPrompt,
+        aiResponse: "",
+        files:
+          parsedResult.relevant_paths.length > 0
+            ? parsedResult.relevant_paths
+            : undefined,
+      };
 
       // 只进行第一轮对话，后续轮次由用户选择
       let response = "";
@@ -306,20 +313,22 @@ ${parsedResult.relevant_paths.join("\n")}
           setLastChar(chunk);
           // 更新动画键以触发新动画
           setAnimationKey((prev) => prev + 1);
-          // 累积响应
-          newTestResult += chunk;
-          // 更新显示的结果
-          setTestResult(newTestResult);
+          // 累积响应到当前响应
+          setCurrentResponse((prev) => prev + chunk);
           response += chunk;
         },
         true // 只进行第一轮
       );
+
+      // 更新第一轮对话的AI响应
+      firstRound.aiResponse = response;
       setCurrentRound(1);
+      setCurrentResponse("");
 
       // 保存第一轮响应
       setResponseSegments((prev) => ({ ...prev, 1: response }));
 
-      // 第一轮对话结束后，根据AI响应重新生成文件索引 - 无感更新
+      // 第一轮对话结束后，根据AI响应重新生成文件索引
       try {
         const newJsonResult = await findRelevantFiles(response, paths);
         const newParsedResult = parseFilePathsResult(newJsonResult);
@@ -328,18 +337,14 @@ ${parsedResult.relevant_paths.join("\n")}
         // 如果找到了新的相关文件，更新索引
         if (responseIndexedFiles.length > 0) {
           setIndexedFiles(responseIndexedFiles);
-
-          // 将新的文件索引卡片添加到结果中
-          const newFileCardMarkdown = `\`\`\`file-index-card
-${responseIndexedFiles.join("\n")}
-\`\`\``;
-          newTestResult +=
-            "根据AI响应更新的文件索引:\n" + newFileCardMarkdown + "\n\n";
-          setTestResult(newTestResult);
+          firstRound.responseFiles = responseIndexedFiles;
         }
       } catch (indexError) {
         console.error("更新文件索引出错:", indexError);
       }
+
+      // 添加第一轮对话到对话轮次数组
+      setDialogRounds([firstRound]);
 
       // 生成对话选项
       generateDialogOptions(initialPrompt, response);
@@ -347,10 +352,238 @@ ${responseIndexedFiles.join("\n")}
       setShowOptions(false);
     } catch (error) {
       console.error("AI测试出错:", error);
-      setTestResult(t("vectorReport.error"));
+      setDialogRounds([
+        {
+          userInput: initialPrompt,
+          aiResponse: t("vectorReport.error"),
+        },
+      ]);
     } finally {
       setIsTesting(false);
     }
+  };
+
+  // 继续对话
+  const continueConversation = async (input: string) => {
+    if (isComplete || currentRound >= maxRounds) {
+      return;
+    }
+
+    setIsTesting(true);
+    setShowOptions(false);
+    setLastChar("");
+    setAnimationKey(0);
+    setCurrentResponse("");
+
+    // 创建新的对话轮次
+    const newRound: DialogRound = {
+      userInput: input,
+      aiResponse: "",
+    };
+
+    // 更新对话历史
+    const updatedHistory = [
+      ...conversationHistory,
+      { role: "assistant", content: responseSegments[currentRound] || "" },
+      { role: "user", content: input },
+    ];
+    setConversationHistory(updatedHistory);
+
+    // 清空自定义输入
+    setCustomInput("");
+
+    try {
+      // 查找相关文件
+      const paths = filePaths.length > 0 ? filePaths : [];
+      const jsonResult = await findRelevantFiles(input, paths);
+      const parsedResult = parseFilePathsResult(jsonResult);
+      const newIndexedFiles = parsedResult.relevant_paths;
+      setIndexedFiles(newIndexedFiles);
+
+      // 如果找到了相关文件，添加到当前轮次
+      if (newIndexedFiles.length > 0) {
+        newRound.files = newIndexedFiles;
+      }
+
+      // 构建系统提示
+      const nextRound = currentRound + 1;
+      const systemPrompt = `这是第${nextRound}/${maxRounds}轮对话。
+我已经为您索引了与当前对话相关的文件: ${JSON.stringify(newIndexedFiles)}
+请根据这些文件和对话历史提供分析，并在回复中包含至少一个工具调用卡片的模拟展示。${
+        nextRound === maxRounds
+          ? "这是最后一轮对话，请在回复结束时提醒用户测试完毕并做出总结。"
+          : ""
+      }`;
+
+      // 调用API获取响应
+      let response = "";
+      await testWithAI(
+        input,
+        (chunk) => {
+          // 更新最后一个字符用于动画
+          setLastChar(chunk);
+          // 更新动画键以触发新动画
+          setAnimationKey((prev) => prev + 1);
+          // 累积响应到当前响应
+          setCurrentResponse((prev) => prev + chunk);
+          response += chunk;
+        },
+        false, // 不是第一轮
+        updatedHistory,
+        systemPrompt
+      );
+
+      // 更新当前轮次的AI响应
+      newRound.aiResponse = response;
+
+      // 保存当前轮次响应
+      setResponseSegments((prev) => ({ ...prev, [nextRound]: response }));
+
+      // 更新对话历史和轮次
+      setConversationHistory([
+        ...updatedHistory,
+        { role: "assistant", content: response },
+      ]);
+      setCurrentRound(nextRound);
+      setCurrentResponse("");
+
+      // 检查是否完成所有轮次
+      if (nextRound >= maxRounds) {
+        setIsComplete(true);
+      } else {
+        // 每轮对话结束后，根据新的响应重新生成文件索引
+        try {
+          const newJsonResult = await findRelevantFiles(response, paths);
+          const newParsedResult = parseFilePathsResult(newJsonResult);
+          const responseIndexedFiles = newParsedResult.relevant_paths;
+
+          // 如果找到了新的相关文件，更新索引
+          if (responseIndexedFiles.length > 0) {
+            setIndexedFiles(responseIndexedFiles);
+            newRound.responseFiles = responseIndexedFiles;
+          }
+        } catch (indexError) {
+          console.error("更新文件索引出错:", indexError);
+        }
+
+        // 生成新的对话选项
+        generateDialogOptions(input, response);
+        // 默认不显示选项
+        setShowOptions(false);
+      }
+
+      // 添加新轮次到对话轮次数组
+      setDialogRounds((prev) => [...prev, newRound]);
+    } catch (error) {
+      console.error("AI对话继续出错:", error);
+      newRound.aiResponse = t("vectorReport.error");
+      setDialogRounds((prev) => [...prev, newRound]);
+    } finally {
+      setIsTesting(false);
+    }
+  };
+
+  // 渲染单个对话轮次
+  const renderDialogRound = (round: DialogRound, index: number) => {
+    return (
+      <div
+        key={`round-${index}`}
+        className="mb-8 bg-gradient-to-r from-gray-50 to-white dark:from-gray-800/30 dark:to-gray-900 p-4 rounded-lg border border-gray-200 dark:border-gray-700"
+      >
+        {/* 用户输入 */}
+        <div className="bg-blue-50 dark:bg-blue-900/20 p-3 mb-4 rounded-md border-l-4 border-blue-500">
+          <strong>用户:</strong> {round.userInput}
+        </div>
+
+        {/* 相关文件索引 */}
+        {round.files && round.files.length > 0 && (
+          <div className="mb-4">
+            <div className="text-sm text-gray-500 dark:text-gray-400 mb-2 font-medium">
+              相关文件索引:
+            </div>
+            <FileIndexCard
+              data={encodeURIComponent(JSON.stringify(round.files))}
+            />
+          </div>
+        )}
+
+        {/* AI响应 */}
+        <div className="ai-response">
+          <Markdown
+            options={{
+              overrides: {
+                pre: {
+                  component: ({ children }: any) => {
+                    return <>{children}</>;
+                  },
+                },
+                code: {
+                  component: CodeBlock,
+                },
+                ToolCard: {
+                  component: ToolCard,
+                },
+                FileIndexCard: {
+                  component: FileIndexCard,
+                },
+              },
+            }}
+          >
+            {processMarkdown(round.aiResponse)}
+          </Markdown>
+        </div>
+
+        {/* 响应后的文件索引 */}
+        {round.responseFiles && round.responseFiles.length > 0 && (
+          <div className="mt-4">
+            <div className="text-sm text-gray-500 dark:text-gray-400 mb-2 font-medium">
+              根据AI响应更新的文件索引:
+            </div>
+            <FileIndexCard
+              data={encodeURIComponent(JSON.stringify(round.responseFiles))}
+            />
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // 处理markdown中的特殊块
+  const processMarkdown = (markdown: string) => {
+    if (!markdown) return "";
+
+    let processed = markdown;
+
+    // 替换工具调用卡片
+    processed = processed.replace(
+      /```tool-card([\s\S]*?)```/g,
+      (match, content) => {
+        return `<ToolCard>${content}</ToolCard>`;
+      }
+    );
+
+    // 替换文件索引卡片 - 在对话轮次中已经单独处理，这里只处理嵌入在AI响应中的卡片
+    processed = processed.replace(
+      /```file-index-card([\s\S]*?)```/g,
+      (match, content) => {
+        try {
+          const files = content
+            .trim()
+            .split("\n")
+            .filter((f) => f.trim() !== "");
+          return `<FileIndexCard data="${encodeURIComponent(
+            JSON.stringify(files)
+          )}" />`;
+        } catch (error) {
+          console.error("处理文件索引卡片出错:", error);
+          return `<FileIndexCard data="${encodeURIComponent(
+            JSON.stringify([])
+          )}" />`;
+        }
+      }
+    );
+
+    return processed;
   };
 
   // 生成对话选项
@@ -438,132 +671,6 @@ ${aiResponse}
     }
   };
 
-  // 继续对话
-  const continueConversation = async (input: string) => {
-    if (isComplete || currentRound >= maxRounds) {
-      return;
-    }
-
-    setIsTesting(true);
-    setShowOptions(false);
-    setLastChar("");
-    setAnimationKey(0);
-
-    // 更新对话历史
-    const updatedHistory = [
-      ...conversationHistory,
-      { role: "assistant", content: testResult },
-      { role: "user", content: input },
-    ];
-    setConversationHistory(updatedHistory);
-
-    // 清空自定义输入
-    setCustomInput("");
-
-    // 创建新的结果字符串，而不是追加到之前的结果
-    let newTestResult = "";
-
-    // 添加用户输入到新的结果显示
-    newTestResult += `用户: ${input}\n\n`;
-
-    try {
-      // 查找相关文件
-      const paths = filePaths.length > 0 ? filePaths : [];
-      const jsonResult = await findRelevantFiles(input, paths);
-      const parsedResult = parseFilePathsResult(jsonResult);
-      const newIndexedFiles = parsedResult.relevant_paths;
-      setIndexedFiles(newIndexedFiles);
-
-      // 将文件索引卡片添加到结果中 - 无感索引，不显示"初始索引"文本
-      if (newIndexedFiles.length > 0) {
-        const fileCardMarkdown = `\`\`\`file-index-card
-${newIndexedFiles.join("\n")}
-\`\`\``;
-        newTestResult += fileCardMarkdown + "\n\n";
-      }
-
-      // 构建系统提示
-      const nextRound = currentRound + 1;
-      const systemPrompt = `这是第${nextRound}/${maxRounds}轮对话。
-我已经为您索引了与当前对话相关的文件: ${JSON.stringify(newIndexedFiles)}
-请根据这些文件和对话历史提供分析，并在回复中包含至少一个工具调用卡片的模拟展示。${
-        nextRound === maxRounds
-          ? "这是最后一轮对话，请在回复结束时提醒用户测试完毕并做出总结。"
-          : ""
-      }`;
-
-      // 调用API获取响应
-      let response = "";
-      await testWithAI(
-        input,
-        (chunk) => {
-          // 更新最后一个字符用于动画
-          setLastChar(chunk);
-          // 更新动画键以触发新动画
-          setAnimationKey((prev) => prev + 1);
-          // 累积响应
-          newTestResult += chunk;
-          // 更新显示的结果
-          setTestResult(newTestResult);
-          response += chunk;
-        },
-        false, // 不是第一轮
-        updatedHistory,
-        systemPrompt
-      );
-
-      // 保存当前轮次响应
-      setResponseSegments((prev) => ({ ...prev, [nextRound]: response }));
-
-      // 更新对话历史和轮次
-      setConversationHistory([
-        ...updatedHistory,
-        { role: "assistant", content: response },
-      ]);
-      setCurrentRound(nextRound);
-
-      // 检查是否完成所有轮次
-      if (nextRound >= maxRounds) {
-        setIsComplete(true);
-        newTestResult += "\n\n测试已完成所有对话轮次，测试完毕。";
-        setTestResult(newTestResult);
-      } else {
-        // 每轮对话结束后，根据新的响应重新生成文件索引 - 无感更新
-        try {
-          const newJsonResult = await findRelevantFiles(response, paths);
-          const newParsedResult = parseFilePathsResult(newJsonResult);
-          const responseIndexedFiles = newParsedResult.relevant_paths;
-
-          // 如果找到了新的相关文件，更新索引
-          if (responseIndexedFiles.length > 0) {
-            setIndexedFiles(responseIndexedFiles);
-
-            // 将新的文件索引卡片添加到结果中，使用更友好的提示
-            const newFileCardMarkdown = `\`\`\`file-index-card
-${responseIndexedFiles.join("\n")}
-\`\`\``;
-            newTestResult +=
-              "\n\n根据AI响应更新的文件索引:\n" + newFileCardMarkdown + "\n\n";
-            setTestResult(newTestResult);
-          }
-        } catch (indexError) {
-          console.error("更新文件索引出错:", indexError);
-        }
-
-        // 生成新的对话选项
-        generateDialogOptions(input, response);
-        // 默认不显示选项
-        setShowOptions(false);
-      }
-    } catch (error) {
-      console.error("AI对话继续出错:", error);
-      newTestResult += "\n\n" + t("vectorReport.error");
-      setTestResult(newTestResult);
-    } finally {
-      setIsTesting(false);
-    }
-  };
-
   // 处理选项点击
   const handleOptionClick = (option: DialogOption) => {
     continueConversation(option.text);
@@ -581,56 +688,6 @@ ${responseIndexedFiles.join("\n")}
   const handleTerminate = () => {
     setIsComplete(true);
     onClose();
-  };
-
-  // 处理markdown中的特殊块
-  const processMarkdown = (markdown: string) => {
-    // 处理每个轮次，但不分割
-    let processed = markdown;
-
-    // 替换工具调用卡片
-    processed = processed.replace(
-      /```tool-card([\s\S]*?)```/g,
-      (match, content) => {
-        return `<ToolCard>${content}</ToolCard>`;
-      }
-    );
-
-    // 替换文件索引卡片
-    processed = processed.replace(
-      /```file-index-card([\s\S]*?)```/g,
-      (match, content) => {
-        try {
-          const files = content
-            .trim()
-            .split("\n")
-            .filter((f) => f.trim() !== "");
-          // 不要尝试在字符串中嵌入JSON数据，而是使用特殊标记
-          return `<FileIndexCard data="${encodeURIComponent(
-            JSON.stringify(files)
-          )}" />`;
-        } catch (error) {
-          console.error("处理文件索引卡片出错:", error);
-          return `<FileIndexCard data="${encodeURIComponent(
-            JSON.stringify([])
-          )}" />`;
-        }
-      }
-    );
-
-    // 处理用户输入部分
-    processed = processed.replace(
-      /用户: (.*?)(\n\n|$)/g,
-      '<div class="bg-blue-50 dark:bg-blue-900/20 p-3 my-4 rounded-md border-l-4 border-blue-500"><strong>用户:</strong> $1</div>$2'
-    );
-
-    // 处理文件索引提示文本
-    processed = processed.replace(
-      /(初始相关文件索引:|根据AI响应更新的文件索引:)/g,
-      '<div class="text-sm text-gray-500 dark:text-gray-400 mt-4 mb-2 font-medium">$1</div>'
-    );
-
-    return processed;
   };
 
   // 复制当前轮次的AI响应
@@ -712,40 +769,59 @@ ${responseIndexedFiles.join("\n")}
           ref={contentRef}
           className="flex-1 overflow-y-auto p-6 bg-gray-50 dark:bg-gray-900"
         >
-          {testResult ? (
+          {dialogRounds.length > 0 ? (
             <div className="prose prose-sm dark:prose-invert max-w-none">
-              <Markdown
-                options={{
-                  overrides: {
-                    pre: {
-                      component: ({ children }: any) => {
-                        return <>{children}</>;
-                      },
-                    },
-                    code: {
-                      component: CodeBlock,
-                    },
-                    ToolCard: {
-                      component: ToolCard,
-                    },
-                    FileIndexCard: {
-                      component: FileIndexCard,
-                    },
-                  },
-                }}
-              >
-                {processMarkdown(testResult)}
-              </Markdown>
-              {lastChar && (
-                <motion.span
-                  key={animationKey}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ duration: 0.3 }}
-                  className="animate-char text-blue-600 dark:text-blue-400 font-medium"
-                >
-                  {lastChar}
-                </motion.span>
+              {/* 渲染所有完成的对话轮次 */}
+              {dialogRounds.map(renderDialogRound)}
+
+              {/* 如果当前有正在进行的响应，显示当前轮次 */}
+              {currentResponse && (
+                <div className="mb-8 bg-gradient-to-r from-gray-50 to-white dark:from-gray-800/30 dark:to-gray-900 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                  <div className="ai-response">
+                    <Markdown
+                      options={{
+                        overrides: {
+                          pre: {
+                            component: ({ children }: any) => {
+                              return <>{children}</>;
+                            },
+                          },
+                          code: {
+                            component: CodeBlock,
+                          },
+                          ToolCard: {
+                            component: ToolCard,
+                          },
+                          FileIndexCard: {
+                            component: FileIndexCard,
+                          },
+                        },
+                      }}
+                    >
+                      {processMarkdown(currentResponse)}
+                    </Markdown>
+                    {lastChar && (
+                      <motion.span
+                        key={animationKey}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ duration: 0.3 }}
+                        className="animate-char text-blue-600 dark:text-blue-400 font-medium"
+                      >
+                        {lastChar}
+                      </motion.span>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* 如果已完成所有轮次，显示完成信息 */}
+              {isComplete && (
+                <div className="text-center p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800 mt-4">
+                  <p className="font-medium text-green-700 dark:text-green-300">
+                    测试已完成所有对话轮次，测试完毕。
+                  </p>
+                </div>
               )}
             </div>
           ) : (
