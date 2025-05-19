@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslations } from "./LocaleProvider";
 import {
@@ -41,46 +41,138 @@ const CodeBlock = ({
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === "dark";
   const language = className ? className.replace(/language-/, "") : "";
+  const [copied, setCopied] = useState(false);
+
+  // 高亮块动画
+  const handleCopy = () => {
+    navigator.clipboard.writeText(children || "");
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
 
   return (
-    <div className="bg-gray-100 dark:bg-gray-700 rounded-md overflow-hidden my-2">
+    <motion.div
+      className="bg-gray-100 dark:bg-gray-700 rounded-md overflow-hidden my-2 max-w-full"
+      initial={{ opacity: 0.9, y: 5 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.2 }}
+    >
       <div className="bg-gray-200 dark:bg-gray-600 px-4 py-1 text-xs font-medium text-gray-700 dark:text-gray-300 flex items-center justify-between">
-        <span>{language || "code"}</span>
-        <button
-          onClick={() => {
-            navigator.clipboard.writeText(children || "");
-          }}
-          className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+        <span className="flex items-center">
+          {language && (
+            <span
+              className="w-3 h-3 rounded-full mr-2"
+              style={{
+                backgroundColor: getLanguageColor(language),
+              }}
+            ></span>
+          )}
+          {language || "code"}
+        </span>
+        <motion.button
+          onClick={handleCopy}
+          className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 p-1 rounded-md flex items-center"
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
         >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-4 w-4"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
-            />
-          </svg>
-        </button>
+          {copied ? (
+            <motion.span
+              initial={{ opacity: 0, y: 5 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-green-500 dark:text-green-400 flex items-center"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-4 w-4 mr-1"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                  clipRule="evenodd"
+                />
+              </svg>
+              已复制
+            </motion.span>
+          ) : (
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-4 w-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+              />
+            </svg>
+          )}
+        </motion.button>
       </div>
-      <div className="overflow-x-auto">
+      <motion.div
+        className="overflow-x-auto"
+        initial={{ opacity: 0.8 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.3, delay: 0.1 }}
+      >
         <SyntaxHighlighter
           language={language || "text"}
           style={isDark ? vscDarkPlus : vs}
-          customStyle={{ margin: 0, padding: "1rem", fontSize: "0.875rem" }}
+          customStyle={{
+            margin: 0,
+            padding: "1rem",
+            fontSize: "0.875rem",
+            backgroundColor: isDark ? "rgb(30, 30, 30)" : "rgb(250, 250, 250)",
+          }}
           wrapLines={true}
           wrapLongLines={true}
+          showLineNumbers={language !== "text" && language !== ""}
+          lineNumberStyle={{
+            minWidth: "2.5em",
+            paddingRight: "1em",
+            color: isDark ? "rgba(255, 255, 255, 0.3)" : "rgba(0, 0, 0, 0.3)",
+            borderRight: isDark
+              ? "1px solid rgba(255, 255, 255, 0.1)"
+              : "1px solid rgba(0, 0, 0, 0.1)",
+            marginRight: "1em",
+          }}
         >
           {children}
         </SyntaxHighlighter>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
+};
+
+// 获取编程语言的颜色
+const getLanguageColor = (language: string): string => {
+  const colorMap: { [key: string]: string } = {
+    javascript: "#f7df1e",
+    typescript: "#3178c6",
+    jsx: "#61dafb",
+    tsx: "#3178c6",
+    python: "#3572A5",
+    java: "#b07219",
+    cpp: "#f34b7d",
+    csharp: "#178600",
+    php: "#4F5D95",
+    ruby: "#CC342D",
+    go: "#00ADD8",
+    rust: "#DEA584",
+    html: "#e34c26",
+    css: "#563d7c",
+    json: "#292929",
+    bash: "#89e051",
+    shell: "#89e051",
+    sql: "#e38c00",
+    markdown: "#083fa1",
+  };
+
+  return colorMap[language.toLowerCase()] || "#aaa";
 };
 
 // 自定义工具调用卡片组件
@@ -108,12 +200,12 @@ const ToolCard = ({ children }: { children: React.ReactNode }) => {
   }
 
   return (
-    <div className="my-3 bg-gray-50 dark:bg-gray-800/60 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+    <div className="my-3 bg-gray-50 dark:bg-gray-800/60 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden max-w-full">
       <div className="bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 px-4 py-2 font-medium flex items-center justify-between">
         <div className="flex items-center">
           <svg
             xmlns="http://www.w3.org/2000/svg"
-            className="h-4 w-4 mr-2 text-blue-500"
+            className="h-4 w-4 mr-2 text-blue-500 flex-shrink-0"
             viewBox="0 0 20 20"
             fill="currentColor"
           >
@@ -123,9 +215,9 @@ const ToolCard = ({ children }: { children: React.ReactNode }) => {
               clipRule="evenodd"
             />
           </svg>
-          <span className="text-sm">{title}</span>
+          <span className="text-sm truncate">{title}</span>
         </div>
-        <span className="text-xs opacity-70">工具调用</span>
+        <span className="text-xs opacity-70 flex-shrink-0">工具调用</span>
       </div>
       <div className="p-3">
         {params && (
@@ -167,7 +259,7 @@ const ToolCard = ({ children }: { children: React.ReactNode }) => {
   );
 };
 
-// 修改FileIndexCard组件以接受data属性
+// 修改FileIndexCard组件
 const FileIndexCard = ({ data }: { data?: string }) => {
   // 解析传入的数据
   const [files, setFiles] = useState<string[]>([]);
@@ -200,12 +292,12 @@ const FileIndexCard = ({ data }: { data?: string }) => {
   }, [data]);
 
   return (
-    <div className="my-3 bg-gray-50 dark:bg-gray-800/60 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+    <div className="my-3 bg-gray-50 dark:bg-gray-800/60 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden max-w-full">
       <div className="bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 px-4 py-2 font-medium flex items-center justify-between">
         <div className="flex items-center">
           <svg
             xmlns="http://www.w3.org/2000/svg"
-            className="h-4 w-4 mr-2 text-purple-500"
+            className="h-4 w-4 mr-2 text-purple-500 flex-shrink-0"
             viewBox="0 0 20 20"
             fill="currentColor"
           >
@@ -217,7 +309,7 @@ const FileIndexCard = ({ data }: { data?: string }) => {
           </svg>
           <span className="text-sm">相关文件</span>
         </div>
-        <span className="text-xs opacity-70">自动索引</span>
+        <span className="text-xs opacity-70 flex-shrink-0">自动索引</span>
       </div>
       <div className="p-3">
         <div className="text-xs text-gray-600 dark:text-gray-400 mb-2">
@@ -251,12 +343,24 @@ export default function AITestDialog({
   projectFilePaths = [],
 }: AITestDialogProps) {
   const { t } = useTranslations();
+  const { resolvedTheme } = useTheme();
+
+  // 对话选项动画设置
+  const optionHoverStyle = {
+    backgroundColor:
+      resolvedTheme === "dark"
+        ? "rgba(55, 65, 81, 0.7)"
+        : "rgba(243, 244, 246, 0.7)",
+    x: 2,
+  };
+
   // 定义对话轮次类型
   interface DialogRound {
     userInput: string;
     aiResponse: string;
     files?: string[];
     responseFiles?: string[];
+    elementRef?: React.RefObject<HTMLDivElement>;
   }
 
   // 移除单一testResult状态，改为存储每轮对话的数组
@@ -283,13 +387,36 @@ export default function AITestDialog({
   const [currentResponse, setCurrentResponse] = useState("");
   const [isIndexing, setIsIndexing] = useState(false);
   const [currentScan] = useAtom(currentScanAtom);
+  // 新增当前轮次的引用
+  const currentRoundRef = useRef<HTMLDivElement>(null);
 
-  // 自动滚动到底部
-  useEffect(() => {
-    if (contentRef.current) {
+  // 自动滚动到当前AI回复的开头位置
+  const scrollToCurrentResponse = useCallback(() => {
+    if (currentRoundRef.current) {
+      currentRoundRef.current.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    } else if (contentRef.current) {
+      // 如果找不到当前轮次的引用，则滚动到底部
       contentRef.current.scrollTop = contentRef.current.scrollHeight;
     }
-  }, [dialogRounds, currentResponse]);
+  }, [currentRoundRef]);
+
+  // 监听AI回复完成，自动滚动到当前轮次开头
+  useEffect(() => {
+    if (!isTesting && dialogRounds.length > 0 && currentRound > 0) {
+      // AI回复完成时滚动到当前回复开头
+      scrollToCurrentResponse();
+    }
+  }, [isTesting, dialogRounds.length, currentRound, scrollToCurrentResponse]);
+
+  // 自动滚动到底部 - 保留原有的滚动逻辑，但不在上面的效果触发时执行
+  useEffect(() => {
+    if (contentRef.current && isTesting) {
+      contentRef.current.scrollTop = contentRef.current.scrollHeight;
+    }
+  }, [dialogRounds, currentResponse, isTesting]);
 
   // 开始测试
   useEffect(() => {
@@ -349,6 +476,7 @@ export default function AITestDialog({
             parsedResult.relevant_paths.length > 0
               ? parsedResult.relevant_paths
               : undefined,
+          elementRef: currentRoundRef,
         },
       ]);
 
@@ -499,6 +627,7 @@ export default function AITestDialog({
     const newRound: DialogRound = {
       userInput: input,
       aiResponse: "",
+      elementRef: currentRoundRef,
     };
 
     // 更新对话历史
@@ -702,21 +831,30 @@ export default function AITestDialog({
     }
   };
 
-  // 渲染单个对话轮次 - 修改为ChatGPT风格
+  // 修改渲染单个对话轮次的函数
   const renderDialogRound = (round: DialogRound, index: number) => {
     const isLastRound = index === dialogRounds.length - 1;
     const isAITyping = isLastRound && isTesting;
     const isFirstRound = index === 0; // 检查是否是第一轮对话
 
+    // 计算token
+    const userTokens = round.userInput?.length || 0;
+    const aiTokens = round.aiResponse?.length || 0;
+
     return (
-      <div key={`round-${index}`} className="mb-2">
+      <div
+        key={`round-${index}`}
+        className="mb-2"
+        // 如果是当前轮次，添加ref
+        ref={isLastRound ? currentRoundRef : undefined}
+      >
         {/* 用户消息 - 第一轮不显示 */}
         {!isFirstRound && (
           <div className="flex items-start mb-4">
-            <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white mr-3">
+            <div className="flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-blue-600 flex items-center justify-center text-white mr-2 sm:mr-3">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5"
+                className="h-4 w-4 sm:h-5 sm:w-5"
                 viewBox="0 0 20 20"
                 fill="currentColor"
               >
@@ -727,11 +865,11 @@ export default function AITestDialog({
                 />
               </svg>
             </div>
-            <div className="flex-1">
-              <div className="font-medium text-gray-900 dark:text-white mb-1">
+            <div className="flex-1 min-w-0 overflow-hidden">
+              <div className="font-medium text-gray-900 dark:text-white mb-1 text-sm sm:text-base">
                 用户
               </div>
-              <div className="prose prose-sm dark:prose-invert max-w-none">
+              <div className="prose prose-sm dark:prose-invert max-w-full text-xs sm:text-sm break-words">
                 {round.userInput}
               </div>
             </div>
@@ -740,10 +878,10 @@ export default function AITestDialog({
 
         {/* AI消息 */}
         <div className="flex items-start mb-6">
-          <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-purple-600 to-blue-500 flex items-center justify-center text-white mr-3">
+          <div className="flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gradient-to-br from-purple-600 to-blue-500 flex items-center justify-center text-white mr-2 sm:mr-3">
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              className="h-5 w-5"
+              className="h-4 w-4 sm:h-5 sm:w-5"
               viewBox="0 0 20 20"
               fill="currentColor"
             >
@@ -751,8 +889,8 @@ export default function AITestDialog({
               <path d="M12 2.252A8.014 8.014 0 0117.748 8H12V2.252z" />
             </svg>
           </div>
-          <div className="flex-1">
-            <div className="font-medium text-gray-900 dark:text-white mb-1">
+          <div className="flex-1 min-w-0 overflow-hidden">
+            <div className="font-medium text-gray-900 dark:text-white mb-1 text-sm sm:text-base">
               AI助手
             </div>
 
@@ -760,7 +898,7 @@ export default function AITestDialog({
             {round.files &&
               Array.isArray(round.files) &&
               round.files.length > 0 && (
-                <div className="mb-3 overflow-x-auto">
+                <div className="mb-3 overflow-hidden">
                   <FileIndexCard
                     data={encodeURIComponent(JSON.stringify(round.files))}
                   />
@@ -768,7 +906,7 @@ export default function AITestDialog({
               )}
 
             {/* AI响应内容 */}
-            <div className="prose prose-sm dark:prose-invert max-w-none overflow-x-auto">
+            <div className="prose prose-sm dark:prose-invert w-full overflow-x-auto text-xs sm:text-sm break-words">
               <Markdown
                 options={{
                   overrides: {
@@ -786,6 +924,14 @@ export default function AITestDialog({
                     FileIndexCard: {
                       component: FileIndexCard,
                     },
+                    p: {
+                      // 自定义段落组件，确保文本可以换行
+                      component: (props: any) => (
+                        <p className="whitespace-pre-wrap break-words">
+                          {props.children}
+                        </p>
+                      ),
+                    },
                   },
                 }}
               >
@@ -798,19 +944,79 @@ export default function AITestDialog({
                   key={animationKey}
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  transition={{ duration: 0.3 }}
-                  className="inline-block ml-1 animate-pulse"
+                  transition={{ duration: 0.2 }}
+                  className="inline-block ml-1"
                 >
-                  <span className="inline-block w-1.5 h-4 bg-blue-500 dark:bg-blue-400 rounded-sm"></span>
+                  <motion.span
+                    className="inline-block w-1.5 h-4 bg-blue-500 dark:bg-blue-400 rounded-sm"
+                    animate={{ opacity: [0.4, 1, 0.4] }}
+                    transition={{
+                      duration: 1.2,
+                      repeat: Infinity,
+                      ease: "easeInOut",
+                    }}
+                  ></motion.span>
                 </motion.span>
               )}
             </div>
+
+            {/* Token计数和复制按钮 */}
+            {!isAITyping && round.aiResponse && (
+              <motion.div
+                className="mt-3 flex flex-col sm:flex-row sm:items-center justify-between text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/60 rounded-md px-2 sm:px-3 py-1.5 border border-gray-200 dark:border-gray-700"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3 }}
+              >
+                <div className="flex items-center space-x-3 mb-1.5 sm:mb-0">
+                  <span>
+                    输入{" "}
+                    <span className="font-mono font-medium">{userTokens}</span>{" "}
+                    tokens
+                  </span>
+                  <span className="text-gray-300 dark:text-gray-600">|</span>
+                  <span>
+                    输出{" "}
+                    <span className="font-mono font-medium">{aiTokens}</span>{" "}
+                    tokens
+                  </span>
+                </div>
+                <motion.button
+                  onClick={() => {
+                    navigator.clipboard.writeText(round.aiResponse);
+                  }}
+                  className="flex items-center text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 transition-colors self-end sm:self-auto rounded-md px-2 py-1"
+                  whileHover={{
+                    scale: 1.05,
+                    backgroundColor: "rgba(59, 130, 246, 0.1)",
+                  }}
+                  whileTap={{ scale: 0.95 }}
+                  title="复制AI回复"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-4 w-4 mr-1"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                    />
+                  </svg>
+                  <span>复制</span>
+                </motion.button>
+              </motion.div>
+            )}
 
             {/* 响应后的文件索引 */}
             {round.responseFiles &&
               Array.isArray(round.responseFiles) &&
               round.responseFiles.length > 0 && (
-                <div className="mt-3 overflow-x-auto">
+                <div className="mt-3 overflow-hidden">
                   <FileIndexCard
                     data={encodeURIComponent(
                       JSON.stringify(round.responseFiles)
@@ -864,6 +1070,18 @@ export default function AITestDialog({
           )}" />`;
         }
       }
+    );
+
+    // 处理表格，确保表格可以水平滚动
+    processed = processed.replace(
+      /(<table[\s\S]*?<\/table>)/g,
+      '<div class="overflow-x-auto max-w-full">$1</div>'
+    );
+
+    // 确保长链接会换行
+    processed = processed.replace(
+      /(\[.*?\]\(.*?\))/g,
+      '<span class="break-all">$1</span>'
     );
 
     return processed;
@@ -986,7 +1204,7 @@ ${aiResponse}
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white dark:bg-gray-800 w-full h-full flex flex-col">
         {/* 对话框标题栏 - 更现代的设计 */}
-        <div className="bg-white dark:bg-gray-800 px-6 py-3 flex justify-between items-center border-b border-gray-200 dark:border-gray-700">
+        <div className="bg-white dark:bg-gray-800 px-4 sm:px-6 py-3 flex justify-between items-center border-b border-gray-200 dark:border-gray-700">
           <h2 className="text-lg font-semibold text-gray-800 dark:text-white flex items-center">
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -1045,7 +1263,7 @@ ${aiResponse}
         {/* 对话内容区域 - ChatGPT风格 */}
         <div
           ref={contentRef}
-          className="flex-1 overflow-y-auto p-4 md:p-6 bg-gray-50 dark:bg-gray-900"
+          className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6 bg-gray-50 dark:bg-gray-900"
         >
           {dialogRounds.length > 0 ? (
             <div className="max-w-3xl mx-auto w-full">
@@ -1124,7 +1342,7 @@ ${aiResponse}
         </div>
 
         {/* 底部输入区域 - ChatGPT风格 */}
-        <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+        <div className="p-3 sm:p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
           <div className="max-w-3xl mx-auto">
             <form onSubmit={handleCustomInputSubmit} className="relative">
               <input
@@ -1133,10 +1351,10 @@ ${aiResponse}
                 onChange={(e) => setCustomInput(e.target.value)}
                 placeholder={isTesting ? "AI正在思考中..." : "输入您的问题..."}
                 disabled={isTesting || isComplete}
-                className="w-full px-4 py-3 pr-24 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                className="w-full px-3 sm:px-4 py-2.5 sm:py-3 pr-20 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm sm:text-base"
               />
 
-              <div className="absolute right-2 top-2 flex space-x-1">
+              <div className="absolute right-2 top-1.5 sm:top-2 flex space-x-1">
                 {!isTesting && !isComplete && (
                   <button
                     type="button"
@@ -1195,24 +1413,32 @@ ${aiResponse}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 10 }}
+                transition={{
+                  duration: 0.2,
+                  type: "spring",
+                  stiffness: 500,
+                  damping: 30,
+                }}
                 className="mt-3 bg-white dark:bg-gray-750 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden"
               >
-                <div className="p-2 flex flex-col gap-1">
+                <div className="p-2 flex flex-col gap-1 max-h-64 overflow-y-auto">
                   {dialogOptions.map((option) => (
-                    <button
+                    <motion.button
                       key={option.id}
                       onClick={() => handleOptionClick(option)}
-                      className="px-3 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors"
+                      className="px-3 py-2 text-left text-xs sm:text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors break-words"
+                      whileHover={optionHoverStyle}
+                      whileTap={{ scale: 0.98 }}
                     >
                       {option.text}
-                    </button>
+                    </motion.button>
                   ))}
                 </div>
               </motion.div>
             )}
 
             {/* 轮次信息和终止按钮 */}
-            <div className="flex justify-between items-center mt-3 text-xs text-gray-500 dark:text-gray-400">
+            <div className="flex justify-between items-center mt-2 sm:mt-3 text-xs text-gray-500 dark:text-gray-400">
               <div>
                 {currentRound > 0
                   ? t("vectorReport.aiDialog.round", {
