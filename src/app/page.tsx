@@ -2,7 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { useAtom } from "jotai";
-import { directoryHandleAtom, dockerfilesAtom } from "../lib/store";
+import {
+  directoryHandleAtom,
+  dockerfilesAtom,
+  knowledgeModalOpenAtom,
+} from "../lib/store";
 import { useTranslations } from "@/components/LocaleProvider";
 import { useTransitionRouter } from "next-view-transitions";
 import { slideInOut } from "../lib/publicCutscene";
@@ -14,10 +18,14 @@ import ThemeToggle from "../components/ThemeToggle";
 import VersionManager from "../components/VersionManager";
 import SettingsButton from "../components/SettingsModal";
 import BrowserCompatCheck from "../components/BrowserCompatCheck";
+import KnowledgeModal from "../components/KnowledgeModal";
 
 export default function Home() {
   const [directoryHandle] = useAtom(directoryHandleAtom);
   const [dockerfiles] = useAtom(dockerfilesAtom);
+  const [knowledgeModalOpen, setKnowledgeModalOpen] = useAtom(
+    knowledgeModalOpenAtom
+  );
   const { t } = useTranslations();
   const router = useTransitionRouter();
   const [mounted, setMounted] = useState(false);
@@ -163,6 +171,14 @@ export default function Home() {
                           >
                             {t("versionManager.title")}
                           </button>
+
+                          {/* 知识库按钮 */}
+                          <button
+                            onClick={() => setKnowledgeModalOpen(true)}
+                            className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+                          >
+                            {t("knowledgeModal.title")}
+                          </button>
                         </div>
                       </div>
                     )}
@@ -263,9 +279,45 @@ export default function Home() {
 
                     <button
                       onClick={() => setShowVersionModal(true)}
-                      className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition-colors dark:bg-purple-700 dark:hover:bg-purple-800 whitespace-nowrap"
+                      className="text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white px-3 py-2 rounded-md text-sm font-medium flex items-center"
                     >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-5 w-5 mr-1"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
+                      </svg>
                       {t("versionManager.title")}
+                    </button>
+
+                    {/* 知识库按钮 */}
+                    <button
+                      onClick={() => setKnowledgeModalOpen(true)}
+                      className="text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white px-3 py-2 rounded-md text-sm font-medium flex items-center"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-5 w-5 mr-1"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                        />
+                      </svg>
+                      知识库
                     </button>
                   </div>
                 </>
@@ -369,6 +421,9 @@ export default function Home() {
           <VersionManager onClose={() => setShowVersionModal(false)} />
         </div>
       )}
+
+      {/* 引入知识库模态窗口组件 */}
+      <KnowledgeModal />
     </div>
   );
 }

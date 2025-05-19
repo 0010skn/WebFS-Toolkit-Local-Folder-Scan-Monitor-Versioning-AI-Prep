@@ -21,7 +21,8 @@
     "lightModeDescription": "Best for well-lit environments",
     "darkModeDescription": "Reduces eye strain, good for nighttime use",
     "pwaInstall": "Install as App",
-    "pwaInstallDescription": "Install this app on your device for offline use and better experience"
+    "pwaInstallDescription": "Install this app on your device for offline use and better experience",
+    "save": "Save"
   },
   "pwa": {
     "install": "Install App",
@@ -97,7 +98,9 @@
     "directoryType": "Directory",
     "fileType": "File",
     "noContent": "No content to display",
-    "directoryContent": "Directory"
+    "directoryContent": "Directory",
+    "view": "View",
+    "cancel": "Cancel"
   },
   "statistics": {
     "title": "Project Statistics",
@@ -306,6 +309,42 @@
       "optionsTitle": "Select next action:",
       "customInputPlaceholder": "Or input a custom question...",
       "send": "Send"
-    }
+    },
+    "knowledgeResults": "Related Knowledge Entries ({count})",
+    "knowledgeEntries": "Knowledge Entries",
+    "knowledgeContent": "Knowledge Entry Content"
+  },
+  "knowledgeModal": {
+    "title": "Knowledge Base",
+    "description": "Manage your knowledge entries, add, edit, and delete knowledge content.",
+    "createNew": "New",
+    "uploadMd": "Upload MD",
+    "uploadZip": "Upload ZIP",
+    "importLib": "Import Library",
+    "exportLib": "Export Library",
+    "lastScanTime": "Last Scan Time",
+    "privateNotice": "Your knowledge data will only be stored locally in your browser, not uploaded to any server, ensuring your data security and privacy.",
+    "dataSecurityPromise": "Your knowledge data will only be stored locally in your browser, not uploaded to any server, ensuring your data security and privacy.",
+    "titlePlaceholder": "Enter knowledge entry title...",
+    "contentPlaceholder": "Enter content in Markdown format...",
+    "titleImportant": "Critical for vector retrieval, ensure the title accurately summarizes the core content",
+    "searchPlaceholder": "Search knowledge entries...",
+    "emptyMessage": "Knowledge base is empty, start adding your first knowledge entry",
+    "noMatchMessage": "No matching knowledge entries found",
+    "importSuccess": "Successfully imported {total} entries (Added: {added}, Updated: {updated})",
+    "importFailed": "Import failed: {message}",
+    "exportFailed": "Export failed: {message}",
+    "deletionConfirm": "Are you sure you want to delete this knowledge entry?",
+    "deletionFailed": "Deletion failed: {message}",
+    "saveFailed": "Save failed: {message}",
+    "titleRequired": "Title cannot be empty",
+    "importing": "Importing...",
+    "edit": "Edit",
+    "newEntry": "New Entry",
+    "titleLabel": "Title",
+    "contentLabel": "Content (Markdown format)",
+    "selectOrCreateMessage": "Select or create a knowledge entry to view content",
+    "processingZip": "Processing ZIP file...",
+    "zipImportSuccess": "Successfully imported {total} Markdown files from ZIP"
   }
 }

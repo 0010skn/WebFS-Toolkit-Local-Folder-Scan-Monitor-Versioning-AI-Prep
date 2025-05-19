@@ -9,6 +9,7 @@ import {
   Dockerfile,
   EnvFile,
   DockerComposeConfig,
+  KnowledgeStoreState,
 } from "../types";
 import { Locale, getDefaultLocale } from "./i18n";
 
@@ -86,9 +87,10 @@ export const restoreProgressAtom = atom<number>(0);
 export const readmeContentAtom = atom<string | null>(null);
 
 // Docker相关状态
-export const dockerfilesAtom = atom<{ exists: boolean; paths: string[] }>({
+export const dockerfilesAtom = atom<Dockerfile>({
   exists: false,
-  paths: [],
+  path: "",
+  content: "",
 });
 
 export const selectedDockerfileAtom = atom<string>("");
@@ -120,3 +122,28 @@ export const selectedEnvFileAtom = atom<string>("");
 export const envFileContentAtom = atom<string>("");
 export const parsedEnvFileAtom = atom<EnvFile | null>(null);
 export const envFileErrorsAtom = atom<string[]>([]);
+
+// 知识库状态
+export const knowledgeStoreAtom = atom<KnowledgeStoreState>({
+  entries: [],
+  isLoading: false,
+  error: null,
+  currentEntry: null,
+  searchQuery: "",
+});
+
+// 知识库模态窗口显示状态
+export const knowledgeModalOpenAtom = atom<boolean>(false);
+
+// 知识库条目编辑状态
+export const knowledgeEditingAtom = atom<{
+  isEditing: boolean;
+  entryId: string | null;
+  title: string;
+  content: string;
+}>({
+  isEditing: false,
+  entryId: null,
+  title: "",
+  content: "",
+});

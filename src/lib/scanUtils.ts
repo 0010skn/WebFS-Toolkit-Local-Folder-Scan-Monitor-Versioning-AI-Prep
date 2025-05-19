@@ -131,8 +131,8 @@ export async function scanDirectory(
       if (basePath) {
         const dirEntry: FileSystemEntry = {
           name: dirHandle.name,
-          kind: "directory",
           path: basePath,
+          type: "directory",
         };
         localEntries.push(dirEntry);
       }
@@ -172,10 +172,10 @@ export async function scanDirectory(
                 // 创建基本文件条目，不包含内容
                 const entry: FileSystemEntry = {
                   name,
-                  kind: "file",
                   path,
                   lastModified: file.lastModified,
                   size: file.size,
+                  type: "file",
                 };
 
                 // 只读取小型文本文件的内容，提高性能
@@ -275,7 +275,7 @@ export function generateTreeStructure(entries: FileSystemEntry[]): string {
     dirMap.get(parentPath)?.add(entry.path);
 
     // 提取文件中的函数和方法
-    if (entry.kind === "file" && entry.content) {
+    if (entry.type === "file" && entry.content) {
       extractFunctionsAndMethods(
         entry.path,
         entry.content,
@@ -303,11 +303,11 @@ export function generateTreeStructure(entries: FileSystemEntry[]): string {
       const childPrefix = isLast ? "    " : "│   ";
 
       result += `${prefix}${connector}${childName}${
-        entry.kind === "directory" ? "/" : ""
+        entry.type === "directory" ? "/" : ""
       }\n`;
 
       // 如果是文件，并且有提取出的函数/方法，显示这些函数/方法
-      if (entry.kind === "file" && fileFunctionsMap.has(childPath)) {
+      if (entry.type === "file" && fileFunctionsMap.has(childPath)) {
         const functions = fileFunctionsMap.get(childPath) || [];
 
         functions.forEach((func, funcIndex) => {
@@ -336,7 +336,7 @@ export function generateTreeStructure(entries: FileSystemEntry[]): string {
         });
       }
 
-      if (entry.kind === "directory") {
+      if (entry.type === "directory") {
         result += buildTree(childPath, prefix + childPrefix);
       }
     });
@@ -571,7 +571,7 @@ export function generateDiffReport(
       deletedFiles.push(oldEntry);
 
       // 如果是文件夹，记录到删除的文件夹集合中
-      if (oldEntry.kind === "directory") {
+      if (oldEntry.type === "directory") {
         deletedDirs.add(oldEntry.path);
       }
     }
@@ -586,12 +586,12 @@ export function generateDiffReport(
       addedFiles.push(newEntry);
 
       // 如果是文件夹，记录到新增的文件夹集合中
-      if (newEntry.kind === "directory") {
+      if (newEntry.type === "directory") {
         addedDirs.add(newEntry.path);
       }
 
       // 为新增的有内容的文本文件创建差异对象
-      if (newEntry.kind === "file" && newEntry.content) {
+      if (newEntry.type === "file" && newEntry.content) {
         const fileDiff: FileDiff = {
           path: newEntry.path,
           type: "added",
@@ -611,8 +611,8 @@ export function generateDiffReport(
         modifiedFiles.push(fileDiff);
       }
     } else if (
-      newEntry.kind === "file" &&
-      oldEntry.kind === "file" &&
+      newEntry.type === "file" &&
+      oldEntry.type === "file" &&
       newEntry.lastModified !== oldEntry.lastModified
     ) {
       // 修改的文件
@@ -643,7 +643,7 @@ export function generateDiffReport(
   // 过滤掉已被删除的父文件夹内的文件，避免重复显示
   const filteredDeletedFiles = deletedFiles.filter((entry) => {
     // 如果是文件，检查其父目录是否已被删除
-    if (entry.kind === "file") {
+    if (entry.type === "file") {
       const pathParts = entry.path.split("/");
       // 依次检查从根到当前路径的每一级父目录
       for (let i = 1; i < pathParts.length; i++) {
@@ -660,7 +660,7 @@ export function generateDiffReport(
   // 过滤掉已添加的父文件夹内的文件，避免重复显示
   const filteredAddedFiles = addedFiles.filter((entry) => {
     // 如果是文件，检查其父目录是否已被添加
-    if (entry.kind === "file") {
+    if (entry.type === "file") {
       const pathParts = entry.path.split("/");
       // 依次检查从根到当前路径的每一级父目录
       for (let i = 1; i < pathParts.length; i++) {
@@ -717,7 +717,7 @@ function collectCodeStructureInfo(
 
   // 处理每个文件条目，提取函数和方法信息
   entries.forEach((entry) => {
-    if (entry.kind === "file" && entry.content) {
+    if (entry.type === "file" && entry.content) {
       extractFunctionsAndMethods(
         entry.path,
         entry.content,
@@ -745,7 +745,7 @@ function collectCodeStructureInfo(
 
   // 统计代码信息
   const stats = {
-    totalFiles: entries.filter((entry) => entry.kind === "file").length,
+    totalFiles: entries.filter((entry) => entry.type === "file").length,
     totalFunctions: 0,
     totalMethods: 0,
     totalClasses: 0,
@@ -754,7 +754,7 @@ function collectCodeStructureInfo(
 
   // 计算总行数
   entries.forEach((entry) => {
-    if (entry.kind === "file" && entry.content) {
+    if (entry.type === "file" && entry.content) {
       stats.totalLines += entry.content.split("\n").length;
     }
   });
@@ -837,7 +837,7 @@ export function generateTextReport(report: ChangeReport): string {
   if (report.addedFiles.length > 0) {
     result += "## 新增文件和文件夹\n\n";
     report.addedFiles.forEach((file) => {
-      const isDirectory = file.kind === "directory";
+      const isDirectory = file.type === "directory";
       result += `- ${file.path}${isDirectory ? "/" : ""} ${
         isDirectory ? "[目录]" : ""
       }\n`;
@@ -848,7 +848,7 @@ export function generateTextReport(report: ChangeReport): string {
   if (report.deletedFiles.length > 0) {
     result += "## 删除文件和文件夹\n\n";
     report.deletedFiles.forEach((file) => {
-      const isDirectory = file.kind === "directory";
+      const isDirectory = file.type === "directory";
       result += `- ${file.path}${isDirectory ? "/" : ""} ${
         isDirectory ? "[目录]" : ""
       }\n`;
@@ -874,16 +874,16 @@ export function generateTextReport(report: ChangeReport): string {
 
     // 先统计文件和文件夹的数量
     const fileCount = report.allFiles.filter(
-      (file) => file.kind === "file"
+      (file) => file.type === "file"
     ).length;
     const dirCount = report.allFiles.filter(
-      (file) => file.kind === "directory"
+      (file) => file.type === "directory"
     ).length;
 
     result += `共计: ${report.allFiles.length} 个项目 (${fileCount} 个文件, ${dirCount} 个文件夹)\n\n`;
 
     report.allFiles.forEach((file) => {
-      const isDirectory = file.kind === "directory";
+      const isDirectory = file.type === "directory";
       result += `### ${file.path}${isDirectory ? "/" : ""} ${
         isDirectory ? "[目录]" : ""
       }\n\n`;

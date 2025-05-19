@@ -8,6 +8,7 @@ import { currentScanAtom, readmeContentAtom } from "../lib/store";
 import {
   findRelevantFiles,
   parseFilePathsResult,
+  getKnowledgeContent,
 } from "../lib/vectorizeService";
 import AITestDialog from "./AITestDialog";
 
@@ -122,6 +123,7 @@ export default function VectorizeModal({ onClose }: VectorizeModalProps) {
   const [currentScan] = useAtom(currentScanAtom);
   const [readmeContent] = useAtom(readmeContentAtom);
   const [relevantFiles, setRelevantFiles] = useState<string[]>([]);
+  const [relevantKnowledge, setRelevantKnowledge] = useState<string[]>([]);
   const [fileContents, setFileContents] = useState<{ [path: string]: string }>(
     {}
   );
@@ -137,7 +139,7 @@ export default function VectorizeModal({ onClose }: VectorizeModalProps) {
     if (result && relevantFiles.length > 0) {
       // 估算节省的tokens：整个项目文件数 - 相关文件数量，每个文件平均200 tokens
       const totalFiles =
-        currentScan?.entries.filter((entry) => entry.kind === "file").length ||
+        currentScan?.entries.filter((entry) => entry.type === "file").length ||
         0;
       const savedFiles = totalFiles - relevantFiles.length;
       const estimatedTokens = savedFiles * 200;
@@ -158,6 +160,7 @@ export default function VectorizeModal({ onClose }: VectorizeModalProps) {
     setError("");
     setResult("");
     setRelevantFiles([]);
+    setRelevantKnowledge([]);
     setFileContents({});
     setProcessingPhase(t("vectorReport.processingPhases.initializing"));
 
@@ -181,12 +184,18 @@ export default function VectorizeModal({ onClose }: VectorizeModalProps) {
     // 提取所有文件路径和内容（如果启用了内容匹配）
     setProcessingPhase(t("vectorReport.processingPhases.collecting"));
     const filePaths = currentScan.entries
-      .filter((entry) => entry.kind === "file")
+      .filter((entry) => entry.type === "file")
       .map((entry) => entry.path);
 
+    // 添加调试日志
+    console.log("提取的文件路径数量:", filePaths.length);
+    console.log("前5个文件路径:", filePaths.slice(0, 5));
+    console.log("currentScan内容:", currentScan);
+
+    // 修改这里：不要在没有文件时立即返回错误
     if (filePaths.length === 0) {
-      setError(t("vectorReport.noResult"));
-      return;
+      console.warn("没有可用的文件路径，将尝试检索知识库内容");
+      // 不再提前返回错误，继续执行
     }
 
     // 如果启用了内容匹配，准备文件内容数据
@@ -194,7 +203,7 @@ export default function VectorizeModal({ onClose }: VectorizeModalProps) {
     if (enableContentMatching) {
       setProcessingPhase(t("vectorReport.processingPhases.analyzing"));
       currentScan.entries
-        .filter((entry) => entry.kind === "file" && entry.content)
+        .filter((entry) => entry.type === "file" && entry.content)
         .forEach((entry) => {
           fileContentMap[entry.path] = entry.content || "";
         });
@@ -220,48 +229,36 @@ export default function VectorizeModal({ onClose }: VectorizeModalProps) {
         parsedResult.query = query;
       }
 
-      setRelevantFiles(parsedResult.relevant_paths);
+      setRelevantFiles(parsedResult.relevant_paths || []);
+      setRelevantKnowledge(parsedResult.knowledge_entries || []);
 
       // 读取相关文件的内容
       setProcessingPhase(t("vectorReport.processingPhases.extracting"));
       const contents: { [path: string]: string } = {};
 
       // 查找文件内容
-      for (const path of parsedResult.relevant_paths) {
-        const fileEntry = currentScan.entries.find(
-          (entry) => entry.path === path
-        );
-        if (fileEntry && fileEntry.content) {
-          contents[path] = fileEntry.content;
-        } else if (fileEntry) {
-          // 如果找到了文件但没有内容，可能是因为文件太大或非文本文件
-          contents[path] = `[文件内容不可用: ${
-            fileEntry.size
-              ? (fileEntry.size / 1024).toFixed(2) + "KB"
-              : "未知大小"
-          }]`;
-        } else {
-          contents[path] = "[文件未找到]";
+      if (
+        parsedResult.relevant_paths &&
+        parsedResult.relevant_paths.length > 0
+      ) {
+        for (const path of parsedResult.relevant_paths) {
+          const fileEntry = currentScan.entries.find(
+            (entry) => entry.path === path
+          );
+          if (fileEntry && fileEntry.content) {
+            contents[path] = fileEntry.content;
+          } else if (fileEntry) {
+            // 如果找到了文件但没有内容，可能是因为文件太大或非文本文件
+            contents[path] = `[文件内容不可用: ${
+              fileEntry.size
+                ? (fileEntry.size / 1024).toFixed(2) + "KB"
+                : "未知大小"
+            }]`;
+          } else {
+            contents[path] = "[文件未找到]";
+          }
         }
       }
-
-      // 获取所有项目文件路径
-      const allFilePaths = currentScan.entries
-        .filter((entry) => entry.kind === "file")
-        .map((entry) => entry.path);
-
-      // 获取所有MD文件内容
-      const mdFiles: { [path: string]: string } = {};
-      currentScan.entries
-        .filter(
-          (entry) =>
-            entry.kind === "file" && entry.path.toLowerCase().endsWith(".md")
-        )
-        .forEach((entry) => {
-          if (entry.content) {
-            mdFiles[entry.path] = entry.content;
-          }
-        });
 
       setFileContents(contents);
 
@@ -272,24 +269,68 @@ export default function VectorizeModal({ onClose }: VectorizeModalProps) {
       textResult += `## 任务\n${parsedResult.query}\n\n`;
       textResult += `## 用户语言\n${navigator.language}\n\n`;
 
-      textResult += `## 项目结构\n`;
-      currentScan.entries.forEach((entry) => {
-        textResult += `${entry.path}\n`;
-      });
-      textResult += "\n";
+      // 只有当有文件时才添加项目结构
+      if (currentScan.entries && currentScan.entries.length > 0) {
+        textResult += `## 项目结构\n`;
+        currentScan.entries.forEach((entry) => {
+          textResult += `${entry.path}\n`;
+        });
+        textResult += "\n";
+      }
 
       // 添加相关文件列表
-      textResult += `## 相关文件 (${parsedResult.relevant_paths.length}个)\n`;
-      parsedResult.relevant_paths.forEach((path, index) => {
-        textResult += `${index + 1}. ${path}\n`;
-      });
-      textResult += "\n";
+      if (
+        parsedResult.relevant_paths &&
+        parsedResult.relevant_paths.length > 0
+      ) {
+        textResult += `## 相关文件 (${parsedResult.relevant_paths.length}个)\n`;
+        parsedResult.relevant_paths.forEach((path, index) => {
+          textResult += `${index + 1}. ${path}\n`;
+        });
+        textResult += "\n";
+      } else {
+        textResult += `## 相关文件\n未找到相关文件\n\n`;
+      }
+
+      // 添加相关知识库条目列表
+      if (
+        parsedResult.knowledge_entries &&
+        parsedResult.knowledge_entries.length > 0
+      ) {
+        textResult += `## 相关知识库条目 (${parsedResult.knowledge_entries.length}个)\n`;
+
+        try {
+          // 获取知识库条目内容
+          const knowledgeEntries = await getKnowledgeContent();
+          const relevantKnowledgeEntries = knowledgeEntries.filter((entry) =>
+            parsedResult.knowledge_entries.includes(entry.title)
+          );
+
+          if (relevantKnowledgeEntries.length > 0) {
+            for (const entry of relevantKnowledgeEntries) {
+              textResult += `### ${entry.title}\n\`\`\`markdown\n${entry.text}\n\`\`\`\n\n`;
+            }
+          } else {
+            textResult += `未找到相关知识库条目内容\n\n`;
+          }
+        } catch (err) {
+          console.error("获取知识库内容失败:", err);
+          textResult += `获取知识库条目内容时出错\n\n`;
+        }
+      } else {
+        textResult += `## 相关知识库条目\n未找到相关知识库条目\n\n`;
+      }
 
       // 添加文件内容
-      textResult += `## 文件内容\n`;
-      Object.entries(contents).forEach(([path, content]) => {
-        textResult += `\n### ${path}\n\`\`\`\n${content}\n\`\`\`\n`;
-      });
+      if (Object.keys(contents).length > 0) {
+        textResult += `## 文件内容\n`;
+        Object.entries(contents).forEach(([path, content]) => {
+          textResult += `\n### ${path}\n\`\`\`\n${content}\n\`\`\`\n`;
+        });
+      } else {
+        textResult += `## 文件内容\n未找到相关文件内容\n\n`;
+      }
+
       // 生成可视化结果显示，但实际使用文本格式
       setResult(textResult);
 
@@ -341,6 +382,33 @@ export default function VectorizeModal({ onClose }: VectorizeModalProps) {
                 className="text-sm text-gray-700 dark:text-gray-300"
               >
                 {path}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    );
+  };
+
+  // 渲染知识库条目列表
+  const renderKnowledgeList = () => {
+    if (!relevantKnowledge.length) return null;
+
+    return (
+      <div className="mt-4 mb-6">
+        <h4 className="text-md font-medium text-gray-800 dark:text-gray-200 mb-2">
+          {t("vectorReport.knowledgeResults", {
+            count: String(relevantKnowledge.length),
+          })}
+        </h4>
+        <div className="bg-gray-50 dark:bg-gray-700/50 rounded-md p-3 max-h-[200px] overflow-y-auto">
+          <ul className="list-disc pl-5 space-y-1">
+            {relevantKnowledge.map((title, index) => (
+              <li
+                key={index}
+                className="text-sm text-gray-700 dark:text-gray-300"
+              >
+                {title}
               </li>
             ))}
           </ul>
@@ -539,6 +607,7 @@ export default function VectorizeModal({ onClose }: VectorizeModalProps) {
                 className="flex flex-col"
               >
                 {renderFileList()}
+                {renderKnowledgeList()}
 
                 <div className="bg-gray-100 dark:bg-gray-700 p-4 rounded-md">
                   <div className="flex items-center justify-between mb-2">
@@ -614,7 +683,7 @@ export default function VectorizeModal({ onClose }: VectorizeModalProps) {
                         {t("vectorReport.optimization.description", {
                           totalCount: String(
                             currentScan?.entries.filter(
-                              (entry) => entry.kind === "file"
+                              (entry) => entry.type === "file"
                             ).length || 0
                           ),
                           relevantCount: String(relevantFiles.length),
@@ -665,6 +734,29 @@ export default function VectorizeModal({ onClose }: VectorizeModalProps) {
               </motion.div>
             )}
           </AnimatePresence>
+        </div>
+
+        {/* 承诺声明 */}
+        <div className="bg-blue-50 dark:bg-blue-900/20 text-blue-800 dark:text-blue-200 p-3 mb-4 rounded-md text-sm">
+          <p className="font-medium">
+            <span className="inline-flex items-center mr-1">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5 mr-1"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+            </span>
+            {t("knowledgeModal.dataSecurityPromise")}
+          </p>
         </div>
       </div>
 

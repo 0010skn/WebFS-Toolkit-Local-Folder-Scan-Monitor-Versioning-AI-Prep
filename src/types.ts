@@ -3,18 +3,18 @@ declare interface FileSystemSyncAccessHandle {}
 
 // 文件系统条目类型
 export interface FileSystemEntry {
-  name: string;
-  kind: "file" | "directory";
-  path: string;
-  lastModified?: number;
-  size?: number;
-  content?: string;
+  name: string; // 文件/文件夹名称
+  path: string; // 相对路径
+  type: "file" | "directory"; // 类型：文件或目录
+  lastModified?: number; // 最后修改时间
+  size?: number; // 文件大小（字节）
+  content?: string; // 文件内容(仅用于文本文件的变更检测)
 }
 
 // 扫描结果类型
 export interface ScanResult {
-  entries: FileSystemEntry[];
-  timestamp: number;
+  entries: FileSystemEntry[]; // 所有条目，包括文件和目录
+  timestamp: number; // 扫描时间戳
 }
 
 // 文件变化记录类型
@@ -56,20 +56,18 @@ export interface FunctionInfo {
 
 // 变动报告类型
 export interface ChangeReport {
-  timestamp: number;
-  addedFiles: FileSystemEntry[];
-  deletedFiles: FileSystemEntry[];
-  modifiedFiles: FileDiff[];
-  projectStructure: string;
-  allFiles?: FileSystemEntry[]; // 添加所有文件的列表，用于显示所有文件内容
-  codeStructure?: {
-    functions: FunctionInfo[];
-    totalFiles: number;
-    totalFunctions: number;
-    totalMethods: number;
-    totalClasses: number;
-    totalLines: number;
-  };
+  timestamp: number; // 报告时间戳
+  fileChanges: FileChange[]; // 文件变更
+  dirChanges: DirectoryChange[]; // 目录变更
+  gitignoreRules: string[]; // 应用的 .gitignore 规则
+
+  // 添加缺少的字段
+  addedFiles: FileSystemEntry[]; // 新增的文件和文件夹
+  deletedFiles: FileSystemEntry[]; // 删除的文件和文件夹
+  modifiedFiles: FileDiff[]; // 修改的文件及其差异
+  projectStructure: string; // 项目结构字符串表示
+  codeStructure: any; // 代码结构信息
+  allFiles?: FileSystemEntry[]; // 所有文件（可选，仅在showAllFiles=true时存在）
 }
 
 // 版本信息类型
@@ -103,16 +101,9 @@ export interface Stage {
 }
 
 export interface Dockerfile {
-  baseImage: string;
-  stages: Stage[];
-  workdir: string;
-  exposedPorts: Port[];
-  entrypoint: string;
-  cmd: string;
-  env: Record<string, string>;
-  labels: Record<string, string>;
-  hasError: boolean;
-  errors: string[];
+  exists: boolean; // 是否存在
+  path: string; // 路径
+  content: string; // 内容
 }
 
 // 环境变量文件类型
@@ -126,11 +117,10 @@ export interface EnvVariable {
 }
 
 export interface EnvFile {
-  path: string;
-  name: string;
-  variables: EnvVariable[];
-  hasError: boolean;
-  errors: string[];
+  exists: boolean; // 是否存在
+  path: string; // 路径
+  content: string; // 内容
+  parsedEnv?: Record<string, string>; // 解析后的环境变量
 }
 
 // Docker Compose 相关类型
@@ -150,16 +140,98 @@ export interface DockerComposeService {
 }
 
 export interface DockerComposeConfig {
-  version: string;
-  services: DockerComposeService[];
-  networks?: Record<string, any>;
-  volumes?: Record<string, any>;
-  hasError: boolean;
-  errors: string[];
+  exists: boolean; // 是否存在
+  path: string; // 路径
+  content: string; // 内容
+  parsedConfig?: any; // 解析后的配置(JSON)
+  services?: string[]; // 服务列表
 }
 
 // 扫描状态类型
-export type ScanStatus = "idle" | "scanning" | "error";
+export type ScanStatus = "idle" | "scanning" | "preparing" | "error";
 
 // 操作状态类型
 export type OperationStatus = "idle" | "backing-up" | "restoring" | "error";
+
+// 文件变更类型
+export interface FileChange {
+  path: string; // 文件路径
+  type: "added" | "deleted" | "modified"; // 变更类型
+  beforeContent?: string; // 修改前内容
+  afterContent?: string; // 修改后内容
+  diff?: string; // 差异文本
+}
+
+// 目录变更类型
+export interface DirectoryChange {
+  path: string; // 目录路径
+  type: "added" | "deleted"; // 变更类型
+}
+
+// 版本管理配置类型
+export interface VersionConfig {
+  backupInterval: number; // 自动备份间隔（分钟，0表示禁用）
+  maxBackups: number; // 最大备份数量
+  backupPath: string; // 备份路径
+}
+
+// 配置类型
+export interface AppConfig {
+  theme: "light" | "dark" | "system"; // 主题
+  language: string; // 语言
+  autoScan: boolean; // 自动扫描
+  scanInterval: number; // 扫描间隔（秒）
+  versionConfig: VersionConfig; // 版本管理配置
+}
+
+// 用户设置类型
+export interface UserSettings {
+  theme: "light" | "dark" | "system"; // 主题
+  language: string; // 语言
+  autoScan: boolean; // 自动扫描
+  scanInterval: number; // 扫描间隔（秒）
+  enableNotifications: boolean; // 启用通知
+  enableAutoBackup: boolean; // 启用自动备份
+  backupInterval: number; // 备份间隔（分钟）
+}
+
+// Docker镜像标签类型
+export interface DockerImageTag {
+  name: string; // 标签名称
+  description: string; // 标签描述
+  isRecommended: boolean; // 是否推荐
+}
+
+// Docker容器基本配置类型
+export interface DockerContainerConfig {
+  name: string; // 容器名称
+  image: string; // 镜像
+  ports: string[]; // 端口映射
+  environment: Record<string, string>; // 环境变量
+  volumes: string[]; // 卷挂载
+}
+
+// 知识条目类型
+export interface KnowledgeEntry {
+  id: string; // 唯一标识符
+  title: string; // 标题
+  content: string; // Markdown格式内容
+  createdAt: string; // 创建时间
+  updatedAt: string; // 更新时间
+}
+
+// 知识库存储状态
+export interface KnowledgeStoreState {
+  entries: KnowledgeEntry[]; // 知识条目列表
+  isLoading: boolean; // 加载状态
+  error: string | null; // 错误信息
+  currentEntry: KnowledgeEntry | null; // 当前选中的条目
+  searchQuery: string; // 搜索查询
+}
+
+// 知识库文件格式
+export interface KnowledgeLibraryFile {
+  version: string; // 文件版本号
+  entries: KnowledgeEntry[]; // 知识条目数组
+  exportedAt: string; // 导出时间
+}

@@ -7,6 +7,7 @@ import {
   testWithAI,
   findRelevantFiles,
   parseFilePathsResult,
+  getKnowledgeContent,
 } from "../lib/vectorizeService";
 import Markdown from "markdown-to-jsx";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
@@ -17,6 +18,8 @@ import {
 import { useTheme } from "next-themes";
 import { useAtom } from "jotai";
 import { currentScanAtom } from "../lib/store";
+import { KnowledgeEntry } from "../lib/knowledgeService";
+import { FileSystemEntry } from "../types";
 
 interface AITestDialogProps {
   onClose: () => void;
@@ -361,6 +364,7 @@ export default function AITestDialog({
     files?: string[];
     responseFiles?: string[];
     elementRef?: React.RefObject<HTMLDivElement>;
+    knowledgeEntries?: string[]; // 知识库条目标题
   }
 
   // 移除单一testResult状态，改为存储每轮对话的数组
@@ -449,7 +453,7 @@ export default function AITestDialog({
         paths.forEach((path) => {
           // 从当前扫描结果中查找文件内容
           const entry = currentScan?.entries.find(
-            (e) => e.path === path && e.kind === "file"
+            (e) => e.path === path && e.type === "file"
           );
           if (entry && entry.content) {
             fileContents[path] = entry.content;
@@ -464,7 +468,9 @@ export default function AITestDialog({
         fileContents
       );
       const parsedResult = parseFilePathsResult(jsonResult);
-      setIndexedFiles(parsedResult.relevant_paths);
+      const responseIndexedFiles = parsedResult.relevant_paths;
+      const responseKnowledgeEntries = parsedResult.knowledge_entries || [];
+      setIndexedFiles(responseIndexedFiles);
       setIsIndexing(false);
 
       // 创建并设置第一轮对话对象
@@ -473,21 +479,20 @@ export default function AITestDialog({
           userInput: initialPrompt,
           aiResponse: "",
           files:
-            parsedResult.relevant_paths.length > 0
-              ? parsedResult.relevant_paths
-              : undefined,
+            responseIndexedFiles.length > 0 ? responseIndexedFiles : undefined,
+          knowledgeEntries: responseKnowledgeEntries,
           elementRef: currentRoundRef,
         },
       ]);
 
-      // 构建增强的提示，包含文件内容
+      // 构建增强的提示，包含文件内容和知识库内容
       let enhancedPrompt = initialPrompt;
-      if (parsedResult.relevant_paths.length > 0) {
+      if (responseIndexedFiles.length > 0) {
         enhancedPrompt += "\n\n相关文件内容:\n\n";
 
-        for (const path of parsedResult.relevant_paths) {
+        for (const path of responseIndexedFiles) {
           const entry = currentScan?.entries.find(
-            (e) => e.path === path && e.kind === "file"
+            (e) => e.path === path && e.type === "file"
           );
           if (entry && entry.content) {
             // 限制文件内容长度
@@ -500,9 +505,29 @@ export default function AITestDialog({
           }
         }
 
+        // 添加知识库条目内容
+        const knowledgeEntries = await getKnowledgeContent();
+        const relevantEntries = knowledgeEntries.filter((entry) =>
+          responseKnowledgeEntries.includes(entry.title)
+        );
+
+        if (relevantEntries.length > 0) {
+          enhancedPrompt += "\n\n相关知识库条目:\n\n";
+
+          for (const entry of relevantEntries) {
+            // 限制知识库条目内容长度
+            const truncatedContent =
+              entry.text.length > 2000
+                ? entry.text.substring(0, 2000) + "..."
+                : entry.text;
+
+            enhancedPrompt += `知识条目: ${entry.title}\n\`\`\`markdown\n${truncatedContent}\n\`\`\`\n\n`;
+          }
+        }
+
         // 添加明确指示，避免AI调用工具
         enhancedPrompt +=
-          "\n\n请直接基于以上提供的文件内容回答问题，不要调用工具来获取文件内容，因为所有必要的文件内容已经提供给你了。";
+          "\n\n请直接基于以上提供的文件内容和知识库条目回答问题，不要调用工具来获取文件内容，因为所有必要的内容已经提供给你了。";
       }
 
       // 只进行第一轮对话，后续轮次由用户选择
@@ -566,6 +591,8 @@ export default function AITestDialog({
             );
             const newParsedResult = parseFilePathsResult(newJsonResult);
             const responseIndexedFiles = newParsedResult.relevant_paths;
+            const responseKnowledgeEntries =
+              newParsedResult.knowledge_entries || [];
 
             // 如果找到了新的相关文件，更新索引
             if (responseIndexedFiles.length > 0) {
@@ -576,6 +603,7 @@ export default function AITestDialog({
                   updated[0] = {
                     ...updated[0],
                     responseFiles: responseIndexedFiles,
+                    knowledgeEntries: responseKnowledgeEntries,
                   };
                   return updated;
                 }
@@ -652,7 +680,7 @@ export default function AITestDialog({
         paths.forEach((path) => {
           // 从当前扫描结果中查找文件内容
           const entry = currentScan?.entries.find(
-            (e) => e.path === path && e.kind === "file"
+            (e) => e.path === path && e.type === "file"
           );
           if (entry && entry.content) {
             fileContents[path] = entry.content;
@@ -664,6 +692,7 @@ export default function AITestDialog({
       const jsonResult = await findRelevantFiles(input, paths, fileContents);
       const parsedResult = parseFilePathsResult(jsonResult);
       const newIndexedFiles = parsedResult.relevant_paths;
+      const newKnowledgeEntries = parsedResult.knowledge_entries || [];
       setIndexedFiles(newIndexedFiles);
       setIsIndexing(false);
 
@@ -672,17 +701,24 @@ export default function AITestDialog({
         newRound.files = newIndexedFiles;
       }
 
+      // 如果找到了相关知识库条目，添加到当前轮次
+      if (newKnowledgeEntries.length > 0) {
+        newRound.knowledgeEntries = newKnowledgeEntries;
+      }
+
       // 添加新轮次到对话轮次数组，以便UI立即显示用户消息
       setDialogRounds((prev) => [...prev, newRound]);
 
-      // 构建增强的提示，包含文件内容
+      // 构建增强的提示，包含文件内容和知识库内容
       let enhancedInput = input;
+
+      // 添加相关文件内容
       if (newIndexedFiles.length > 0) {
         enhancedInput += "\n\n相关文件内容:\n\n";
 
         for (const path of newIndexedFiles) {
           const entry = currentScan?.entries.find(
-            (e) => e.path === path && e.kind === "file"
+            (e) => e.path === path && e.type === "file"
           );
           if (entry && entry.content) {
             // 限制文件内容长度，但增加到3000字符以包含更多上下文
@@ -694,11 +730,33 @@ export default function AITestDialog({
             enhancedInput += `文件: ${path}\n\`\`\`\n${truncatedContent}\n\`\`\`\n\n`;
           }
         }
-
-        // 添加明确指示，避免AI调用工具
-        enhancedInput +=
-          "\n\n请直接基于以上提供的文件内容回答问题，不要调用工具来获取文件内容，因为所有必要的文件内容已经提供给你了。";
       }
+
+      // 添加相关知识库条目内容
+      if (newKnowledgeEntries.length > 0) {
+        const knowledgeEntries = await getKnowledgeContent();
+        const relevantEntries = knowledgeEntries.filter((entry) =>
+          newKnowledgeEntries.includes(entry.title)
+        );
+
+        if (relevantEntries.length > 0) {
+          enhancedInput += "\n\n相关知识库条目:\n\n";
+
+          for (const entry of relevantEntries) {
+            // 限制知识库条目内容长度
+            const truncatedContent =
+              entry.text.length > 2000
+                ? entry.text.substring(0, 2000) + "..."
+                : entry.text;
+
+            enhancedInput += `知识条目: ${entry.title}\n\`\`\`markdown\n${truncatedContent}\n\`\`\`\n\n`;
+          }
+        }
+      }
+
+      // 添加明确指示，避免AI调用工具
+      enhancedInput +=
+        "\n\n请直接基于以上提供的文件内容和知识库条目回答问题，不要调用工具来获取文件内容，因为所有必要的内容已经提供给你了。";
 
       // 构建系统提示
       const nextRound = currentRound + 1;
@@ -789,6 +847,8 @@ export default function AITestDialog({
               );
               const newParsedResult = parseFilePathsResult(newJsonResult);
               const responseIndexedFiles = newParsedResult.relevant_paths;
+              const responseKnowledgeEntries =
+                newParsedResult.knowledge_entries || [];
 
               // 如果找到了新的相关文件，更新索引
               if (responseIndexedFiles.length > 0) {
@@ -800,6 +860,7 @@ export default function AITestDialog({
                     updated[lastIndex] = {
                       ...updated[lastIndex],
                       responseFiles: responseIndexedFiles,
+                      knowledgeEntries: responseKnowledgeEntries,
                     };
                     return updated;
                   }

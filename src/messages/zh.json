@@ -21,7 +21,8 @@
     "lightModeDescription": "适合在光线充足的环境中使用",
     "darkModeDescription": "减少眼睛疲劳，适合夜间使用",
     "pwaInstall": "将网页安装为应用",
-    "pwaInstallDescription": "安装此应用到您的设备，以便离线使用和获得更好的体验"
+    "pwaInstallDescription": "安装此应用到您的设备，以便离线使用和获得更好的体验",
+    "save": "保存"
   },
   "pwa": {
     "install": "安装应用",
@@ -97,7 +98,9 @@
     "directoryType": "文件夹",
     "fileType": "文件",
     "noContent": "无内容可显示",
-    "directoryContent": "文件夹"
+    "directoryContent": "文件夹",
+    "view": "查看",
+    "cancel": "取消"
   },
   "docker": {
     "title": "Docker",
@@ -310,6 +313,42 @@
       "optionsTitle": "选择下一步操作:",
       "customInputPlaceholder": "或输入自定义问题...",
       "send": "发送"
-    }
+    },
+    "knowledgeResults": "相关知识库条目 ({count})",
+    "knowledgeEntries": "知识库条目",
+    "knowledgeContent": "知识库条目内容"
+  },
+  "knowledgeModal": {
+    "title": "知识库",
+    "description": "在这里管理您的知识库条目，添加、编辑和删除知识内容。",
+    "createNew": "新建",
+    "uploadMd": "上传MD",
+    "uploadZip": "上传ZIP",
+    "importLib": "导入库",
+    "exportLib": "导出库",
+    "lastScanTime": "最后扫描时间",
+    "dataSecurityPromise": "您的知识库数据将仅存储在您的浏览器本地，不会上传到任何服务器，确保您的数据安全与隐私。",
+    "privateNotice": "您的知识库数据将仅存储在您的浏览器本地，不会上传到任何服务器，确保您的数据安全与隐私。",
+    "titlePlaceholder": "输入知识条目标题...",
+    "contentPlaceholder": "输入Markdown格式的内容...",
+    "titleImportant": "对后续的向量检索至关重要，请确保标题能够准确概括内容核心",
+    "searchPlaceholder": "搜索知识条目...",
+    "emptyMessage": "知识库为空，开始添加您的第一条知识",
+    "noMatchMessage": "没有找到匹配的知识条目",
+    "importSuccess": "成功导入 {total} 个条目（新增: {added}, 更新: {updated}）",
+    "importFailed": "导入失败: {message}",
+    "exportFailed": "导出失败: {message}",
+    "deletionConfirm": "确定要删除这个知识条目吗？",
+    "deletionFailed": "删除失败: {message}",
+    "saveFailed": "保存失败: {message}",
+    "titleRequired": "标题不能为空",
+    "importing": "导入中...",
+    "edit": "编辑",
+    "newEntry": "新建条目",
+    "titleLabel": "标题",
+    "contentLabel": "内容 (Markdown格式)",
+    "selectOrCreateMessage": "选择或创建一个知识条目来查看内容",
+    "processingZip": "处理ZIP文件中...",
+    "zipImportSuccess": "成功从ZIP文件导入 {total} 个Markdown文件"
   }
 }

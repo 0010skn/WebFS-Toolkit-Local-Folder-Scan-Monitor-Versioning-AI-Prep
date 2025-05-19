@@ -3,6 +3,8 @@
  * 提供文件路径定位和语义分析功能
  */
 
+import { getAllKnowledgeEntries } from "./knowledgeService";
+
 // 基本配置
 const API_URL = "https://text.pollinations.ai/openai";
 
@@ -298,11 +300,11 @@ async function simulateRound(
 }
 
 /**
- * 查找与查询相关的文件路径
+ * 查找与查询相关的文件路径和知识库条目
  * @param query 查询字符串
  * @param filePaths 文件路径数组
  * @param fileContents 可选的文件内容映射
- * @returns 包含相关文件路径的JSON字符串
+ * @returns 包含相关文件路径和知识库条目的JSON字符串
  */
 export async function findRelevantFiles(
   query: string,
@@ -310,23 +312,52 @@ export async function findRelevantFiles(
   fileContents?: { [path: string]: string }
 ): Promise<string> {
   try {
+    // 添加调试日志
+    console.log("vectorizeService收到的filePaths:", filePaths);
+    console.log("filePaths是否为数组:", Array.isArray(filePaths));
+    console.log("filePaths长度:", filePaths ? filePaths.length : "undefined");
+    console.log("filePaths类型:", typeof filePaths);
+
+    // 获取知识库内容
+    const knowledgeEntries = await getKnowledgeContent();
+
+    // 移除这个检查，确保即使没有文件或知识库内容也能继续处理
+    // 如果文件路径为空，则返回空结果但不中断处理
     if (!filePaths || filePaths.length === 0) {
-      return JSON.stringify({
-        query,
-        relevant_paths: [],
-      });
+      console.warn("没有提供文件路径，将只检索知识库内容");
+      // 如果知识库也为空，则返回空结果
+      if (knowledgeEntries.length === 0) {
+        console.warn("知识库也为空，返回空结果");
+      }
+      // 不再提前返回，继续执行向量匹配逻辑
     }
 
     // 构建提示
-    let prompt = `你是一个专业的代码项目分析工具，你的任务是分析用户的查询，并从项目中找出与查询最相关的文件。
-请基于文件路径和文件名的语义相关性，找出最相关的文件。
+    let prompt = `你是一个专业的代码项目分析工具，你的任务是分析用户的查询，并从项目中找出与查询最相关的文件和知识库条目。
+请基于文件路径、文件名以及知识库条目标题的语义相关性，找出最相关的资源。
 如果提供了文件内容，也请考虑内容的相关性。
 
 用户查询: "${query}"
 
-可用的文件路径:
-${filePaths.join("\n")}
-`;
+可用的文件路径:`;
+
+    // 添加文件路径信息
+    if (filePaths && Array.isArray(filePaths) && filePaths.length > 0) {
+      // 每行一个文件路径
+      prompt += "\n" + filePaths.join("\n");
+    } else {
+      prompt += "\n没有可用的文件路径";
+    }
+
+    // 添加知识库条目信息
+    if (knowledgeEntries.length > 0) {
+      prompt += `\n\n可用的知识库条目标题:\n`;
+      knowledgeEntries.forEach((entry, index) => {
+        prompt += `${index + 1}. ${entry.title}\n`;
+      });
+    } else {
+      prompt += `\n\n没有可用的知识库条目\n`;
+    }
 
     // 如果提供了文件内容，添加到提示中以提高搜索质量
     if (fileContents && Object.keys(fileContents).length > 0) {
@@ -348,14 +379,18 @@ ${filePaths.join("\n")}
       }
     }
 
-    prompt += `\n请返回与查询最相关的文件路径列表（最多10个），按相关性从高到低排序。
+    prompt += `\n请返回与查询最相关的资源列表，包括文件路径和知识库条目标题，按相关性从高到低排序。
+每类资源最多返回10个，按相关性从高到低排序。
+必须确保返回至少2个相关文件路径，即使匹配度不高也要返回最相关的几个。
 只返回JSON格式，不要有任何其他解释。格式如下:
 {
   "query": "用户查询",
-  "relevant_paths": ["文件路径1", "文件路径2", ...]
+  "relevant_paths": ["文件路径1", "文件路径2", ...],
+  "knowledge_entries": ["知识条目标题1", "知识条目标题2", ...]
 }`;
 
-    // 调用API获取相关文件
+    // 调用API获取相关资源
+    console.log("正在调用API，发送的prompt:", prompt);
     const response = await fetch("https://text.pollinations.ai/openai", {
       method: "POST",
       headers: {
@@ -367,7 +402,7 @@ ${filePaths.join("\n")}
           {
             role: "system",
             content:
-              "你是一个专业的代码项目分析工具，你的任务是分析用户的查询，并从项目中找出与查询最相关的文件。",
+              "你是一个专业的代码项目分析工具，你的任务是分析用户的查询，并从项目中找出与查询最相关的文件和知识库条目。必须至少返回2个相关文件路径，即使相关性不高。",
           },
           { role: "user", content: prompt },
         ],
@@ -381,6 +416,7 @@ ${filePaths.join("\n")}
 
     const result = await response.json();
     const content = result.choices[0].message.content;
+    console.log("API返回内容:", content);
 
     // 尝试解析JSON
     try {
@@ -392,36 +428,66 @@ ${filePaths.join("\n")}
 
       // 确保返回的是有效的格式
       if (!parsed.relevant_paths || !Array.isArray(parsed.relevant_paths)) {
-        throw new Error("Invalid response format");
+        parsed.relevant_paths = [];
       }
 
-      return jsonContent;
+      // 确保知识库条目字段存在
+      if (
+        !parsed.knowledge_entries ||
+        !Array.isArray(parsed.knowledge_entries)
+      ) {
+        parsed.knowledge_entries = [];
+      }
+
+      // 如果文件路径为空，但有可用的文件路径，至少返回前两个
+      if (
+        parsed.relevant_paths.length === 0 &&
+        filePaths &&
+        filePaths.length > 0
+      ) {
+        console.warn("API返回的relevant_paths为空，将添加默认文件");
+        parsed.relevant_paths = filePaths.slice(
+          0,
+          Math.min(5, filePaths.length)
+        );
+      }
+
+      return JSON.stringify(parsed);
     } catch (error) {
-      console.error("解析文件路径结果出错:", error);
-      // 如果解析失败，返回空结果
-      return JSON.stringify({
+      console.error("解析相关资源结果出错:", error);
+      // 如果解析失败，返回带默认文件路径的结果
+      const defaultResult = {
         query,
-        relevant_paths: [],
-      });
+        relevant_paths: filePaths
+          ? filePaths.slice(0, Math.min(5, filePaths.length))
+          : [],
+        knowledge_entries: [],
+      };
+      return JSON.stringify(defaultResult);
     }
   } catch (error) {
-    console.error("查找相关文件出错:", error);
-    // 如果出错，返回空结果
-    return JSON.stringify({
+    console.error("查找相关资源出错:", error);
+    // 如果出错，返回带默认文件路径的结果
+    const defaultResult = {
       query,
-      relevant_paths: [],
-    });
+      relevant_paths: filePaths
+        ? filePaths.slice(0, Math.min(5, filePaths.length))
+        : [],
+      knowledge_entries: [],
+    };
+    return JSON.stringify(defaultResult);
   }
 }
 
 /**
- * 解析文件路径查询结果
- * @param jsonString 文件路径查询返回的JSON字符串
+ * 解析文件路径和知识库条目查询结果
+ * @param jsonString 查询返回的JSON字符串
  * @returns 解析后的结果对象
  */
 export function parseFilePathsResult(jsonString: string): {
   query: string;
   relevant_paths: string[];
+  knowledge_entries: string[];
 } {
   try {
     // 首先检查输入是否为空或非字符串
@@ -429,6 +495,7 @@ export function parseFilePathsResult(jsonString: string): {
       return {
         query: "",
         relevant_paths: [],
+        knowledge_entries: [],
       };
     }
 
@@ -446,6 +513,7 @@ export function parseFilePathsResult(jsonString: string): {
       return {
         query: "",
         relevant_paths: [],
+        knowledge_entries: [],
       };
     }
 
@@ -459,26 +527,155 @@ export function parseFilePathsResult(jsonString: string): {
     const result = JSON.parse(jsonToParse);
 
     // 验证结果格式
-    if (!result.query || !Array.isArray(result.relevant_paths)) {
-      console.warn("JSON格式不完整:", result);
-      return {
-        query: result.query || "",
-        relevant_paths: Array.isArray(result.relevant_paths)
-          ? result.relevant_paths
-          : [],
-      };
+    if (!result.query) {
+      console.warn("JSON格式不完整 - 缺少query字段:", result);
+      result.query = "";
+    }
+
+    if (!Array.isArray(result.relevant_paths)) {
+      console.warn(
+        "JSON格式不完整 - 缺少relevant_paths字段或格式不正确:",
+        result
+      );
+      result.relevant_paths = [];
+    }
+
+    if (!Array.isArray(result.knowledge_entries)) {
+      console.warn(
+        "JSON格式不完整 - 缺少knowledge_entries字段或格式不正确:",
+        result
+      );
+      result.knowledge_entries = [];
     }
 
     return {
-      query: result.query,
-      relevant_paths: result.relevant_paths,
+      query: result.query || "",
+      relevant_paths: Array.isArray(result.relevant_paths)
+        ? result.relevant_paths
+        : [],
+      knowledge_entries: Array.isArray(result.knowledge_entries)
+        ? result.knowledge_entries
+        : [],
     };
   } catch (error) {
-    console.error("Error parsing file paths result:", error);
+    console.error("Error parsing resources result:", error);
     // 返回默认值
     return {
       query: "",
       relevant_paths: [],
+      knowledge_entries: [],
     };
   }
+}
+
+/**
+ * 从知识库获取内容进行向量化
+ * 将知识库中的条目转换为可向量化的文本
+ */
+export async function getKnowledgeContent(): Promise<
+  { id: string; text: string; title: string }[]
+> {
+  try {
+    const entries = await getAllKnowledgeEntries();
+
+    return entries.map((entry) => ({
+      id: entry.id,
+      text: entry.content,
+      title: entry.title,
+    }));
+  } catch (error) {
+    console.error("获取知识库内容失败:", error);
+    return [];
+  }
+}
+
+/**
+ * 向量化文本内容
+ * @param text 要向量化的文本内容
+ */
+export async function vectorizeText(text: string): Promise<number[] | null> {
+  // 向量化实现
+  // 这里使用简化的算法，真实场景请使用合适的嵌入模型
+  try {
+    // 实际应用中应该调用embedding API获取文本向量
+    // 这里使用假数据模拟向量
+    const vector = new Array(128).fill(0).map(() => Math.random());
+    return vector;
+  } catch (error) {
+    console.error("向量化文本失败:", error);
+    return null;
+  }
+}
+
+/**
+ * 向量化所有内容（文件和知识库）
+ */
+export async function vectorizeAllContent(
+  files: { path: string; content: string }[] = []
+): Promise<
+  {
+    id: string;
+    vector: number[];
+    metadata: {
+      type: string;
+      title: string;
+      content: string;
+      path?: string;
+    };
+  }[]
+> {
+  // 存储所有向量化的文档
+  const vectorizedDocuments: {
+    id: string;
+    vector: number[];
+    metadata: {
+      type: string;
+      title: string;
+      content: string;
+      path?: string;
+    };
+  }[] = [];
+
+  // 向量化文件内容
+  for (const file of files) {
+    const vectorizedData = await vectorizeText(file.content);
+
+    if (vectorizedData) {
+      vectorizedDocuments.push({
+        id: `file-${file.path}`,
+        vector: vectorizedData,
+        metadata: {
+          type: "file",
+          title: file.path.split("/").pop() || file.path,
+          content: file.content,
+          path: file.path,
+        },
+      });
+    }
+  }
+
+  // 添加知识库内容
+  try {
+    const knowledgeEntries = await getKnowledgeContent();
+
+    for (const entry of knowledgeEntries) {
+      const vectorizedData = await vectorizeText(entry.text);
+
+      if (vectorizedData) {
+        vectorizedDocuments.push({
+          id: `knowledge-${entry.id}`,
+          vector: vectorizedData,
+          metadata: {
+            type: "knowledge",
+            title: entry.title,
+            content: entry.text,
+          },
+        });
+      }
+    }
+  } catch (error) {
+    console.error("向量化知识库内容失败:", error);
+  }
+
+  return vectorizedDocuments;
 }
