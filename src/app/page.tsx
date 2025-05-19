@@ -317,7 +317,7 @@ export default function Home() {
                           d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
                         />
                       </svg>
-                      知识库
+                      {t("knowledgeModal.title")}
                     </button>
                   </div>
                 </>
@@ -338,13 +338,18 @@ export default function Home() {
             className="flex-1 flex items-center justify-center p-4"
           >
             <div className="max-w-md w-full mx-auto">
-              <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden transition-colors duration-300">
-                <div className="p-8">
-                  <div className="text-center mb-8">
-                    <div className="inline-block p-4 bg-blue-50 dark:bg-blue-900/30 rounded-full mb-4">
+              <div className="bg-white dark:bg-[#343541] rounded-md shadow-sm overflow-hidden transition-colors duration-300 border border-gray-100 dark:border-gray-600">
+                <div className="p-6">
+                  <div className="text-center mb-6">
+                    <motion.div
+                      initial={{ scale: 0.9, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{ duration: 0.3 }}
+                      className="inline-block p-4 bg-[#f0f4f9] dark:bg-[#444654] rounded-md mb-5"
+                    >
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
-                        className="h-12 w-12 text-blue-500"
+                        className="h-10 w-10 text-[#10a37f]"
                         fill="none"
                         viewBox="0 0 24 24"
                         stroke="currentColor"
@@ -356,20 +361,41 @@ export default function Home() {
                           d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"
                         />
                       </svg>
-                    </div>
-                    <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">
+                    </motion.div>
+                    <motion.h2
+                      initial={{ y: 10, opacity: 0 }}
+                      animate={{ y: 0, opacity: 1 }}
+                      transition={{ delay: 0.1, duration: 0.3 }}
+                      className="text-2xl font-medium text-gray-900 dark:text-white"
+                    >
                       {t("folderPicker.welcomeTitle")}
-                    </h2>
-                    <p className="mt-2 text-gray-600 dark:text-gray-300">
+                    </motion.h2>
+                    <motion.p
+                      initial={{ y: 10, opacity: 0 }}
+                      animate={{ y: 0, opacity: 1 }}
+                      transition={{ delay: 0.2, duration: 0.3 }}
+                      className="mt-2 text-gray-600 dark:text-gray-300 text-sm"
+                    >
                       {t("folderPicker.welcomeDescription")}
-                    </p>
+                    </motion.p>
                   </div>
 
-                  <FolderPicker />
+                  <motion.div
+                    initial={{ y: 10, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ delay: 0.3, duration: 0.3 }}
+                  >
+                    <FolderPicker />
+                  </motion.div>
 
-                  <div className="mt-6 text-center text-sm text-gray-500 dark:text-gray-400">
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.4, duration: 0.3 }}
+                    className="mt-6 text-center text-xs text-gray-500 dark:text-gray-400"
+                  >
                     <p>{t("folderPicker.privacyNote")}</p>
-                  </div>
+                  </motion.div>
                 </div>
               </div>
             </div>

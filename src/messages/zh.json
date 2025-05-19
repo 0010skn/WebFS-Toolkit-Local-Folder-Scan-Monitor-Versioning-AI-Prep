@@ -48,7 +48,11 @@
     "welcomeTitle": "欢迎使用 Folda-Scan",
     "welcomeDescription": "请选择一个项目文件夹开始扫描和监控",
     "privacyNote": "所有操作均在本地进行，不会上传您的文件",
-    "changeFolder": "更换文件夹"
+    "changeFolder": "更换文件夹",
+    "selectedFolder": "已选择的文件夹",
+    "ready": "就绪",
+    "errorTitle": "出错了",
+    "dismiss": "关闭"
   },
   "scanControls": {
     "startScan": "开始扫描",

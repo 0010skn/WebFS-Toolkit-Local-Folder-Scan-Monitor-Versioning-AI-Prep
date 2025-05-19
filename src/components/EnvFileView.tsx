@@ -158,11 +158,13 @@ export default function EnvFileView() {
             onChange={handleEnvFileChange}
             className="block w-64 rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
           >
-            {envFiles.paths.map((path) => (
-              <option key={path} value={path}>
-                {path}
-              </option>
-            ))}
+            {envFiles &&
+              envFiles.paths &&
+              envFiles.paths.map((path) => (
+                <option key={path} value={path}>
+                  {path}
+                </option>
+              ))}
           </select>
 
           <button

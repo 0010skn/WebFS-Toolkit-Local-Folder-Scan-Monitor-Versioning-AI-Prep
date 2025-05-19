@@ -101,9 +101,19 @@ export interface Stage {
 }
 
 export interface Dockerfile {
-  exists: boolean; // 是否存在
-  path: string; // 路径
-  content: string; // 内容
+  baseImage?: string;
+  stages?: Stage[];
+  workdir?: string;
+  exposedPorts?: Port[];
+  entrypoint?: string;
+  cmd?: string;
+  env?: Record<string, string>;
+  labels?: Record<string, string>;
+  hasError?: boolean;
+  errors?: string[];
+  exists?: boolean; // 是否存在
+  path?: string; // 路径
+  content?: string; // 内容
 }
 
 // 环境变量文件类型
@@ -117,10 +127,14 @@ export interface EnvVariable {
 }
 
 export interface EnvFile {
-  exists: boolean; // 是否存在
-  path: string; // 路径
-  content: string; // 内容
+  exists?: boolean; // 是否存在
+  path?: string; // 路径
+  content?: string; // 内容
   parsedEnv?: Record<string, string>; // 解析后的环境变量
+  name?: string; // 文件名
+  variables?: EnvVariable[]; // 解析后的环境变量列表
+  hasError?: boolean; // 是否有错误
+  errors?: string[]; // 错误信息
 }
 
 // Docker Compose 相关类型

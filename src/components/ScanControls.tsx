@@ -127,6 +127,7 @@ export default function ScanControls() {
     const checkForDockerfiles = async () => {
       try {
         const result = await detectDockerfile(directoryHandle);
+        // 直接设置结果，因为dockerfilesAtom现在与detectDockerfile返回类型匹配
         setDockerfiles(result);
         if (result.exists) {
           console.log("项目中检测到Docker文件:", result.paths);
@@ -472,324 +473,268 @@ export default function ScanControls() {
         )}
       </AnimatePresence>
 
-      <div className="flex flex-wrap gap-3 mb-3">
-        <motion.button
-          onClick={handleScan}
-          disabled={scanStatus === "scanning"}
-          className={`px-4 py-2 rounded-md text-white transition-colors ${
-            scanStatus === "scanning"
-              ? "bg-gray-400 cursor-not-allowed"
-              : "bg-blue-600 hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-          }`}
-          whileHover={{ scale: scanStatus === "scanning" ? 1 : 1.05 }}
-          whileTap={{ scale: scanStatus === "scanning" ? 1 : 0.95 }}
-          transition={{ type: "spring", stiffness: 400, damping: 10 }}
-        >
-          <span className="flex items-center">
-            {scanStatus === "scanning" ? (
-              <>
-                <motion.svg
-                  className="-ml-1 mr-2 h-5 w-5 text-white"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  animate={{
-                    rotate: 360,
-                    scale: [1, 1.1, 1],
-                  }}
-                  transition={{
-                    rotate: {
-                      duration: 1.5,
-                      repeat: Infinity,
-                      ease: "linear",
-                    },
-                    scale: {
-                      duration: 1,
-                      repeat: Infinity,
-                      ease: "easeInOut",
-                    },
-                  }}
-                >
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  ></circle>
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  ></path>
-                </motion.svg>
-                <motion.span
-                  animate={{ opacity: [0.6, 1, 0.6] }}
-                  transition={{
-                    duration: 1.5,
-                    repeat: Infinity,
-                    ease: "easeInOut",
-                  }}
-                >
-                  {t("scanControls.scanning")}
-                </motion.span>
-              </>
-            ) : (
-              <>
-                <motion.svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5 mr-2"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  animate={{ scale: [1, 1.1, 1] }}
-                  transition={{
-                    duration: 2,
-                    repeat: Infinity,
-                    ease: "easeInOut",
-                  }}
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                  />
-                </motion.svg>
-                {t("scanControls.startScan")}
-              </>
-            )}
-          </span>
-        </motion.button>
-
-        <motion.button
-          onClick={toggleMonitoring}
-          disabled={scanStatus === "scanning"}
-          className={`px-4 py-2 rounded-md text-white transition-colors flex items-center relative ${
-            scanStatus === "scanning"
-              ? "bg-gray-400 cursor-not-allowed"
-              : isMonitoring
-              ? "bg-red-500 hover:bg-red-600 focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
-              : "bg-green-600 hover:bg-green-700 focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
-          }`}
-          whileHover={{ scale: scanStatus === "scanning" ? 1 : 1.05 }}
-          whileTap={{ scale: scanStatus === "scanning" ? 1 : 0.95 }}
-          transition={{ type: "spring", stiffness: 400, damping: 10 }}
-        >
-          {isMonitoring && showPulse && (
-            <motion.span
-              initial={{ opacity: 0.7, scale: 1 }}
-              animate={{ opacity: 0, scale: 1.5 }}
-              transition={{ duration: 1, repeat: Infinity }}
-              className="absolute inset-0 bg-red-400 rounded-md z-0"
-            ></motion.span>
-          )}
-          <span className="flex items-center relative z-10">
-            {isMonitoring ? (
-              <>
-                <motion.svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5 mr-2"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  animate={{ scale: [1, 1.2, 1] }}
-                  transition={{
-                    duration: 1,
-                    repeat: Infinity,
-                    ease: "easeInOut",
-                  }}
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"
-                  />
-                </motion.svg>
-                <motion.span
-                  animate={{ opacity: [0.6, 1, 0.6] }}
-                  transition={{
-                    duration: 1.5,
-                    repeat: Infinity,
-                    ease: "easeInOut",
-                  }}
-                >
-                  {t("scanControls.stopMonitoring")}
-                </motion.span>
-              </>
-            ) : (
-              <>
-                <motion.svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5 mr-2"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  animate={{
-                    rotate: [0, 10, 0, -10, 0],
-                    scale: [1, 1.1, 1],
-                  }}
-                  transition={{
-                    rotate: {
-                      duration: 1.5,
-                      repeat: Infinity,
-                      ease: "easeInOut",
-                    },
-                    scale: { duration: 2, repeat: Infinity, ease: "easeInOut" },
-                  }}
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
-                  />
-                </motion.svg>
-                {t("scanControls.startMonitoring")}
-              </>
-            )}
-          </span>
-        </motion.button>
-
-        <motion.button
-          onClick={handleDownloadReport}
-          disabled={isDownloading || !currentScan}
-          className={`px-4 py-2 rounded-md text-white transition-colors ${
-            isDownloading || !currentScan
-              ? "bg-gray-400 cursor-not-allowed"
-              : "bg-indigo-600 hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-          }`}
-          whileHover={{ scale: isDownloading || !currentScan ? 1 : 1.05 }}
-          whileTap={{ scale: isDownloading || !currentScan ? 1 : 0.95 }}
-          transition={{ type: "spring", stiffness: 400, damping: 10 }}
-        >
-          <span className="flex items-center">
-            {isDownloading || scanStatus === "preparing" ? (
-              <>
-                <motion.svg
-                  className="-ml-1 mr-2 h-5 w-5 text-white"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  animate={{
-                    rotate: 360,
-                    scale: [1, 1.1, 1],
-                  }}
-                  transition={{
-                    rotate: {
-                      duration: 1.5,
-                      repeat: Infinity,
-                      ease: "linear",
-                    },
-                    scale: {
-                      duration: 1,
-                      repeat: Infinity,
-                      ease: "easeInOut",
-                    },
-                  }}
-                >
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  ></circle>
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  ></path>
-                </motion.svg>
-                <motion.span
-                  animate={{ opacity: [0.6, 1, 0.6] }}
-                  transition={{
-                    duration: 1.5,
-                    repeat: Infinity,
-                    ease: "easeInOut",
-                  }}
-                >
-                  {scanStatus === "preparing"
-                    ? t("scanControls.preparingReport")
-                    : t("scanControls.downloading")}
-                </motion.span>
-              </>
-            ) : (
-              <>
-                <motion.svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5 mr-2"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  animate={{
-                    y: [0, -2, 0, 2, 0],
-                  }}
-                  transition={{
-                    duration: 2,
-                    repeat: Infinity,
-                    ease: "easeInOut",
-                  }}
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-                  />
-                </motion.svg>
-                {t("scanControls.download")}
-              </>
-            )}
-          </span>
-        </motion.button>
-
-        {/* 向量化报告按钮 */}
-        {currentScan && (
+      <div className="flex flex-wrap gap-2 mb-4">
+        {/* ChatGPT风格的按钮组 */}
+        <div className="bg-gray-50 dark:bg-gray-800 p-1.5 rounded-lg inline-flex flex-wrap gap-1.5 border border-gray-200 dark:border-gray-700">
+          {/* 扫描按钮 */}
           <motion.button
-            onClick={handleOpenVectorizeModal}
-            className="px-4 py-2 rounded-md text-white transition-colors bg-purple-600 hover:bg-purple-700 focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+            onClick={handleScan}
+            disabled={scanStatus === "scanning"}
+            className={`px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center ${
+              scanStatus === "scanning"
+                ? "bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed"
+                : "bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600 border border-gray-200 dark:border-gray-600"
+            }`}
+            whileHover={{ scale: scanStatus === "scanning" ? 1 : 1.02 }}
+            whileTap={{ scale: scanStatus === "scanning" ? 1 : 0.98 }}
             transition={{ type: "spring", stiffness: 400, damping: 10 }}
           >
             <span className="flex items-center">
-              <motion.svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5 mr-2"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                animate={{
-                  rotate: [0, 0, 10, -10, 0],
-                  scale: [1, 1.1, 1.1, 1.1, 1],
-                }}
-                transition={{
-                  duration: 3,
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                }}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"
-                />
-              </motion.svg>
-              {t("scanControls.vectorize")}
+              {scanStatus === "scanning" ? (
+                <>
+                  <motion.svg
+                    className="mr-1.5 h-4 w-4 text-gray-500 dark:text-gray-400"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    animate={{
+                      rotate: 360,
+                    }}
+                    transition={{
+                      duration: 1,
+                      repeat: Infinity,
+                      ease: "linear",
+                    }}
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
+                  </motion.svg>
+                  <motion.span
+                    animate={{ opacity: [0.7, 1, 0.7] }}
+                    transition={{
+                      duration: 1.5,
+                      repeat: Infinity,
+                      ease: "easeInOut",
+                    }}
+                  >
+                    {t("scanControls.scanning")}
+                  </motion.span>
+                </>
+              ) : (
+                <>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-4 w-4 mr-1.5 text-emerald-600 dark:text-emerald-400"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                    />
+                  </svg>
+                  {t("scanControls.startScan")}
+                </>
+              )}
             </span>
           </motion.button>
-        )}
+
+          {/* 监控按钮 */}
+          <motion.button
+            onClick={toggleMonitoring}
+            disabled={scanStatus === "scanning"}
+            className={`px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center relative ${
+              scanStatus === "scanning"
+                ? "bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed"
+                : isMonitoring
+                ? "bg-white dark:bg-gray-700 text-red-600 dark:text-red-400 border-2 border-red-400 dark:border-red-600"
+                : "bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600 border border-gray-200 dark:border-gray-600"
+            }`}
+            whileHover={{ scale: scanStatus === "scanning" ? 1 : 1.02 }}
+            whileTap={{ scale: scanStatus === "scanning" ? 1 : 0.98 }}
+            transition={{ type: "spring", stiffness: 400, damping: 10 }}
+          >
+            {isMonitoring && showPulse && (
+              <motion.span
+                initial={{ opacity: 0.3, scale: 1 }}
+                animate={{ opacity: 0, scale: 1.2 }}
+                transition={{
+                  duration: 1.5,
+                  repeat: Infinity,
+                  ease: "easeOut",
+                }}
+                className="absolute inset-0 rounded-md border border-red-400 dark:border-red-600"
+              />
+            )}
+            <span className="flex items-center z-10">
+              {isMonitoring ? (
+                <>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-4 w-4 mr-1.5 text-red-600 dark:text-red-400"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                  {t("scanControls.stopMonitoring")}
+                </>
+              ) : (
+                <>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-4 w-4 mr-1.5 text-purple-600 dark:text-purple-400"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"
+                    />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                  {t("scanControls.startMonitoring")}
+                </>
+              )}
+            </span>
+          </motion.button>
+
+          {/* 下载报告按钮 */}
+          <motion.button
+            onClick={handleDownloadReport}
+            disabled={isDownloading || !currentScan}
+            className={`px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center ${
+              isDownloading || !currentScan
+                ? "bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed"
+                : "bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600 border border-gray-200 dark:border-gray-600"
+            }`}
+            whileHover={{ scale: isDownloading || !currentScan ? 1 : 1.02 }}
+            whileTap={{ scale: isDownloading || !currentScan ? 1 : 0.98 }}
+            transition={{ type: "spring", stiffness: 400, damping: 10 }}
+          >
+            <span className="flex items-center">
+              {isDownloading || scanStatus === "preparing" ? (
+                <>
+                  <motion.svg
+                    className="mr-1.5 h-4 w-4 text-gray-500 dark:text-gray-400"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    animate={{
+                      rotate: 360,
+                    }}
+                    transition={{
+                      duration: 1,
+                      repeat: Infinity,
+                      ease: "linear",
+                    }}
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
+                  </motion.svg>
+                  <motion.span
+                    animate={{ opacity: [0.7, 1, 0.7] }}
+                    transition={{
+                      duration: 1.5,
+                      repeat: Infinity,
+                      ease: "easeInOut",
+                    }}
+                  >
+                    {scanStatus === "preparing"
+                      ? t("scanControls.preparingReport")
+                      : t("scanControls.downloading")}
+                  </motion.span>
+                </>
+              ) : (
+                <>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-4 w-4 mr-1.5 text-blue-600 dark:text-blue-400"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                    />
+                  </svg>
+                  {t("scanControls.download")}
+                </>
+              )}
+            </span>
+          </motion.button>
+
+          {/* 向量化报告按钮 */}
+          {currentScan && (
+            <motion.button
+              onClick={handleOpenVectorizeModal}
+              className="px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600 border border-gray-200 dark:border-gray-600"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              transition={{ type: "spring", stiffness: 400, damping: 10 }}
+            >
+              <span className="flex items-center">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-4 w-4 mr-1.5 text-purple-600 dark:text-purple-400"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"
+                  />
+                </svg>
+                {t("scanControls.vectorize")}
+              </span>
+            </motion.button>
+          )}
+        </div>
       </div>
 
       {/* 监控状态指示器 */}

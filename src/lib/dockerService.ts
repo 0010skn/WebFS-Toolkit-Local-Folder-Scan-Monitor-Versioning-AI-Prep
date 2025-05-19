@@ -154,6 +154,7 @@ export function parseDockerfile(content: string): Dockerfile {
     labels: {},
     hasError: false,
     errors: [],
+    content: content,
   };
 
   let currentStage: Stage | null = null;

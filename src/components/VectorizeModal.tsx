@@ -363,25 +363,42 @@ export default function VectorizeModal({ onClose }: VectorizeModalProps) {
     setShowAITestDialog(true);
   };
 
-  // 渲染文件列表
+  // 渲染文件列表 - ChatGPT风格
   const renderFileList = () => {
     if (!relevantFiles.length) return null;
 
     return (
-      <div className="mt-4 mb-6">
-        <h4 className="text-md font-medium text-gray-800 dark:text-gray-200 mb-2">
+      <div className="mt-4 mb-5">
+        <h4 className="text-sm font-medium text-gray-800 dark:text-gray-200 mb-2 flex items-center">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-4 w-4 mr-1.5 text-emerald-600 dark:text-emerald-400"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"
+            />
+          </svg>
           {t("resultDisplay.filesAndFoldersCount", {
             count: String(relevantFiles.length),
           })}
         </h4>
-        <div className="bg-gray-50 dark:bg-gray-700/50 rounded-md p-3 max-h-[200px] overflow-y-auto">
-          <ul className="list-disc pl-5 space-y-1">
+        <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 max-h-[180px] overflow-y-auto border border-gray-200 dark:border-gray-700">
+          <ul className="list-none space-y-1">
             {relevantFiles.map((path, index) => (
               <li
                 key={index}
-                className="text-sm text-gray-700 dark:text-gray-300"
+                className="text-xs text-gray-700 dark:text-gray-300 flex items-start"
               >
-                {path}
+                <span className="text-gray-400 dark:text-gray-500 mr-2 mt-0.5">
+                  •
+                </span>
+                <span className="font-mono">{path}</span>
               </li>
             ))}
           </ul>
@@ -390,25 +407,42 @@ export default function VectorizeModal({ onClose }: VectorizeModalProps) {
     );
   };
 
-  // 渲染知识库条目列表
+  // 渲染知识库条目列表 - ChatGPT风格
   const renderKnowledgeList = () => {
     if (!relevantKnowledge.length) return null;
 
     return (
-      <div className="mt-4 mb-6">
-        <h4 className="text-md font-medium text-gray-800 dark:text-gray-200 mb-2">
+      <div className="mb-5">
+        <h4 className="text-sm font-medium text-gray-800 dark:text-gray-200 mb-2 flex items-center">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-4 w-4 mr-1.5 text-purple-600 dark:text-purple-400"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
+            />
+          </svg>
           {t("vectorReport.knowledgeResults", {
             count: String(relevantKnowledge.length),
           })}
         </h4>
-        <div className="bg-gray-50 dark:bg-gray-700/50 rounded-md p-3 max-h-[200px] overflow-y-auto">
-          <ul className="list-disc pl-5 space-y-1">
+        <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 max-h-[180px] overflow-y-auto border border-gray-200 dark:border-gray-700">
+          <ul className="list-none space-y-1">
             {relevantKnowledge.map((title, index) => (
               <li
                 key={index}
-                className="text-sm text-gray-700 dark:text-gray-300"
+                className="text-xs text-gray-700 dark:text-gray-300 flex items-start"
               >
-                {title}
+                <span className="text-gray-400 dark:text-gray-500 mr-2 mt-0.5">
+                  •
+                </span>
+                <span>{title}</span>
               </li>
             ))}
           </ul>
@@ -417,14 +451,14 @@ export default function VectorizeModal({ onClose }: VectorizeModalProps) {
     );
   };
 
-  // 渲染处理阶段提示
+  // 渲染处理阶段提示 - ChatGPT风格
   const renderProcessingPhase = () => {
     if (!isProcessing || !processingPhase) return null;
 
     return (
-      <div className="mt-2 flex items-center text-sm text-blue-600 dark:text-blue-400">
+      <div className="mt-2 flex items-center text-xs text-emerald-600 dark:text-emerald-400">
         <div className="relative mr-2">
-          <div className="w-4 h-4 border-2 border-blue-600 dark:border-blue-400 border-t-transparent rounded-full animate-spin"></div>
+          <div className="w-3.5 h-3.5 border-2 border-emerald-600 dark:border-emerald-400 border-t-transparent rounded-full animate-spin"></div>
         </div>
         <span>{processingPhase}...</span>
       </div>
@@ -432,7 +466,7 @@ export default function VectorizeModal({ onClose }: VectorizeModalProps) {
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl overflow-hidden max-w-2xl w-full mx-4 max-h-[90vh] flex flex-col relative">
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden max-w-2xl w-full mx-4 max-h-[90vh] flex flex-col relative border border-gray-200 dark:border-gray-700">
       {/* AI测试对话框 */}
       {showAITestDialog && (
         <AITestDialog
@@ -449,11 +483,11 @@ export default function VectorizeModal({ onClose }: VectorizeModalProps) {
             initial={{ opacity: 0, y: -50 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -50 }}
-            className="absolute top-4 left-1/2 transform -translate-x-1/2 z-50 bg-green-500 text-white px-4 py-2 rounded-md shadow-lg flex items-center"
+            className="absolute top-4 left-1/2 transform -translate-x-1/2 z-50 bg-emerald-500 text-white px-4 py-2 rounded-md shadow-sm flex items-center text-sm"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              className="h-5 w-5 mr-2"
+              className="h-4 w-4 mr-1.5"
               viewBox="0 0 20 20"
               fill="currentColor"
             >
@@ -468,32 +502,34 @@ export default function VectorizeModal({ onClose }: VectorizeModalProps) {
         )}
       </AnimatePresence>
 
-      {/* 模态窗口标题栏 */}
-      <div className="bg-blue-600 dark:bg-blue-700 px-6 py-4 flex justify-between items-center">
-        <h2 className="text-xl font-semibold text-white flex items-center">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-6 w-6 mr-2"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-            />
-          </svg>
+      {/* 模态窗口标题栏 - ChatGPT风格 */}
+      <div className="px-6 py-4 flex justify-between items-center border-b border-gray-200 dark:border-gray-700">
+        <h2 className="text-lg font-medium text-gray-800 dark:text-gray-200 flex items-center">
+          <div className="p-1.5 bg-emerald-100 dark:bg-emerald-900/30 rounded-md mr-3">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-5 w-5 text-emerald-600 dark:text-emerald-400"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+              />
+            </svg>
+          </div>
           {t("vectorReport.title")}
         </h2>
         <button
           onClick={onClose}
-          className="text-white hover:text-gray-200 focus:outline-none"
+          className="p-1 rounded-md text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none transition-colors"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
-            className="h-6 w-6"
+            className="h-5 w-5"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -508,9 +544,9 @@ export default function VectorizeModal({ onClose }: VectorizeModalProps) {
         </button>
       </div>
 
-      {/* 模态窗口内容 */}
+      {/* 模态窗口内容 - ChatGPT风格 */}
       <div className="p-6 flex-1 overflow-y-auto">
-        <p className="text-gray-600 dark:text-gray-300 mb-4">
+        <p className="text-sm text-gray-600 dark:text-gray-300 mb-5">
           {t("vectorReport.description")}
         </p>
 
@@ -519,19 +555,19 @@ export default function VectorizeModal({ onClose }: VectorizeModalProps) {
             <textarea
               value={question}
               onChange={(e) => setQuestion(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 min-h-[100px] resize-y"
+              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 min-h-[120px] resize-y text-sm"
               placeholder={t("vectorReport.placeholder")}
               disabled={isProcessing}
             />
           </div>
 
-          <div className="mb-4 flex items-center">
+          <div className="mb-5 flex items-center">
             <input
               type="checkbox"
               id="enableContentMatching"
               checked={enableContentMatching}
               onChange={(e) => setEnableContentMatching(e.target.checked)}
-              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              className="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-gray-300 rounded"
               disabled={isProcessing}
             />
             <label
@@ -546,16 +582,16 @@ export default function VectorizeModal({ onClose }: VectorizeModalProps) {
             <button
               type="submit"
               disabled={isProcessing || !question.trim()}
-              className={`px-4 py-2 rounded-md text-white transition-colors ${
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                 isProcessing || !question.trim()
-                  ? "bg-gray-400 cursor-not-allowed"
-                  : "bg-blue-600 hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                  ? "bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed"
+                  : "bg-emerald-600 hover:bg-emerald-700 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
               }`}
             >
               {isProcessing ? (
                 <span className="flex items-center">
                   <svg
-                    className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                    className="animate-spin mr-2 h-4 w-4 text-current"
                     xmlns="http://www.w3.org/2000/svg"
                     fill="none"
                     viewBox="0 0 24 24"
@@ -577,7 +613,23 @@ export default function VectorizeModal({ onClose }: VectorizeModalProps) {
                   {t("vectorReport.processing")}
                 </span>
               ) : (
-                t("vectorReport.submit")
+                <span className="flex items-center">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-4 w-4 mr-1.5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                    />
+                  </svg>
+                  {t("vectorReport.submit")}
+                </span>
               )}
             </button>
           </div>
@@ -585,7 +637,21 @@ export default function VectorizeModal({ onClose }: VectorizeModalProps) {
         </form>
 
         <div className="mt-6">
-          <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
+          <h3 className="text-base font-medium text-gray-900 dark:text-gray-100 mb-3 flex items-center">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-5 w-5 mr-2 text-emerald-600 dark:text-emerald-400"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+              />
+            </svg>
             {t("vectorReport.result")}
           </h3>
 
@@ -595,7 +661,7 @@ export default function VectorizeModal({ onClose }: VectorizeModalProps) {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
-                className="bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 p-4 rounded-md"
+                className="bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-300 p-4 rounded-lg border border-red-200 dark:border-red-800/50 text-sm"
               >
                 {error}
               </motion.div>
@@ -609,20 +675,34 @@ export default function VectorizeModal({ onClose }: VectorizeModalProps) {
                 {renderFileList()}
                 {renderKnowledgeList()}
 
-                <div className="bg-gray-100 dark:bg-gray-700 p-4 rounded-md">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-gray-700 dark:text-gray-300 font-medium">
+                <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-gray-700 dark:text-gray-300 font-medium text-sm flex items-center">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-4 w-4 mr-1.5 text-gray-500 dark:text-gray-400"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"
+                        />
+                      </svg>
                       {t("vectorReport.result")} (
                       {(result.length / 1024).toFixed(1)} KB)
                     </span>
                     <div className="flex justify-end space-x-2">
                       <button
                         onClick={copyResultToClipboard}
-                        className="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded-md transition-colors flex items-center text-sm"
+                        className="px-3 py-1.5 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-md transition-colors flex items-center text-xs border border-gray-200 dark:border-gray-600"
                       >
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
-                          className="h-4 w-4 mr-1"
+                          className="h-3.5 w-3.5 mr-1 text-emerald-600 dark:text-emerald-400"
                           fill="none"
                           viewBox="0 0 24 24"
                           stroke="currentColor"
@@ -638,11 +718,11 @@ export default function VectorizeModal({ onClose }: VectorizeModalProps) {
                       </button>
                       <button
                         onClick={handleTestWithAI}
-                        className="px-3 py-1 bg-green-500 hover:bg-green-600 text-white rounded-md transition-colors flex items-center text-sm"
+                        className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md transition-colors flex items-center text-xs"
                       >
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
-                          className="h-4 w-4 mr-1"
+                          className="h-3.5 w-3.5 mr-1"
                           fill="none"
                           viewBox="0 0 24 24"
                           stroke="currentColor"
@@ -659,12 +739,12 @@ export default function VectorizeModal({ onClose }: VectorizeModalProps) {
                     </div>
                   </div>
 
-                  {/* 优化提示 */}
-                  <div className="mb-3 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30 border border-blue-200 dark:border-blue-800 rounded-md p-3 flex items-start">
-                    <div className="flex-shrink-0 bg-blue-100 dark:bg-blue-800 rounded-full p-1 mr-3">
+                  {/* 优化提示 - ChatGPT风格 */}
+                  <div className="mb-4 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800/50 rounded-lg p-3 flex items-start">
+                    <div className="flex-shrink-0 text-emerald-600 dark:text-emerald-400 mr-3">
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
-                        className="h-5 w-5 text-blue-600 dark:text-blue-300"
+                        className="h-5 w-5"
                         viewBox="0 0 20 20"
                         fill="currentColor"
                       >
@@ -676,10 +756,10 @@ export default function VectorizeModal({ onClose }: VectorizeModalProps) {
                       </svg>
                     </div>
                     <div>
-                      <h4 className="text-sm font-medium text-blue-800 dark:text-blue-300">
+                      <h4 className="text-sm font-medium text-emerald-800 dark:text-emerald-300">
                         {t("vectorReport.optimization.title")}
                       </h4>
-                      <p className="text-xs text-blue-700 dark:text-blue-400 mt-1">
+                      <p className="text-xs text-emerald-700 dark:text-emerald-400 mt-1">
                         {t("vectorReport.optimization.description", {
                           totalCount: String(
                             currentScan?.entries.filter(
@@ -696,17 +776,37 @@ export default function VectorizeModal({ onClose }: VectorizeModalProps) {
                     </div>
                   </div>
 
-                  {/* 结果预览区域 */}
-                  <div className="mb-3">
-                    <div className="flex items-center justify-between mb-1">
-                      <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  {/* 结果预览区域 - ChatGPT风格 */}
+                  <div className="mb-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center">
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-4 w-4 mr-1.5 text-gray-500 dark:text-gray-400"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                          />
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                          />
+                        </svg>
                         {t("vectorReport.resultPreview")}
                       </h4>
-                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                      <span className="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded">
                         {t("vectorReport.markdownFormat")}
                       </span>
                     </div>
-                    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md p-3 max-h-[200px] overflow-y-auto">
+                    <div className="bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-700 rounded-lg p-3 max-h-[200px] overflow-y-auto">
                       <pre className="text-xs text-gray-700 dark:text-gray-300 whitespace-pre-wrap font-mono">
                         {result.length > 500
                           ? result.substring(0, 500) +
@@ -716,10 +816,26 @@ export default function VectorizeModal({ onClose }: VectorizeModalProps) {
                     </div>
                   </div>
 
-                  <div className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded p-2 text-xs text-gray-500 dark:text-gray-400">
-                    {t("vectorReport.resultDescription")}
-                    <br />
-                    {t("vectorReport.copyInstructions")}
+                  <div className="bg-gray-50 dark:bg-gray-700/30 border border-gray-200 dark:border-gray-700 rounded-lg p-3 text-xs text-gray-600 dark:text-gray-400 flex items-start">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-4 w-4 mr-2 text-gray-500 dark:text-gray-400 flex-shrink-0 mt-0.5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                      />
+                    </svg>
+                    <div>
+                      {t("vectorReport.resultDescription")}
+                      <br />
+                      {t("vectorReport.copyInstructions")}
+                    </div>
                   </div>
                 </div>
               </motion.div>
@@ -736,35 +852,33 @@ export default function VectorizeModal({ onClose }: VectorizeModalProps) {
           </AnimatePresence>
         </div>
 
-        {/* 承诺声明 */}
-        <div className="bg-blue-50 dark:bg-blue-900/20 text-blue-800 dark:text-blue-200 p-3 mb-4 rounded-md text-sm">
-          <p className="font-medium">
-            <span className="inline-flex items-center mr-1">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5 mr-1"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-            </span>
+        {/* 承诺声明 - ChatGPT风格 */}
+        <div className="bg-gray-50 dark:bg-gray-700/30 border border-gray-200 dark:border-gray-700 p-3 mb-4 rounded-lg text-sm flex items-start">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-4 w-4 mr-2 text-gray-500 dark:text-gray-400 flex-shrink-0 mt-0.5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
+          </svg>
+          <p className="text-gray-700 dark:text-gray-300 text-xs">
             {t("knowledgeModal.dataSecurityPromise")}
           </p>
         </div>
       </div>
 
-      {/* 模态窗口底部 */}
-      <div className="bg-gray-100 dark:bg-gray-750 px-6 py-4 flex justify-end">
+      {/* 模态窗口底部 - ChatGPT风格 */}
+      <div className="bg-gray-50 dark:bg-gray-800 px-6 py-4 flex justify-end border-t border-gray-200 dark:border-gray-700">
         <button
           onClick={onClose}
-          className="px-4 py-2 bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-md hover:bg-gray-400 dark:hover:bg-gray-500 transition-colors"
+          className="px-4 py-2 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-md hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors border border-gray-300 dark:border-gray-600 text-sm font-medium"
         >
           {t("vectorReport.close")}
         </button>

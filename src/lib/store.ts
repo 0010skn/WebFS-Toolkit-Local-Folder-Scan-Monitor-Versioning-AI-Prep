@@ -87,10 +87,9 @@ export const restoreProgressAtom = atom<number>(0);
 export const readmeContentAtom = atom<string | null>(null);
 
 // Docker相关状态
-export const dockerfilesAtom = atom<Dockerfile>({
+export const dockerfilesAtom = atom<{ exists: boolean; paths: string[] }>({
   exists: false,
-  path: "",
-  content: "",
+  paths: [],
 });
 
 export const selectedDockerfileAtom = atom<string>("");

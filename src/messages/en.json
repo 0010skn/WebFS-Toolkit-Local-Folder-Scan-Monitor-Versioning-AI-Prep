@@ -48,7 +48,11 @@
     "welcomeTitle": "Welcome to Folda-Scan",
     "welcomeDescription": "Please select a project folder to start scanning and monitoring",
     "privacyNote": "All operations are performed locally, your files will not be uploaded",
-    "changeFolder": "Change Folder"
+    "changeFolder": "Change Folder",
+    "selectedFolder": "Selected folder",
+    "ready": "Ready",
+    "errorTitle": "Error",
+    "dismiss": "Dismiss"
   },
   "scanControls": {
     "startScan": "Start Scan",

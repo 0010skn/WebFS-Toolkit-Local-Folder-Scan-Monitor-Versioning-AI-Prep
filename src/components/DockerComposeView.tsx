@@ -185,11 +185,13 @@ export default function DockerComposeView() {
             onChange={handleDockerComposeChange}
             className="block w-64 rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
           >
-            {dockerComposeFiles.paths.map((path) => (
-              <option key={path} value={path}>
-                {path}
-              </option>
-            ))}
+            {dockerComposeFiles &&
+              dockerComposeFiles.paths &&
+              dockerComposeFiles.paths.map((path) => (
+                <option key={path} value={path}>
+                  {path}
+                </option>
+              ))}
           </select>
 
           {parsedDockerCompose && parsedDockerCompose.services.length > 0 && (
