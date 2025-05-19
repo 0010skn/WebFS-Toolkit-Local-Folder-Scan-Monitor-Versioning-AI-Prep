@@ -579,46 +579,7 @@ export default function AITestDialog({
       // 保存第一轮响应
       setResponseSegments((prev) => ({ ...prev, 1: response }));
 
-      // 第一轮对话结束后，根据AI响应重新生成文件索引
-      try {
-        // 添加延迟，确保UI更新完成
-        setTimeout(async () => {
-          try {
-            const newJsonResult = await findRelevantFiles(
-              response,
-              paths,
-              fileContents
-            );
-            const newParsedResult = parseFilePathsResult(newJsonResult);
-            const responseIndexedFiles = newParsedResult.relevant_paths;
-            const responseKnowledgeEntries =
-              newParsedResult.knowledge_entries || [];
-
-            // 如果找到了新的相关文件，更新索引
-            if (responseIndexedFiles.length > 0) {
-              setIndexedFiles(responseIndexedFiles);
-              setDialogRounds((prev) => {
-                if (prev.length > 0) {
-                  const updated = [...prev];
-                  updated[0] = {
-                    ...updated[0],
-                    responseFiles: responseIndexedFiles,
-                    knowledgeEntries: responseKnowledgeEntries,
-                  };
-                  return updated;
-                }
-                return prev;
-              });
-            }
-          } catch (innerError) {
-            console.error("延迟更新文件索引出错:", innerError);
-          }
-        }, 500);
-      } catch (indexError) {
-        console.error("更新文件索引出错:", indexError);
-      }
-
-      // 第一轮对话已经通过状态更新添加，不需要重复设置
+      // 移除第一轮对话结束后基于AI响应的第二次向量化搜索
 
       // 生成对话选项
       generateDialogOptions(initialPrompt, response);
@@ -835,46 +796,7 @@ export default function AITestDialog({
       if (nextRound >= maxRounds) {
         setIsComplete(true);
       } else {
-        // 每轮对话结束后，根据新的响应重新生成文件索引
-        try {
-          // 添加延迟，确保UI更新完成
-          setTimeout(async () => {
-            try {
-              const newJsonResult = await findRelevantFiles(
-                response,
-                paths,
-                fileContents
-              );
-              const newParsedResult = parseFilePathsResult(newJsonResult);
-              const responseIndexedFiles = newParsedResult.relevant_paths;
-              const responseKnowledgeEntries =
-                newParsedResult.knowledge_entries || [];
-
-              // 如果找到了新的相关文件，更新索引
-              if (responseIndexedFiles.length > 0) {
-                setIndexedFiles(responseIndexedFiles);
-                setDialogRounds((prev) => {
-                  if (prev.length > 0) {
-                    const updated = [...prev];
-                    const lastIndex = updated.length - 1;
-                    updated[lastIndex] = {
-                      ...updated[lastIndex],
-                      responseFiles: responseIndexedFiles,
-                      knowledgeEntries: responseKnowledgeEntries,
-                    };
-                    return updated;
-                  }
-                  return prev;
-                });
-              }
-            } catch (innerError) {
-              console.error("延迟更新文件索引出错:", innerError);
-            }
-          }, 500);
-        } catch (indexError) {
-          console.error("更新文件索引出错:", indexError);
-        }
-
+        // 移除第二次向量化搜索，不再基于AI回复重新索引文件
         // 生成新的对话选项
         generateDialogOptions(input, response);
         // 默认不显示选项
