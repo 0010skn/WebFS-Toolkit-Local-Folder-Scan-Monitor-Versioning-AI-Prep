@@ -30,7 +30,7 @@
 
 <a name="zh-cn"></a>
 
-## 🇨🇳 中文版
+## Chinese
 
 **代码迷宫中找不到方向？与AI协作时上下文准备太繁琐？ Folda-Scan 来拯救您！** 💡
 
@@ -94,7 +94,7 @@ Folda-Scan 的魔法源于其创新的**语义向量化引擎**：
 
 <a name="en-us"></a>
 
-## 🇬🇧 English Version
+## English
 
 **Lost in a code maze? Tired of tedious context prep for AI collaboration? Folda-Scan to the rescue!** 💡
 
