@@ -278,10 +278,6 @@ export default function VectorizeModal({ onClose }: VectorizeModalProps) {
       });
       textResult += "\n";
 
-      if (readmeContent) {
-        textResult += `## 项目README\n${readmeContent}\n\n`;
-      }
-
       // 添加相关文件列表
       textResult += `## 相关文件 (${parsedResult.relevant_paths.length}个)\n`;
       parsedResult.relevant_paths.forEach((path, index) => {

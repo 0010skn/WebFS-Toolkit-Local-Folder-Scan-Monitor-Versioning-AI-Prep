@@ -15,6 +15,8 @@ import {
   vs,
 } from "react-syntax-highlighter/dist/cjs/styles/prism";
 import { useTheme } from "next-themes";
+import { useAtom } from "jotai";
+import { currentScanAtom } from "../lib/store";
 
 interface AITestDialogProps {
   onClose: () => void;
@@ -66,13 +68,17 @@ const CodeBlock = ({
           </svg>
         </button>
       </div>
-      <SyntaxHighlighter
-        language={language || "text"}
-        style={isDark ? vscDarkPlus : vs}
-        customStyle={{ margin: 0, padding: "1rem", fontSize: "0.875rem" }}
-      >
-        {children}
-      </SyntaxHighlighter>
+      <div className="overflow-x-auto">
+        <SyntaxHighlighter
+          language={language || "text"}
+          style={isDark ? vscDarkPlus : vs}
+          customStyle={{ margin: 0, padding: "1rem", fontSize: "0.875rem" }}
+          wrapLines={true}
+          wrapLongLines={true}
+        >
+          {children}
+        </SyntaxHighlighter>
+      </div>
     </div>
   );
 };
@@ -102,12 +108,12 @@ const ToolCard = ({ children }: { children: React.ReactNode }) => {
   }
 
   return (
-    <div className="my-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30 rounded-lg border border-blue-200 dark:border-blue-800 overflow-hidden">
-      <div className="bg-blue-600 dark:bg-blue-800 text-white px-4 py-2 font-medium flex items-center justify-between">
+    <div className="my-3 bg-gray-50 dark:bg-gray-800/60 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+      <div className="bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 px-4 py-2 font-medium flex items-center justify-between">
         <div className="flex items-center">
           <svg
             xmlns="http://www.w3.org/2000/svg"
-            className="h-5 w-5 mr-2"
+            className="h-4 w-4 mr-2 text-blue-500"
             viewBox="0 0 20 20"
             fill="currentColor"
           >
@@ -117,21 +123,21 @@ const ToolCard = ({ children }: { children: React.ReactNode }) => {
               clipRule="evenodd"
             />
           </svg>
-          <span>工具调用: {title}</span>
+          <span className="text-sm">{title}</span>
         </div>
-        <span className="text-xs opacity-70">AI模拟</span>
+        <span className="text-xs opacity-70">工具调用</span>
       </div>
-      <div className="p-4">
+      <div className="p-3">
         {params && (
-          <div className="mb-3">
-            <div className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          <div className="mb-2">
+            <div className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
               参数:
             </div>
-            <div className="bg-white/50 dark:bg-gray-800/50 rounded p-2 text-sm">
+            <div className="bg-white/80 dark:bg-gray-900/50 rounded p-2 text-sm overflow-x-auto">
               {params.split("\n").map((param, k) => (
                 <div
                   key={k}
-                  className="font-mono text-xs text-gray-700 dark:text-gray-300"
+                  className="font-mono text-xs text-gray-700 dark:text-gray-300 whitespace-pre-wrap break-words"
                 >
                   {param}
                 </div>
@@ -141,14 +147,14 @@ const ToolCard = ({ children }: { children: React.ReactNode }) => {
         )}
         {result && (
           <div>
-            <div className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <div className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
               结果:
             </div>
-            <div className="bg-white/50 dark:bg-gray-800/50 rounded p-2 text-sm">
+            <div className="bg-white/80 dark:bg-gray-900/50 rounded p-2 text-sm overflow-x-auto">
               {result.split("\n").map((line, k) => (
                 <div
                   key={k}
-                  className="font-mono text-xs text-gray-700 dark:text-gray-300"
+                  className="font-mono text-xs text-gray-700 dark:text-gray-300 whitespace-pre-wrap break-words"
                 >
                   {line}
                 </div>
@@ -164,25 +170,42 @@ const ToolCard = ({ children }: { children: React.ReactNode }) => {
 // 修改FileIndexCard组件以接受data属性
 const FileIndexCard = ({ data }: { data?: string }) => {
   // 解析传入的数据
-  let files: string[] = [];
-  try {
-    if (data) {
-      const parsed = JSON.parse(decodeURIComponent(data));
-      if (Array.isArray(parsed)) {
-        files = parsed;
+  const [files, setFiles] = useState<string[]>([]);
+
+  useEffect(() => {
+    // 在组件挂载后安全地解析数据
+    try {
+      if (data) {
+        const decoded = decodeURIComponent(data);
+        const parsed = JSON.parse(decoded);
+
+        if (Array.isArray(parsed)) {
+          // 如果已经是数组，直接使用
+          setFiles(parsed.filter((item) => typeof item === "string"));
+        } else if (parsed && typeof parsed === "object") {
+          // 如果是对象，转换为字符串数组
+          const values = Object.values(parsed);
+          setFiles(values.filter((item) => typeof item === "string"));
+        } else {
+          // 其他情况设为空数组
+          setFiles([]);
+        }
+      } else {
+        setFiles([]);
       }
+    } catch (error) {
+      console.error("解析文件索引数据出错:", error, data);
+      setFiles([]);
     }
-  } catch (error) {
-    console.error("解析文件索引数据出错:", error);
-  }
+  }, [data]);
 
   return (
-    <div className="my-4 bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/30 dark:to-indigo-900/30 rounded-lg border border-purple-200 dark:border-purple-800 overflow-hidden">
-      <div className="bg-purple-600 dark:bg-purple-800 text-white px-4 py-2 font-medium flex items-center justify-between">
+    <div className="my-3 bg-gray-50 dark:bg-gray-800/60 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+      <div className="bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 px-4 py-2 font-medium flex items-center justify-between">
         <div className="flex items-center">
           <svg
             xmlns="http://www.w3.org/2000/svg"
-            className="h-5 w-5 mr-2"
+            className="h-4 w-4 mr-2 text-purple-500"
             viewBox="0 0 20 20"
             fill="currentColor"
           >
@@ -192,20 +215,21 @@ const FileIndexCard = ({ data }: { data?: string }) => {
               clipRule="evenodd"
             />
           </svg>
-          <span>文件索引更新</span>
+          <span className="text-sm">相关文件</span>
         </div>
         <span className="text-xs opacity-70">自动索引</span>
       </div>
-      <div className="p-4">
-        <div className="text-sm text-gray-700 dark:text-gray-300 mb-2">
-          已为您自动索引以下相关文件:
+      <div className="p-3">
+        <div className="text-xs text-gray-600 dark:text-gray-400 mb-2">
+          已为您索引以下相关文件:
         </div>
-        <div className="bg-white/50 dark:bg-gray-800/50 rounded p-2 max-h-40 overflow-y-auto">
-          {files.length > 0 ? (
-            files.map((file: string, index: number) => (
+
+        <div className="bg-white/80 dark:bg-gray-900/50 rounded p-2 max-h-40 overflow-y-auto overflow-x-auto">
+          {Array.isArray(files) && files.length > 0 ? (
+            files.map((file, index) => (
               <div
                 key={index}
-                className="font-mono text-xs text-gray-700 dark:text-gray-300 py-1 border-b border-gray-100 dark:border-gray-700 last:border-0"
+                className="font-mono text-xs text-gray-700 dark:text-gray-300 py-0.5 border-b border-gray-100 dark:border-gray-800 last:border-0 whitespace-pre-wrap break-words"
               >
                 {file}
               </div>
@@ -257,6 +281,8 @@ export default function AITestDialog({
   const [animationKey, setAnimationKey] = useState<number>(0);
   // 当前正在构建的响应
   const [currentResponse, setCurrentResponse] = useState("");
+  const [isIndexing, setIsIndexing] = useState(false);
+  const [currentScan] = useAtom(currentScanAtom);
 
   // 自动滚动到底部
   useEffect(() => {
@@ -272,7 +298,6 @@ export default function AITestDialog({
     }
   }, [initialPrompt]);
 
-  // 开始测试
   const startTest = async () => {
     setIsTesting(true);
     setDialogRounds([]);
@@ -284,30 +309,81 @@ export default function AITestDialog({
     setLastChar("");
     setAnimationKey(0);
     setCurrentResponse("");
+    setIsIndexing(true);
 
     try {
       // 获取项目文件路径列表
       const paths = filePaths.length > 0 ? filePaths : [];
 
-      // 查找相关文件
-      const jsonResult = await findRelevantFiles(initialPrompt, paths);
+      // 从currentScan中提取文件内容
+      const fileContents: { [path: string]: string } = {};
+      if (paths.length > 0) {
+        // 查找相关文件并传递文件内容
+        paths.forEach((path) => {
+          // 从当前扫描结果中查找文件内容
+          const entry = currentScan?.entries.find(
+            (e) => e.path === path && e.kind === "file"
+          );
+          if (entry && entry.content) {
+            fileContents[path] = entry.content;
+          }
+        });
+      }
+
+      // 查找相关文件，传递文件内容以提高相关性
+      const jsonResult = await findRelevantFiles(
+        initialPrompt,
+        paths,
+        fileContents
+      );
       const parsedResult = parseFilePathsResult(jsonResult);
       setIndexedFiles(parsedResult.relevant_paths);
+      setIsIndexing(false);
 
-      // 创建第一轮对话对象
-      const firstRound: DialogRound = {
-        userInput: initialPrompt,
-        aiResponse: "",
-        files:
-          parsedResult.relevant_paths.length > 0
-            ? parsedResult.relevant_paths
-            : undefined,
-      };
+      // 创建并设置第一轮对话对象
+      setDialogRounds([
+        {
+          userInput: initialPrompt,
+          aiResponse: "",
+          files:
+            parsedResult.relevant_paths.length > 0
+              ? parsedResult.relevant_paths
+              : undefined,
+        },
+      ]);
+
+      // 构建增强的提示，包含文件内容
+      let enhancedPrompt = initialPrompt;
+      if (parsedResult.relevant_paths.length > 0) {
+        enhancedPrompt += "\n\n相关文件内容:\n\n";
+
+        for (const path of parsedResult.relevant_paths) {
+          const entry = currentScan?.entries.find(
+            (e) => e.path === path && e.kind === "file"
+          );
+          if (entry && entry.content) {
+            // 限制文件内容长度
+            const truncatedContent =
+              entry.content.length > 30000
+                ? entry.content.substring(0, 30000) + "..."
+                : entry.content;
+
+            enhancedPrompt += `文件: ${path}\n\`\`\`\n${truncatedContent}\n\`\`\`\n\n`;
+          }
+        }
+
+        // 添加明确指示，避免AI调用工具
+        enhancedPrompt +=
+          "\n\n请直接基于以上提供的文件内容回答问题，不要调用工具来获取文件内容，因为所有必要的文件内容已经提供给你了。";
+      }
 
       // 只进行第一轮对话，后续轮次由用户选择
       let response = "";
+
+      // 对话轮次已经通过之前的状态更新添加，这里不需要重复设置
+
       await testWithAI(
-        initialPrompt,
+        enhancedPrompt,
         (chunk) => {
           // 更新最后一个字符用于动画
           setLastChar(chunk);
@@ -316,12 +392,34 @@ export default function AITestDialog({
           // 累积响应到当前响应
           setCurrentResponse((prev) => prev + chunk);
           response += chunk;
+
+          // 实时更新对话轮次中的AI响应
+          setDialogRounds((prev) => {
+            const updated = [...prev];
+            if (updated.length > 0) {
+              updated[0] = {
+                ...updated[0],
+                aiResponse: response,
+              };
+            }
+            return updated;
+          });
         },
         true // 只进行第一轮
       );
 
       // 更新第一轮对话的AI响应
-      firstRound.aiResponse = response;
+      setDialogRounds((prev) => {
+        if (prev.length > 0) {
+          const updated = [...prev];
+          updated[0] = {
+            ...updated[0],
+            aiResponse: response,
+          };
+          return updated;
+        }
+        return [{ userInput: initialPrompt, aiResponse: response }];
+      });
       setCurrentRound(1);
       setCurrentResponse("");
 
@@ -330,21 +428,41 @@ export default function AITestDialog({
 
       // 第一轮对话结束后，根据AI响应重新生成文件索引
       try {
-        const newJsonResult = await findRelevantFiles(response, paths);
-        const newParsedResult = parseFilePathsResult(newJsonResult);
-        const responseIndexedFiles = newParsedResult.relevant_paths;
+        // 添加延迟，确保UI更新完成
+        setTimeout(async () => {
+          try {
+            const newJsonResult = await findRelevantFiles(
+              response,
+              paths,
+              fileContents
+            );
+            const newParsedResult = parseFilePathsResult(newJsonResult);
+            const responseIndexedFiles = newParsedResult.relevant_paths;
 
-        // 如果找到了新的相关文件，更新索引
-        if (responseIndexedFiles.length > 0) {
-          setIndexedFiles(responseIndexedFiles);
-          firstRound.responseFiles = responseIndexedFiles;
-        }
+            // 如果找到了新的相关文件，更新索引
+            if (responseIndexedFiles.length > 0) {
+              setIndexedFiles(responseIndexedFiles);
+              setDialogRounds((prev) => {
+                if (prev.length > 0) {
+                  const updated = [...prev];
+                  updated[0] = {
+                    ...updated[0],
+                    responseFiles: responseIndexedFiles,
+                  };
+                  return updated;
+                }
+                return prev;
+              });
+            }
+          } catch (innerError) {
+            console.error("延迟更新文件索引出错:", innerError);
+          }
+        }, 500);
       } catch (indexError) {
         console.error("更新文件索引出错:", indexError);
       }
 
-      // 添加第一轮对话到对话轮次数组
-      setDialogRounds([firstRound]);
+      // 第一轮对话已经通过状态更新添加，不需要重复设置
 
       // 生成对话选项
       generateDialogOptions(initialPrompt, response);
@@ -358,6 +476,7 @@ export default function AITestDialog({
           aiResponse: t("vectorReport.error"),
         },
       ]);
+      setIsIndexing(false);
     } finally {
       setIsTesting(false);
     }
@@ -374,6 +493,7 @@ export default function AITestDialog({
     setLastChar("");
     setAnimationKey(0);
     setCurrentResponse("");
+    setIsIndexing(true);
 
     // 创建新的对话轮次
     const newRound: DialogRound = {
@@ -393,32 +513,85 @@ export default function AITestDialog({
     setCustomInput("");
 
     try {
-      // 查找相关文件
+      // 获取项目文件路径列表
       const paths = filePaths.length > 0 ? filePaths : [];
-      const jsonResult = await findRelevantFiles(input, paths);
+
+      // 从currentScan中提取文件内容
+      const fileContents: { [path: string]: string } = {};
+      if (paths.length > 0) {
+        // 查找相关文件并传递文件内容
+        paths.forEach((path) => {
+          // 从当前扫描结果中查找文件内容
+          const entry = currentScan?.entries.find(
+            (e) => e.path === path && e.kind === "file"
+          );
+          if (entry && entry.content) {
+            fileContents[path] = entry.content;
+          }
+        });
+      }
+
+      // 查找相关文件，传递文件内容以提高相关性
+      const jsonResult = await findRelevantFiles(input, paths, fileContents);
       const parsedResult = parseFilePathsResult(jsonResult);
       const newIndexedFiles = parsedResult.relevant_paths;
       setIndexedFiles(newIndexedFiles);
+      setIsIndexing(false);
 
       // 如果找到了相关文件，添加到当前轮次
       if (newIndexedFiles.length > 0) {
         newRound.files = newIndexedFiles;
       }
 
+      // 添加新轮次到对话轮次数组，以便UI立即显示用户消息
+      setDialogRounds((prev) => [...prev, newRound]);
+
+      // 构建增强的提示，包含文件内容
+      let enhancedInput = input;
+      if (newIndexedFiles.length > 0) {
+        enhancedInput += "\n\n相关文件内容:\n\n";
+
+        for (const path of newIndexedFiles) {
+          const entry = currentScan?.entries.find(
+            (e) => e.path === path && e.kind === "file"
+          );
+          if (entry && entry.content) {
+            // 限制文件内容长度，但增加到3000字符以包含更多上下文
+            const truncatedContent =
+              entry.content.length > 3000
+                ? entry.content.substring(0, 3000) + "..."
+                : entry.content;
+
+            enhancedInput += `文件: ${path}\n\`\`\`\n${truncatedContent}\n\`\`\`\n\n`;
+          }
+        }
+
+        // 添加明确指示，避免AI调用工具
+        enhancedInput +=
+          "\n\n请直接基于以上提供的文件内容回答问题，不要调用工具来获取文件内容，因为所有必要的文件内容已经提供给你了。";
+      }
+
       // 构建系统提示
       const nextRound = currentRound + 1;
       const systemPrompt = `这是第${nextRound}/${maxRounds}轮对话。
-我已经为您索引了与当前对话相关的文件: ${JSON.stringify(newIndexedFiles)}
-请根据这些文件和对话历史提供分析，并在回复中包含至少一个工具调用卡片的模拟展示。${
+我已经为您索引了与当前对话相关的文件，并且已经在用户消息中提供了这些文件的完整内容。
+请直接基于用户消息中提供的文件内容回答问题，不要尝试调用工具来获取文件内容。
+请根据这些文件内容和对话历史提供详细分析。${
         nextRound === maxRounds
           ? "这是最后一轮对话，请在回复结束时提醒用户测试完毕并做出总结。"
           : ""
       }`;
 
+      // 更新对话历史中的最后一个用户消息，使用增强的提示
+      const enhancedHistory = [
+        ...updatedHistory.slice(0, -1),
+        { role: "user", content: enhancedInput },
+      ];
+
       // 调用API获取响应
       let response = "";
       await testWithAI(
-        input,
+        enhancedInput,
         (chunk) => {
           // 更新最后一个字符用于动画
           setLastChar(chunk);
@@ -427,21 +600,45 @@ export default function AITestDialog({
           // 累积响应到当前响应
           setCurrentResponse((prev) => prev + chunk);
           response += chunk;
+
+          // 实时更新对话轮次中的AI响应
+          setDialogRounds((prev) => {
+            const updated = [...prev];
+            if (updated.length > 0) {
+              const lastIndex = updated.length - 1;
+              updated[lastIndex] = {
+                ...updated[lastIndex],
+                aiResponse: response,
+              };
+            }
+            return updated;
+          });
         },
         false, // 不是第一轮
-        updatedHistory,
+        enhancedHistory,
         systemPrompt
       );
 
       // 更新当前轮次的AI响应
-      newRound.aiResponse = response;
+      // 使用状态更新而不是直接修改对象
+      setDialogRounds((prev) => {
+        const updated = [...prev];
+        if (updated.length > 0) {
+          const lastIndex = updated.length - 1;
+          updated[lastIndex] = {
+            ...updated[lastIndex],
+            aiResponse: response,
+          };
+        }
+        return updated;
+      });
 
       // 保存当前轮次响应
       setResponseSegments((prev) => ({ ...prev, [nextRound]: response }));
 
       // 更新对话历史和轮次
       setConversationHistory([
-        ...updatedHistory,
+        ...enhancedHistory,
         { role: "assistant", content: response },
       ]);
       setCurrentRound(nextRound);
@@ -453,15 +650,37 @@ export default function AITestDialog({
       } else {
         // 每轮对话结束后，根据新的响应重新生成文件索引
         try {
-          const newJsonResult = await findRelevantFiles(response, paths);
-          const newParsedResult = parseFilePathsResult(newJsonResult);
-          const responseIndexedFiles = newParsedResult.relevant_paths;
+          // 添加延迟，确保UI更新完成
+          setTimeout(async () => {
+            try {
+              const newJsonResult = await findRelevantFiles(
+                response,
+                paths,
+                fileContents
+              );
+              const newParsedResult = parseFilePathsResult(newJsonResult);
+              const responseIndexedFiles = newParsedResult.relevant_paths;
 
-          // 如果找到了新的相关文件，更新索引
-          if (responseIndexedFiles.length > 0) {
-            setIndexedFiles(responseIndexedFiles);
-            newRound.responseFiles = responseIndexedFiles;
-          }
+              // 如果找到了新的相关文件，更新索引
+              if (responseIndexedFiles.length > 0) {
+                setIndexedFiles(responseIndexedFiles);
+                setDialogRounds((prev) => {
+                  if (prev.length > 0) {
+                    const updated = [...prev];
+                    const lastIndex = updated.length - 1;
+                    updated[lastIndex] = {
+                      ...updated[lastIndex],
+                      responseFiles: responseIndexedFiles,
+                    };
+                    return updated;
+                  }
+                  return prev;
+                });
+              }
+            } catch (innerError) {
+              console.error("延迟更新文件索引出错:", innerError);
+            }
+          }, 500);
         } catch (indexError) {
           console.error("更新文件索引出错:", indexError);
         }
@@ -472,78 +691,135 @@ export default function AITestDialog({
         setShowOptions(false);
       }
 
-      // 添加新轮次到对话轮次数组
-      setDialogRounds((prev) => [...prev, newRound]);
+      // 对话轮次数组已经通过前面的状态更新进行了修改，不需要再次设置
     } catch (error) {
       console.error("AI对话继续出错:", error);
       newRound.aiResponse = t("vectorReport.error");
       setDialogRounds((prev) => [...prev, newRound]);
+      setIsIndexing(false);
     } finally {
       setIsTesting(false);
     }
   };
 
-  // 渲染单个对话轮次
+  // 渲染单个对话轮次 - 修改为ChatGPT风格
   const renderDialogRound = (round: DialogRound, index: number) => {
+    const isLastRound = index === dialogRounds.length - 1;
+    const isAITyping = isLastRound && isTesting;
+    const isFirstRound = index === 0; // 检查是否是第一轮对话
+
     return (
-      <div
-        key={`round-${index}`}
-        className="mb-8 bg-gradient-to-r from-gray-50 to-white dark:from-gray-800/30 dark:to-gray-900 p-4 rounded-lg border border-gray-200 dark:border-gray-700"
-      >
-        {/* 用户输入 */}
-        <div className="bg-blue-50 dark:bg-blue-900/20 p-3 mb-4 rounded-md border-l-4 border-blue-500">
-          <strong>用户:</strong> {round.userInput}
-        </div>
-
-        {/* 相关文件索引 */}
-        {round.files && round.files.length > 0 && (
-          <div className="mb-4">
-            <div className="text-sm text-gray-500 dark:text-gray-400 mb-2 font-medium">
-              相关文件索引:
+      <div key={`round-${index}`} className="mb-2">
+        {/* 用户消息 - 第一轮不显示 */}
+        {!isFirstRound && (
+          <div className="flex items-start mb-4">
+            <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white mr-3">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
+                  clipRule="evenodd"
+                />
+              </svg>
             </div>
-            <FileIndexCard
-              data={encodeURIComponent(JSON.stringify(round.files))}
-            />
+            <div className="flex-1">
+              <div className="font-medium text-gray-900 dark:text-white mb-1">
+                用户
+              </div>
+              <div className="prose prose-sm dark:prose-invert max-w-none">
+                {round.userInput}
+              </div>
+            </div>
           </div>
         )}
 
-        {/* AI响应 */}
-        <div className="ai-response">
-          <Markdown
-            options={{
-              overrides: {
-                pre: {
-                  component: ({ children }: any) => {
-                    return <>{children}</>;
+        {/* AI消息 */}
+        <div className="flex items-start mb-6">
+          <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-purple-600 to-blue-500 flex items-center justify-center text-white mr-3">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-5 w-5"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+            >
+              <path d="M2 10a8 8 0 018-8v8h8a8 8 0 11-16 0z" />
+              <path d="M12 2.252A8.014 8.014 0 0117.748 8H12V2.252z" />
+            </svg>
+          </div>
+          <div className="flex-1">
+            <div className="font-medium text-gray-900 dark:text-white mb-1">
+              AI助手
+            </div>
+
+            {/* 文件索引卡片 - 如果有的话 */}
+            {round.files &&
+              Array.isArray(round.files) &&
+              round.files.length > 0 && (
+                <div className="mb-3 overflow-x-auto">
+                  <FileIndexCard
+                    data={encodeURIComponent(JSON.stringify(round.files))}
+                  />
+                </div>
+              )}
+
+            {/* AI响应内容 */}
+            <div className="prose prose-sm dark:prose-invert max-w-none overflow-x-auto">
+              <Markdown
+                options={{
+                  overrides: {
+                    pre: {
+                      component: ({ children }: any) => {
+                        return <>{children}</>;
+                      },
+                    },
+                    code: {
+                      component: CodeBlock,
+                    },
+                    ToolCard: {
+                      component: ToolCard,
+                    },
+                    FileIndexCard: {
+                      component: FileIndexCard,
+                    },
                   },
-                },
-                code: {
-                  component: CodeBlock,
-                },
-                ToolCard: {
-                  component: ToolCard,
-                },
-                FileIndexCard: {
-                  component: FileIndexCard,
-                },
-              },
-            }}
-          >
-            {processMarkdown(round.aiResponse)}
-          </Markdown>
-        </div>
+                }}
+              >
+                {processMarkdown(round.aiResponse)}
+              </Markdown>
 
-        {/* 响应后的文件索引 */}
-        {round.responseFiles && round.responseFiles.length > 0 && (
-          <div className="mt-4">
-            <div className="text-sm text-gray-500 dark:text-gray-400 mb-2 font-medium">
-              根据AI响应更新的文件索引:
+              {/* 显示打字动画效果 */}
+              {isAITyping && (
+                <motion.span
+                  key={animationKey}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.3 }}
+                  className="inline-block ml-1 animate-pulse"
+                >
+                  <span className="inline-block w-1.5 h-4 bg-blue-500 dark:bg-blue-400 rounded-sm"></span>
+                </motion.span>
+              )}
             </div>
-            <FileIndexCard
-              data={encodeURIComponent(JSON.stringify(round.responseFiles))}
-            />
+
+            {/* 响应后的文件索引 */}
+            {round.responseFiles &&
+              Array.isArray(round.responseFiles) &&
+              round.responseFiles.length > 0 && (
+                <div className="mt-3 overflow-x-auto">
+                  <FileIndexCard
+                    data={encodeURIComponent(
+                      JSON.stringify(round.responseFiles)
+                    )}
+                  />
+                </div>
+              )}
           </div>
-        )}
+        </div>
       </div>
     );
   };
@@ -567,15 +843,22 @@ export default function AITestDialog({
       /```file-index-card([\s\S]*?)```/g,
       (match, content) => {
         try {
-          const files = content
-            .trim()
-            .split("\n")
-            .filter((f) => f.trim() !== "");
-          return `<FileIndexCard data="${encodeURIComponent(
-            JSON.stringify(files)
-          )}" />`;
+          // 安全地处理文件列表
+          let fileList: string[] = [];
+
+          if (content && typeof content === "string") {
+            fileList = content
+              .trim()
+              .split("\n")
+              .filter((f) => f && typeof f === "string" && f.trim() !== "");
+          }
+
+          // 确保传递的是有效的JSON字符串数组
+          const safeData = encodeURIComponent(JSON.stringify(fileList));
+          return `<FileIndexCard data="${safeData}" />`;
         } catch (error) {
           console.error("处理文件索引卡片出错:", error);
+          // 出错时传递空数组
           return `<FileIndexCard data="${encodeURIComponent(
             JSON.stringify([])
           )}" />`;
@@ -702,29 +985,24 @@ ${aiResponse}
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white dark:bg-gray-800 w-full h-full flex flex-col">
-        {/* 对话框标题栏 */}
-        <div className="bg-blue-600 dark:bg-blue-700 px-6 py-4 flex justify-between items-center">
-          <h2 className="text-xl font-semibold text-white flex items-center">
+        {/* 对话框标题栏 - 更现代的设计 */}
+        <div className="bg-white dark:bg-gray-800 px-6 py-3 flex justify-between items-center border-b border-gray-200 dark:border-gray-700">
+          <h2 className="text-lg font-semibold text-gray-800 dark:text-white flex items-center">
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              className="h-6 w-6 mr-2"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
+              className="h-5 w-5 mr-2 text-blue-600 dark:text-blue-400"
+              viewBox="0 0 20 20"
+              fill="currentColor"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
-              />
+              <path d="M2 5a2 2 0 012-2h7a2 2 0 012 2v4a2 2 0 01-2 2H9l-3 3v-3H4a2 2 0 01-2-2V5z" />
+              <path d="M15 7v2a4 4 0 01-4 4H9.828l-1.766 1.767c.28.149.599.233.938.233h2l3 3v-3h2a2 2 0 002-2V9a2 2 0 00-2-2h-1z" />
             </svg>
-            {t("vectorReport.testResult")}
+            AI 对话
           </h2>
           <div className="flex items-center space-x-2">
             <button
               onClick={copyCurrentResponse}
-              className="text-white hover:text-gray-200 focus:outline-none p-2 rounded-full hover:bg-blue-700"
+              className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 focus:outline-none p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
               title="复制当前响应"
             >
               <svg
@@ -744,11 +1022,11 @@ ${aiResponse}
             </button>
             <button
               onClick={onClose}
-              className="text-white hover:text-gray-200 focus:outline-none p-2 rounded-full hover:bg-blue-700"
+              className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 focus:outline-none p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                className="h-6 w-6"
+                className="h-5 w-5"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -764,54 +1042,44 @@ ${aiResponse}
           </div>
         </div>
 
-        {/* 对话内容区域 */}
+        {/* 对话内容区域 - ChatGPT风格 */}
         <div
           ref={contentRef}
-          className="flex-1 overflow-y-auto p-6 bg-gray-50 dark:bg-gray-900"
+          className="flex-1 overflow-y-auto p-4 md:p-6 bg-gray-50 dark:bg-gray-900"
         >
           {dialogRounds.length > 0 ? (
-            <div className="prose prose-sm dark:prose-invert max-w-none">
+            <div className="max-w-3xl mx-auto w-full">
               {/* 渲染所有完成的对话轮次 */}
               {dialogRounds.map(renderDialogRound)}
 
-              {/* 如果当前有正在进行的响应，显示当前轮次 */}
-              {currentResponse && (
-                <div className="mb-8 bg-gradient-to-r from-gray-50 to-white dark:from-gray-800/30 dark:to-gray-900 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
-                  <div className="ai-response">
-                    <Markdown
-                      options={{
-                        overrides: {
-                          pre: {
-                            component: ({ children }: any) => {
-                              return <>{children}</>;
-                            },
-                          },
-                          code: {
-                            component: CodeBlock,
-                          },
-                          ToolCard: {
-                            component: ToolCard,
-                          },
-                          FileIndexCard: {
-                            component: FileIndexCard,
-                          },
-                        },
-                      }}
+              {/* 如果正在索引文件，显示索引中状态 */}
+              {isIndexing && (
+                <div className="flex items-center justify-center p-4 mb-4">
+                  <div className="animate-spin mr-3">
+                    <svg
+                      className="w-5 h-5 text-blue-500"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
                     >
-                      {processMarkdown(currentResponse)}
-                    </Markdown>
-                    {lastChar && (
-                      <motion.span
-                        key={animationKey}
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ duration: 0.3 }}
-                        className="animate-char text-blue-600 dark:text-blue-400 font-medium"
-                      >
-                        {lastChar}
-                      </motion.span>
-                    )}
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      ></circle>
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      ></path>
+                    </svg>
                   </div>
+                  <span className="text-blue-700 dark:text-blue-300 font-medium">
+                    正在索引相关文件...
+                  </span>
                 </div>
               )}
 
@@ -855,104 +1123,111 @@ ${aiResponse}
           )}
         </div>
 
-        {/* 对话选项和输入区域 - 使用浮动面板而不是固定区域 */}
-        <AnimatePresence>
-          {!isTesting && !isComplete && currentRound > 0 && showOptions && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 20 }}
-              className="fixed bottom-16 right-6 max-w-md bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden"
-            >
-              <div className="p-4">
-                <div className="mb-3">
-                  <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex justify-between items-center">
-                    <span>{t("vectorReport.aiDialog.optionsTitle")}</span>
-                    <button
-                      onClick={() => setShowOptions(false)}
-                      className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-                    >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-4 w-4"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M6 18L18 6M6 6l12 12"
-                        />
-                      </svg>
-                    </button>
-                  </h3>
-                  <div className="flex flex-col gap-2">
-                    {dialogOptions.map((option) => (
-                      <button
-                        key={option.id}
-                        onClick={() => handleOptionClick(option)}
-                        className="px-3 py-2 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/30 dark:hover:bg-blue-800/50 text-blue-800 dark:text-blue-300 rounded-md text-sm transition-colors text-left"
-                      >
-                        {option.text}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+        {/* 底部输入区域 - ChatGPT风格 */}
+        <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+          <div className="max-w-3xl mx-auto">
+            <form onSubmit={handleCustomInputSubmit} className="relative">
+              <input
+                type="text"
+                value={customInput}
+                onChange={(e) => setCustomInput(e.target.value)}
+                placeholder={isTesting ? "AI正在思考中..." : "输入您的问题..."}
+                disabled={isTesting || isComplete}
+                className="w-full px-4 py-3 pr-24 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              />
 
-                <form onSubmit={handleCustomInputSubmit} className="flex gap-2">
-                  <input
-                    type="text"
-                    value={customInput}
-                    onChange={(e) => setCustomInput(e.target.value)}
-                    placeholder={t(
-                      "vectorReport.aiDialog.customInputPlaceholder"
-                    )}
-                    className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                  />
+              <div className="absolute right-2 top-2 flex space-x-1">
+                {!isTesting && !isComplete && (
                   <button
-                    type="submit"
-                    disabled={!customInput.trim()}
-                    className={`px-4 py-2 rounded-md text-white transition-colors ${
-                      !customInput.trim()
-                        ? "bg-gray-400 cursor-not-allowed"
-                        : "bg-blue-600 hover:bg-blue-700"
-                    }`}
+                    type="button"
+                    onClick={() => setShowOptions(!showOptions)}
+                    className="p-1.5 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 rounded-md hover:bg-gray-100 dark:hover:bg-gray-600"
+                    title="显示建议问题"
                   >
-                    {t("vectorReport.aiDialog.send")}
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-5 w-5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M8 12h.01M12 12h.01M16 12h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                      />
+                    </svg>
                   </button>
-                </form>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+                )}
 
-        {/* 底部操作区 */}
-        <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-750 flex justify-between items-center">
-          <div className="text-sm text-gray-500 dark:text-gray-400">
-            {currentRound > 0
-              ? t("vectorReport.aiDialog.round", {
-                  current: String(currentRound),
-                  max: String(maxRounds),
-                })
-              : t("vectorReport.aiDialog.initializing")}
-          </div>
-          <div className="flex items-center space-x-2">
-            {!showOptions && !isTesting && currentRound > 0 && !isComplete && (
-              <button
-                onClick={() => setShowOptions(true)}
-                className="px-4 py-2 bg-blue-100 hover:bg-blue-200 dark:bg-blue-900/30 dark:hover:bg-blue-800/50 text-blue-800 dark:text-blue-300 rounded-md text-sm transition-colors"
+                <button
+                  type="submit"
+                  disabled={!customInput.trim() || isTesting || isComplete}
+                  className={`p-1.5 rounded-md ${
+                    !customInput.trim() || isTesting || isComplete
+                      ? "text-gray-400 cursor-not-allowed"
+                      : "text-blue-600 hover:text-blue-700 dark:text-blue-500 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                  }`}
+                  title="发送"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-5 w-5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
+                    />
+                  </svg>
+                </button>
+              </div>
+            </form>
+
+            {/* 对话选项卡片 */}
+            {showOptions && dialogOptions.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 10 }}
+                className="mt-3 bg-white dark:bg-gray-750 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden"
               >
-                显示选项
-              </button>
+                <div className="p-2 flex flex-col gap-1">
+                  {dialogOptions.map((option) => (
+                    <button
+                      key={option.id}
+                      onClick={() => handleOptionClick(option)}
+                      className="px-3 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors"
+                    >
+                      {option.text}
+                    </button>
+                  ))}
+                </div>
+              </motion.div>
             )}
-            <button
-              onClick={handleTerminate}
-              className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md transition-colors"
-            >
-              {t("vectorReport.aiDialog.terminate")}
-            </button>
+
+            {/* 轮次信息和终止按钮 */}
+            <div className="flex justify-between items-center mt-3 text-xs text-gray-500 dark:text-gray-400">
+              <div>
+                {currentRound > 0
+                  ? t("vectorReport.aiDialog.round", {
+                      current: String(currentRound),
+                      max: String(maxRounds),
+                    })
+                  : t("vectorReport.aiDialog.initializing")}
+              </div>
+              <button
+                onClick={handleTerminate}
+                className="px-2 py-1 text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 hover:underline"
+              >
+                终止对话
+              </button>
+            </div>
           </div>
         </div>
       </div>
