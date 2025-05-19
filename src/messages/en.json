@@ -274,8 +274,8 @@
     "markdownFormat": "Markdown format",
     "resultDescription": "Structured Markdown text containing query, related file list, file contents, and optimization statistics",
     "copyInstructions": "Click the button above to copy the result, which can be directly pasted into large language models",
-    "testPrompt": "Test with AI",
-    "testingPrompt": "Testing with AI...",
+    "testPrompt": "Dialogue with code library",
+    "testingPrompt": "Preparing...",
     "testResult": "AI Response",
     "testInstructions": "Test how this prompt performs with the AI model",
     "testPlaceholder": "AI response will appear here...",
@@ -291,6 +291,21 @@
     "optimization": {
       "title": "Smart Vector Optimization",
       "description": "Through semantic vector analysis, {relevantCount} relevant resources have been precisely located from {totalCount} project files, estimated to save approximately {tokenCount} tokens for large models, improving processing efficiency by about {efficiencyFactor}x."
+    },
+    "toolCard": {
+      "title": "Tool Call",
+      "params": "Params",
+      "result": "Result",
+      "simulation": "AI Simulation"
+    },
+    "aiDialog": {
+      "title": "Code Library Dialogue",
+      "terminate": "Terminate Dialogue",
+      "round": "Round {current}/{max}",
+      "initializing": "Initializing dialogue...",
+      "optionsTitle": "Select next action:",
+      "customInputPlaceholder": "Or input a custom question...",
+      "send": "Send"
     }
   }
 }
