@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  //导出静态
   output: "export",
+  reactStrictMode: false,
   typescript: {
     ignoreBuildErrors: true,
   },

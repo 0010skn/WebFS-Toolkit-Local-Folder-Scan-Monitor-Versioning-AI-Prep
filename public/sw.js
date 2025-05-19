@@ -1,8 +1,9 @@
 // 缓存名称和版本
-const CACHE_NAME = "folda-scan-cache-v1";
+const CACHE_NAME =
+  "folda-scan-cache-v2-" + new Date().toISOString().split("T")[0];
 
 // 需要缓存的资源列表
-const urlsToCache = ["/", "/index.html", "/manifest.json"];
+let urlsToCache = ["/", "/index.html", "/manifest.json"];
 
 // 安装Service Worker
 self.addEventListener("install", (event) => {

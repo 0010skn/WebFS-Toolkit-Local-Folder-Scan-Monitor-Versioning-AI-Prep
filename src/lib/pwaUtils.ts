@@ -26,6 +26,10 @@ export async function registerServiceWorker(): Promise<boolean> {
     console.log("当前浏览器不支持Service Worker");
     return false;
   }
+  if (process.env.NODE_ENV === "development") {
+    console.log("开发环境下不注册Service Worker");
+    return false;
+  }
 
   try {
     const registration = await navigator.serviceWorker.register("/sw.js");
