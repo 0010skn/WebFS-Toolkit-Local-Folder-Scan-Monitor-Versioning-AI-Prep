@@ -344,7 +344,7 @@ export default function SettingsPage() {
                 </p>
                 <p className="flex justify-between">
                   <span>{t("about.developer")}:</span>
-                  <span className="font-medium">Folda-Scan Team</span>
+                  <span className="font-medium">Folda-Scan</span>
                 </p>
               </div>
               <div className="pt-3 border-t border-gray-200 dark:border-gray-600 text-center text-xs text-gray-500 dark:text-gray-400">
