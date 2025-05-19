@@ -59,7 +59,7 @@
     "seconds": "seconds",
     "showAllFiles": "Show All Files",
     "download": "Download Report",
-    "vectorize": "Vectorize Report",
+    "vectorize": "Dialogue with code library",
     "monitoring": "Monitoring...",
     "usingObserver": "Using real-time FileSystemObserver",
     "usingPolling": "Automatic scanning every",

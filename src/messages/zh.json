@@ -59,7 +59,7 @@
     "seconds": "秒",
     "showAllFiles": "显示所有文件",
     "download": "下载报告",
-    "vectorize": "向量化报告",
+    "vectorize": "与代码库对话",
     "monitoring": "监控中...",
     "usingObserver": "使用实时文件系统观察器",
     "usingPolling": "自动扫描，每",
