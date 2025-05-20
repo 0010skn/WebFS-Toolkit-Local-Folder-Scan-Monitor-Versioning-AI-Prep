@@ -20,6 +20,7 @@ import { useAtom } from "jotai";
 import { currentScanAtom } from "../lib/store";
 import { KnowledgeEntry } from "../lib/knowledgeService";
 import { FileSystemEntry } from "../types";
+import RequirementGeneratorModal from "@/components/RequirementGeneratorModal";
 
 interface AITestDialogProps {
   onClose: () => void;
@@ -394,6 +395,11 @@ export default function AITestDialog({
   // 新增当前轮次的引用
   const currentRoundRef = useRef<HTMLDivElement>(null);
 
+  // 添加需求生成器相关状态
+  const [showRequirementGenerator, setShowRequirementGenerator] =
+    useState(false);
+  const [requirementContext, setRequirementContext] = useState("");
+
   // 自动滚动到当前AI回复的开头位置
   const scrollToCurrentResponse = useCallback(() => {
     if (currentRoundRef.current) {
@@ -501,7 +507,13 @@ export default function AITestDialog({
                 ? entry.content.substring(0, 30000) + "..."
                 : entry.content;
 
-            enhancedPrompt += `文件: ${path}\n\`\`\`\n${truncatedContent}\n\`\`\`\n\n`;
+            // 添加行号到每行
+            const contentWithLineNumbers = truncatedContent
+              .split("\n")
+              .map((line, index) => `${index + 1} ${line}`)
+              .join("\n");
+
+            enhancedPrompt += `文件: ${path}\n\`\`\`\n${contentWithLineNumbers}\n\`\`\`\n\n`;
           }
         }
 
@@ -582,7 +594,8 @@ export default function AITestDialog({
       // 移除第一轮对话结束后基于AI响应的第二次向量化搜索
 
       // 生成对话选项
-      generateDialogOptions(initialPrompt, response);
+      const options = await generateDialogOptions(initialPrompt, response);
+      setDialogOptions(options);
       // 默认不显示选项
       setShowOptions(false);
     } catch (error) {
@@ -688,7 +701,13 @@ export default function AITestDialog({
                 ? entry.content.substring(0, 3000) + "..."
                 : entry.content;
 
-            enhancedInput += `文件: ${path}\n\`\`\`\n${truncatedContent}\n\`\`\`\n\n`;
+            // 添加行号到每行
+            const contentWithLineNumbers = truncatedContent
+              .split("\n")
+              .map((line, index) => `${index + 1} ${line}`)
+              .join("\n");
+
+            enhancedInput += `文件: ${path}\n\`\`\`\n${contentWithLineNumbers}\n\`\`\`\n\n`;
           }
         }
       }
@@ -798,7 +817,8 @@ export default function AITestDialog({
       } else {
         // 移除第二次向量化搜索，不再基于AI回复重新索引文件
         // 生成新的对话选项
-        generateDialogOptions(input, response);
+        const options = await generateDialogOptions(input, response);
+        setDialogOptions(options);
         // 默认不显示选项
         setShowOptions(false);
       }
@@ -964,34 +984,69 @@ export default function AITestDialog({
                     tokens
                   </span>
                 </div>
-                <motion.button
-                  onClick={() => {
-                    navigator.clipboard.writeText(round.aiResponse);
-                  }}
-                  className="flex items-center text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 transition-colors self-end sm:self-auto rounded-md px-2 py-1"
-                  whileHover={{
-                    scale: 1.05,
-                    backgroundColor: "rgba(59, 130, 246, 0.1)",
-                  }}
-                  whileTap={{ scale: 0.95 }}
-                  title="复制AI回复"
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-4 w-4 mr-1"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
+                <div className="flex items-center space-x-2 self-end sm:self-auto">
+                  <motion.button
+                    onClick={() => {
+                      navigator.clipboard.writeText(round.aiResponse);
+                    }}
+                    className="flex items-center text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 transition-colors rounded-md px-2 py-1"
+                    whileHover={{
+                      scale: 1.05,
+                      backgroundColor: "rgba(59, 130, 246, 0.1)",
+                    }}
+                    whileTap={{ scale: 0.95 }}
+                    title={t("copy.copied")}
                   >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
-                    />
-                  </svg>
-                  <span>复制</span>
-                </motion.button>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-4 w-4 mr-1"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                      />
+                    </svg>
+                    <span>{t("copy.copy")}</span>
+                  </motion.button>
+
+                  {/* 添加生成需求按钮 */}
+                  <motion.button
+                    onClick={() => {
+                      // 构建上下文，包括用户输入和AI回复
+                      const context = `用户问题: ${round.userInput}\n\nAI回复: ${round.aiResponse}`;
+                      setRequirementContext(context);
+                      setShowRequirementGenerator(true);
+                    }}
+                    className="flex items-center text-green-500 hover:text-green-600 dark:text-green-400 dark:hover:text-green-300 transition-colors rounded-md px-2 py-1"
+                    whileHover={{
+                      scale: 1.05,
+                      backgroundColor: "rgba(34, 197, 94, 0.1)",
+                    }}
+                    whileTap={{ scale: 0.95 }}
+                    title={t("requirementGenerator.generate")}
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-4 w-4 mr-1"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                      />
+                    </svg>
+                    <span>{t("requirementGenerator.generate")}</span>
+                  </motion.button>
+                </div>
               </motion.div>
             )}
 
@@ -1126,32 +1181,32 @@ ${aiResponse}
         const options = JSON.parse(jsonContent);
 
         if (Array.isArray(options) && options.length > 0) {
-          setDialogOptions(options);
+          return options;
         } else {
           // 如果解析失败，使用默认选项
-          setDialogOptions([
+          return [
             { id: "option1", text: "请详细解释项目的核心功能" },
             { id: "option2", text: "这个项目的技术架构是什么?" },
             { id: "option3", text: "有哪些关键组件和它们的作用?" },
-          ]);
+          ];
         }
       } catch (error) {
         console.error("解析选项JSON出错:", error);
         // 使用默认选项
-        setDialogOptions([
+        return [
           { id: "option1", text: "请详细解释项目的核心功能" },
           { id: "option2", text: "这个项目的技术架构是什么?" },
           { id: "option3", text: "有哪些关键组件和它们的作用?" },
-        ]);
+        ];
       }
     } catch (error) {
       console.error("生成对话选项出错:", error);
       // 使用默认选项
-      setDialogOptions([
+      return [
         { id: "option1", text: "请详细解释项目的核心功能" },
         { id: "option2", text: "这个项目的技术架构是什么?" },
         { id: "option3", text: "有哪些关键组件和它们的作用?" },
-      ]);
+      ];
     }
   };
 
@@ -1439,6 +1494,14 @@ ${aiResponse}
             </div>
           </div>
         </div>
+
+        {/* 添加需求生成器弹窗 */}
+        {showRequirementGenerator && (
+          <RequirementGeneratorModal
+            context={requirementContext}
+            onClose={() => setShowRequirementGenerator(false)}
+          />
+        )}
       </div>
     </div>
   );

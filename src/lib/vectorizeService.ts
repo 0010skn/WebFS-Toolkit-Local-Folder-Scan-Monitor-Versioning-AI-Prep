@@ -4,9 +4,21 @@
  */
 
 import { getAllKnowledgeEntries } from "./knowledgeService";
+import { getDefaultLocale } from "./i18n";
 
 // 基本配置
 const API_URL = "https://text.pollinations.ai/openai";
+
+/**
+ * 根据当前语言获取本地化的提示词
+ * @param zh 中文提示词
+ * @param en 英文提示词
+ * @returns 根据当前语言返回相应的提示词
+ */
+export function getLocalizedPrompt(zh: string, en: string): string {
+  const locale = getDefaultLocale();
+  return locale === "zh" ? zh : en;
+}
 
 /**
  * 基本聊天完成请求
@@ -125,7 +137,8 @@ export async function testWithAI(
       // 构建系统提示
       const systemPrompt =
         customSystemPrompt ||
-        `你是一个强大的AI编码助手，正在帮助用户解决一个编程任务。这是一个多轮对话测试，最多进行${maxRounds}轮。
+        getLocalizedPrompt(
+          `你是一个强大的AI编码助手，正在帮助用户解决一个编程任务。这是一个多轮对话测试，最多进行${maxRounds}轮。
 
 请主动分析用户提供的代码和项目信息，不要等待用户明确指示。你应该：
 1. 提供深入的代码分析和见解
@@ -146,7 +159,30 @@ export async function testWithAI(
 
 在第${maxRounds}轮对话结束后，你必须提醒用户"测试已完成所有对话轮次，测试完毕。如需继续，请重新开始测试。"
 
-你的回复应该是有帮助的、专业的，并且表现出主动性和专业性。请基于用户提供的项目信息开始第一轮对话。`;
+你的回复应该是有帮助的、专业的，并且表现出主动性和专业性。请基于用户提供的项目信息开始第一轮对话。`,
+          `You are a powerful AI coding assistant helping the user solve a programming task. This is a multi-round conversation test with a maximum of ${maxRounds} rounds.
+
+Please actively analyze the code and project information provided by the user, without waiting for explicit instructions. You should:
+1. Provide in-depth code analysis and insights
+2. Proactively identify potential issues and suggest solutions
+3. Demonstrate understanding of the overall project architecture
+4. Offer specific, actionable advice
+
+Important formatting guidelines:
+- Only use code blocks (\`\`\`language ...code... \`\`\`) when displaying actual code snippets
+- Avoid using code block formatting for regular explanatory text, nouns, folder names, or file names
+- When referencing variable names, function names, or short code snippets, use inline code format (\`code\`) rather than code blocks
+- Keep your answers clear and concise, avoiding unnecessary markup and formatting
+- Use code block formatting for long code snippets
+
+Note: All necessary file contents have already been provided in the user's message. You don't need to use tool calls to get file contents. Answer questions directly based on the file contents provided in the user's message.
+
+At the end of each conversation round, you should summarize the current progress and suggest possible directions for further exploration.
+
+After the ${maxRounds}th round of conversation, you must remind the user "The test has completed all conversation rounds. Test complete. To continue, please restart the test."
+
+Your responses should be helpful, professional, and demonstrate proactivity and expertise. Please start the first round of conversation based on the project information provided by the user.`
+        );
 
       // 构建用户提示
       const userPrompt = prompt;
@@ -196,7 +232,10 @@ export async function testWithAI(
     for (let i = 1; i < maxRounds; i++) {
       currentRound++;
       // 模拟用户输入
-      const userFollowUp = `请继续分析项目，提供第${currentRound}轮的见解。`;
+      const userFollowUp = getLocalizedPrompt(
+        `请继续分析项目，提供第${currentRound}轮的见解。`,
+        `Please continue analyzing the project and provide insights for round ${currentRound}.`
+      );
       conversationHistory.push({ role: "user", content: userFollowUp });
 
       // 获取助手响应
@@ -217,7 +256,10 @@ export async function testWithAI(
     // 最终提醒
     if (onUpdate) {
       onUpdate(
-        "\n\n测试已完成所有对话轮次，测试完毕。如需继续，请重新开始测试。"
+        getLocalizedPrompt(
+          "\n\n测试已完成所有对话轮次，测试完毕。如需继续，请重新开始测试。",
+          "\n\nThe test has completed all conversation rounds. Test complete. To continue, please restart the test."
+        )
       );
     }
 
@@ -225,7 +267,12 @@ export async function testWithAI(
     return conversationHistory
       .filter((msg) => msg.role !== "system")
       .map(
-        (msg) => `${msg.role === "user" ? "用户" : "AI助手"}：${msg.content}`
+        (msg) =>
+          `${
+            msg.role === "user"
+              ? getLocalizedPrompt("用户", "User")
+              : getLocalizedPrompt("FoldaScan Agent", "FoldaScan Agent")
+          }：${msg.content}`
       )
       .join("\n\n---\n\n");
   } catch (error) {
@@ -253,7 +300,8 @@ async function simulateRound(
   // 构建提示，包含轮次信息
   const roundPrompt =
     customSystemPrompt ||
-    `你是一个强大的AI编码助手，正在帮助用户解决编程任务。这是第${currentRound}/${maxRounds}轮对话。
+    getLocalizedPrompt(
+      `你是一个强大的AI编码助手，正在帮助用户解决编程任务。这是第${currentRound}/${maxRounds}轮对话。
 
 请主动分析用户提供的代码和项目信息，不要等待用户明确指示。你应该：
 1. 提供深入的代码分析和见解
@@ -270,10 +318,32 @@ async function simulateRound(
 注意：所有必要的文件内容已经在用户消息中提供，不需要使用工具调用来获取文件内容。直接基于用户消息中提供的文件内容回答问题。
 
 你的回复应该是有帮助的、专业的，并且表现出主动性和专业性。${
-      currentRound === maxRounds
-        ? "这是最后一轮对话，请在回复结束时提醒用户测试完毕并做出总结。"
-        : ""
-    }`;
+        currentRound === maxRounds
+          ? "这是最后一轮对话，请在回复结束时提醒用户测试完毕并做出总结。"
+          : ""
+      }`,
+      `You are a powerful AI coding assistant helping the user solve programming tasks. This is round ${currentRound}/${maxRounds} of the conversation.
+
+Please actively analyze the code and project information provided by the user, without waiting for explicit instructions. You should:
+1. Provide in-depth code analysis and insights
+2. Proactively identify potential issues and suggest solutions
+3. Demonstrate understanding of the overall project architecture
+4. Offer specific, actionable advice
+
+Important formatting guidelines:
+- Only use code blocks (\`\`\`language ...code... \`\`\`) when displaying actual code snippets
+- Avoid using code block formatting for regular explanatory text
+- When referencing variable names, function names, or short code snippets, use inline code format (\`code\`) rather than code blocks
+- Keep your answers clear and concise, avoiding unnecessary markup and formatting
+
+Note: All necessary file contents have already been provided in the user's message. You don't need to use tool calls to get file contents. Answer questions directly based on the file contents provided in the user's message.
+
+Your responses should be helpful, professional, and demonstrate proactivity and expertise.${
+        currentRound === maxRounds
+          ? " This is the final round of conversation, please remind the user that the test is complete and provide a summary at the end of your response."
+          : ""
+      }`
+    );
 
   // 添加轮次提示到历史
   const conversationWithRound = [
@@ -333,30 +403,50 @@ export async function findRelevantFiles(
     }
 
     // 构建提示
-    let prompt = `你是一个专业的代码项目分析工具，你的任务是分析用户的查询，并从项目中找出与查询最相关的文件和知识库条目。
+    const basePrompt = getLocalizedPrompt(
+      `你是一个专业的代码项目分析工具，你的任务是分析用户的查询，并从项目中找出与查询最相关的文件和知识库条目。
 请基于文件路径、文件名以及知识库条目标题的语义相关性，找出最相关的资源。
 如果提供了文件内容，也请考虑内容的相关性。
 
 用户查询: "${query}"
 
-可用的文件路径:`;
+可用的文件路径:`,
+      `You are a professional code project analysis tool. Your task is to analyze the user's query and find the most relevant files and knowledge base entries from the project.
+Please identify the most relevant resources based on the semantic relevance of file paths, file names, and knowledge base entry titles.
+If file contents are provided, please also consider the relevance of the content.
+
+User query: "${query}"
+
+Available file paths:`
+    );
+
+    let prompt = basePrompt;
 
     // 添加文件路径信息
     if (filePaths && Array.isArray(filePaths) && filePaths.length > 0) {
       // 每行一个文件路径
       prompt += "\n" + filePaths.join("\n");
     } else {
-      prompt += "\n没有可用的文件路径";
+      prompt += getLocalizedPrompt(
+        "\n没有可用的文件路径",
+        "\nNo available file paths"
+      );
     }
 
     // 添加知识库条目信息
     if (knowledgeEntries.length > 0) {
-      prompt += `\n\n可用的知识库条目标题:\n`;
+      prompt += getLocalizedPrompt(
+        `\n\n可用的知识库条目标题:\n`,
+        `\n\nAvailable knowledge base entry titles:\n`
+      );
       knowledgeEntries.forEach((entry, index) => {
         prompt += `${index + 1}. ${entry.title}\n`;
       });
     } else {
-      prompt += `\n\n没有可用的知识库条目\n`;
+      prompt += getLocalizedPrompt(
+        `\n\n没有可用的知识库条目\n`,
+        `\n\nNo available knowledge base entries\n`
+      );
     }
 
     // 如果提供了文件内容，添加到提示中以提高搜索质量
@@ -364,7 +454,10 @@ export async function findRelevantFiles(
       // 为了避免提示过长，只添加前10个文件的内容
       const contentPaths = Object.keys(fileContents).slice(0, 10);
       if (contentPaths.length > 0) {
-        prompt += `\n\n以下是一些可能相关的文件内容:\n\n`;
+        prompt += getLocalizedPrompt(
+          `\n\n以下是一些可能相关的文件内容:\n\n`,
+          `\n\nHere are some potentially relevant file contents:\n\n`
+        );
 
         for (const path of contentPaths) {
           const content = fileContents[path];
@@ -374,12 +467,22 @@ export async function findRelevantFiles(
               ? content.substring(0, 1000) + "..."
               : content;
 
-          prompt += `文件: ${path}\n内容:\n${truncatedContent}\n\n---\n\n`;
+          // 添加行号到每行
+          const contentWithLineNumbers = truncatedContent
+            .split("\n")
+            .map((line, index) => `${index + 1} ${line}`)
+            .join("\n");
+
+          prompt += getLocalizedPrompt(
+            `文件: ${path}\n内容:\n${contentWithLineNumbers}\n\n---\n\n`,
+            `File: ${path}\nContent:\n${contentWithLineNumbers}\n\n---\n\n`
+          );
         }
       }
     }
 
-    prompt += `\n请返回与查询最相关的资源列表，包括文件路径和知识库条目标题，按相关性从高到低排序。
+    const finalInstructions = getLocalizedPrompt(
+      `\n请返回与查询最相关的资源列表，包括文件路径和知识库条目标题，按相关性从高到低排序。
 每类资源最多返回10个，按相关性从高到低排序。
 必须确保返回至少2个相关文件路径，即使匹配度不高也要返回最相关的几个。
 只返回JSON格式，不要有任何其他解释。格式如下:
@@ -387,10 +490,28 @@ export async function findRelevantFiles(
   "query": "用户查询",
   "relevant_paths": ["文件路径1", "文件路径2", ...],
   "knowledge_entries": ["知识条目标题1", "知识条目标题2", ...]
-}`;
+}`,
+      `\nPlease return a list of resources most relevant to the query, including file paths and knowledge base entry titles, sorted by relevance from highest to lowest.
+Return at most 10 resources for each category, sorted by relevance from highest to lowest.
+Make sure to return at least 2 relevant file paths, even if the match score is low, return the most relevant ones.
+Return only JSON format, without any other explanation. Format as follows:
+{
+  "query": "user query",
+  "relevant_paths": ["file path 1", "file path 2", ...],
+  "knowledge_entries": ["knowledge entry title 1", "knowledge entry title 2", ...]
+}`
+    );
+
+    prompt += finalInstructions;
 
     // 调用API获取相关资源
     console.log("正在调用API，发送的prompt:", prompt);
+
+    const systemPrompt = getLocalizedPrompt(
+      "你是一个专业的代码项目分析工具，你的任务是分析用户的查询，并从项目中找出与查询最相关的文件和知识库条目。必须至少返回2个相关文件路径，即使相关性不高。",
+      "You are a professional code project analysis tool. Your task is to analyze the user's query and find the most relevant files and knowledge base entries from the project. You must return at least 2 relevant file paths, even if the relevance is low."
+    );
+
     const response = await fetch("https://text.pollinations.ai/openai", {
       method: "POST",
       headers: {
@@ -401,8 +522,7 @@ export async function findRelevantFiles(
         messages: [
           {
             role: "system",
-            content:
-              "你是一个专业的代码项目分析工具，你的任务是分析用户的查询，并从项目中找出与查询最相关的文件和知识库条目。必须至少返回2个相关文件路径，即使相关性不高。",
+            content: systemPrompt,
           },
           { role: "user", content: prompt },
         ],

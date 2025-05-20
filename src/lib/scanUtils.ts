@@ -106,8 +106,8 @@ export async function scanDirectory(
   maxContentSize: number = 1024 * 1024 * 1 // 减小默认限制为1MB以提高性能
 ): Promise<FileSystemEntry[]> {
   const entries: FileSystemEntry[] = [];
-  const BATCH_SIZE = 50; // 批处理大小
-  const MAX_CONCURRENT_DIRS = 8; // 最大并行处理目录数
+  const BATCH_SIZE = 100; // 批处理大小
+  const MAX_CONCURRENT_DIRS = 32; // 最大并行处理目录数
 
   // 创建一个工作队列来控制并发
   const dirQueue: { handle: FileSystemDirectoryHandle; path: string }[] = [];
@@ -191,7 +191,6 @@ export async function scanDirectory(
                     console.log(`无法读取文件内容 ${path}: ${contentError}`);
                   }
                 }
-
                 localEntries.push(entry);
               } else if (handle.kind === "directory") {
                 // 将子目录添加到队列中，而不是立即处理
@@ -688,6 +687,9 @@ export function generateDiffReport(
     modifiedFiles,
     projectStructure,
     codeStructure,
+    fileChanges: [],
+    dirChanges: [],
+    gitignoreRules: [],
   };
 
   // 如果需要，添加所有文件

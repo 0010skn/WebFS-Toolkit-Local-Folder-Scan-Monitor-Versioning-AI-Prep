@@ -54,6 +54,21 @@
     "errorTitle": "Error",
     "dismiss": "Dismiss"
   },
+  "copy": {
+    "copy": "Copy",
+    "copied": "Copied"
+  },
+  "requirementGenerator": {
+    "title": "Requirement Generator",
+    "generate": "Generate Requirements",
+    "generating": "Generating requirements based on the conversation, please wait...",
+    "generated": "The following requirements have been generated based on the conversation. You can copy and paste them into code assistants like Cursor or GitHub Copilot:",
+    "error": "Error generating requirements, please try again",
+    "copy": "Copy Requirements",
+    "copied": "Copied",
+    "close": "Close",
+    "footer": "Requirements description for code assistants"
+  },
   "scanControls": {
     "startScan": "Start Scan",
     "stopScan": "Stop Scan",

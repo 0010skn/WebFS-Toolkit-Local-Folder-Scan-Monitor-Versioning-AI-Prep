@@ -111,10 +111,10 @@ async function getAllSubdirectories(
           directories.push(subdirHandle);
           queue.push({ handle: subdirHandle, depth: depth + 1 });
 
-          // 输出调试信息，显示目录深度
-          if (process.env.NODE_ENV === "development") {
-            console.log(`发现目录: ${name}, 深度: ${depth + 1}`);
-          }
+          // // 输出调试信息，显示目录深度
+          // if (process.env.NODE_ENV === "development") {
+          //   console.log(`发现目录: ${name}, 深度: ${depth + 1}`);
+          // }
         }
       }
     } catch (error) {
@@ -241,13 +241,6 @@ export async function observeDirectoryChanges(
             }
           })
         );
-
-        // 每处理一批，输出进度
-        if (i + batchSize < subDirectories.length) {
-          console.log(
-            `已处理 ${i + batch.length}/${subDirectories.length} 个子目录...`
-          );
-        }
       }
 
       // 如果有新观察的目录，输出日志

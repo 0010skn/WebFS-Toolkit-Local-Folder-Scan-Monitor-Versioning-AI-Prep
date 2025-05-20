@@ -54,6 +54,21 @@
     "errorTitle": "出错了",
     "dismiss": "关闭"
   },
+  "copy": {
+    "copy": "复制",
+    "copied": "已复制"
+  },
+  "requirementGenerator": {
+    "title": "需求生成器",
+    "generate": "生成需求",
+    "generating": "正在根据对话内容生成需求，请稍候...",
+    "generated": "已根据对话内容生成以下需求，可直接复制并粘贴到代码智能体（如Cursor、GitHub Copilot等）中使用：",
+    "error": "生成需求时出错，请重试",
+    "copy": "复制需求",
+    "copied": "已复制",
+    "close": "关闭",
+    "footer": "适用于代码智能体的需求描述"
+  },
   "scanControls": {
     "startScan": "开始扫描",
     "stopScan": "停止扫描",

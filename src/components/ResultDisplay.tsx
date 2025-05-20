@@ -154,7 +154,7 @@ export default function ResultDisplay() {
                 const hasFileDiff = changeReport.modifiedFiles.some(
                   (diff) => diff.path === file.path && diff.type === "added"
                 );
-                const isDirectory = file.kind === "directory";
+                const isDirectory = file.type === "directory";
 
                 return (
                   <li
@@ -188,7 +188,7 @@ export default function ResultDisplay() {
             </h3>
             <ul className="list-disc pl-5 space-y-1">
               {changeReport.deletedFiles.map((file) => {
-                const isDirectory = file.kind === "directory";
+                const isDirectory = file.type === "directory";
                 return (
                   <li
                     key={file.path}
@@ -340,15 +340,15 @@ export default function ResultDisplay() {
             className="border-b dark:border-gray-700 pb-4 mb-4 last:border-0"
           >
             <h3 className="text-md font-medium text-blue-600 dark:text-blue-400">
-              {file.kind === "directory" ? <FolderIcon /> : <FileIcon />}
+              {file.type === "directory" ? <FolderIcon /> : <FileIcon />}
               {file.path}
-              {file.kind === "directory" ? "/" : ""}
+              {file.type === "directory" ? "/" : ""}
             </h3>
-            {file.kind === "file" && file.content ? (
+            {file.type === "file" && file.content ? (
               <pre className="mt-2 p-3 bg-gray-100 dark:bg-gray-700 rounded-md text-sm overflow-auto max-h-96 text-gray-800 dark:text-gray-200 transition-colors duration-300">
                 {file.content}
               </pre>
-            ) : file.kind === "directory" ? (
+            ) : file.type === "directory" ? (
               <p className="text-gray-600 dark:text-gray-400 mt-2 text-sm">
                 （{t("resultDisplay.directoryContent")}）
               </p>

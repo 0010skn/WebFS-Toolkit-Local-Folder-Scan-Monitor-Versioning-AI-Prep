@@ -51,10 +51,13 @@ export async function performScan(
 ): Promise<ScanResult> {
   // 创建gitignore过滤器
   const shouldInclude = await createGitignoreFilter(dirHandle);
-
+  const startTime = new Date();
+  console.log("开始扫描目录...", startTime.toLocaleString());
   // 扫描目录
   const entries = await scanDirectory(dirHandle, shouldInclude);
-
+  const endTime = new Date();
+  const duration = endTime.getTime() - startTime.getTime();
+  console.log(`扫描耗时: ${duration} 毫秒`);
   // 返回扫描结果
   return {
     entries,

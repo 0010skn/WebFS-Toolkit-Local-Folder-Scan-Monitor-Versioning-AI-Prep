@@ -325,7 +325,13 @@ export default function VectorizeModal({ onClose }: VectorizeModalProps) {
       if (Object.keys(contents).length > 0) {
         textResult += `## 文件内容\n`;
         Object.entries(contents).forEach(([path, content]) => {
-          textResult += `\n### ${path}\n\`\`\`\n${content}\n\`\`\`\n`;
+          // 添加行号到每行
+          const contentWithLineNumbers = content
+            .split("\n")
+            .map((line, index) => `${index + 1} ${line}`)
+            .join("\n");
+
+          textResult += `\n### ${path}\n\`\`\`\n${contentWithLineNumbers}\n\`\`\`\n`;
         });
       } else {
         textResult += `## 文件内容\n未找到相关文件内容\n\n`;
