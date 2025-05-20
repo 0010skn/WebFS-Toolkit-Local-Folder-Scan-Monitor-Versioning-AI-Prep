@@ -820,3 +820,108 @@ export async function vectorizeAllContent(
 
   return vectorizedDocuments;
 }
+
+/**
+ * 使用搜索生成内容
+ * @param keyword 搜索关键词
+ * @param onUpdate 可选的流式更新回调
+ * @returns 生成的内容
+ */
+export async function searchGpt(
+  keyword: string,
+  onUpdate?: (chunk: string) => void
+): Promise<string> {
+  try {
+    // 构建提示词
+    const prompt = getLocalizedPrompt(
+      `针对关键词 "${keyword}"，执行最大范围的实时搜索。将所有搜索结果整合提炼，并以结构清晰的 Markdown 文档格式输出。
+      
+文档要求：
+1. 以"${keyword}"作为文档标题
+2. 包含完整的背景信息和最新动态
+3. 按主题或时间顺序组织内容，使用适当的Markdown标题层级
+4. 提供全面且客观的信息总结
+5. 如果是技术主题，包含关键概念解释和应用场景
+6. 如果是新闻事件，包含事件起因、发展和影响
+7. 结尾部分提供简明扼要的总结
+
+请确保内容：
+- 结构清晰，使用Markdown格式（标题、列表、引用等）
+- 信息准确全面
+- 观点客观中立
+- 适合作为知识库参考资料`,
+
+      `For the keyword "${keyword}", perform a comprehensive real-time search. Synthesize all search results and output in a well-structured Markdown document format.
+      
+Document requirements:
+1. Use "${keyword}" as the document title
+2. Include complete background information and latest developments
+3. Organize content by topic or chronologically, using appropriate Markdown heading levels
+4. Provide comprehensive and objective information summary
+5. For technical topics, include key concept explanations and application scenarios
+6. For news events, include causes, developments, and impacts
+7. Provide a concise summary in the conclusion section
+
+Please ensure the content is:
+- Well-structured using Markdown format (headings, lists, quotes, etc.)
+- Accurate and comprehensive
+- Objective and neutral in perspective
+- Suitable as a knowledge base reference`
+    );
+
+    // 调用API获取响应
+    let response = "";
+
+    await chatCompletion(
+      [
+        {
+          role: "system",
+          content: getLocalizedPrompt(
+            "你是一个专业的研究助手，擅长整合和组织信息。你需要基于用户提供的关键词，生成一篇结构清晰、内容全面的Markdown格式文档。",
+            "You are a professional research assistant skilled at integrating and organizing information. You need to generate a well-structured, comprehensive Markdown document based on the keyword provided by the user."
+          ),
+        },
+        { role: "user", content: prompt },
+      ],
+      {
+        model: "openai-large",
+        stream: !!onUpdate,
+        onUpdate: (chunk) => {
+          response += chunk;
+          if (onUpdate) {
+            onUpdate(chunk);
+          }
+        },
+      }
+    );
+
+    // 如果没有使用流式更新，则需要获取完整响应
+    if (!onUpdate) {
+      const result = await chatCompletion(
+        [
+          {
+            role: "system",
+            content: getLocalizedPrompt(
+              "你是一个专业的研究助手，擅长整合和组织信息。你需要基于用户提供的关键词，生成一篇结构清晰、内容全面的Markdown格式文档。",
+              "You are a professional research assistant skilled at integrating and organizing information. You need to generate a well-structured, comprehensive Markdown document based on the keyword provided by the user."
+            ),
+          },
+          { role: "user", content: prompt },
+        ],
+        {
+          model: "openai-large",
+        }
+      );
+
+      response = result.choices[0].message.content;
+    }
+
+    return response;
+  } catch (error) {
+    console.error("搜索生成内容失败:", error);
+    return getLocalizedPrompt(
+      `# ${keyword}\n\n生成内容时发生错误，请重试。`,
+      `# ${keyword}\n\nAn error occurred while generating content. Please try again.`
+    );
+  }
+}

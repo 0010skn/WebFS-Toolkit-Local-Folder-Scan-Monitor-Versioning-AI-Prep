@@ -347,8 +347,9 @@
       "round": "第 {current}/{max} 轮对话",
       "initializing": "正在初始化对话...",
       "optionsTitle": "选择下一步操作:",
-      "customInputPlaceholder": "或输入自定义问题...",
-      "send": "发送"
+      "customInputPlaceholder": "输入您的问题...按Ctrl+Enter发送",
+      "send": "发送",
+      "thinking": "AI正在思考中..."
     },
     "knowledgeResults": "相关知识库条目 ({count})",
     "knowledgeEntries": "知识库条目",
@@ -385,6 +386,8 @@
     "contentLabel": "内容 (Markdown格式)",
     "selectOrCreateMessage": "选择或创建一个知识条目来查看内容",
     "processingZip": "处理ZIP文件中...",
-    "zipImportSuccess": "成功从ZIP文件导入 {total} 个Markdown文件"
+    "zipImportSuccess": "成功从ZIP文件导入 {total} 个Markdown文件",
+    "searchGenerate": "",
+    "generateFailed": "生成失败: {message}"
   }
 }

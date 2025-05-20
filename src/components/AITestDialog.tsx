@@ -9,6 +9,7 @@ import {
   parseFilePathsResult,
   getKnowledgeContent,
   chatCompletion,
+  getLocalizedPrompt,
 } from "../lib/vectorizeService";
 import Markdown from "markdown-to-jsx";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
@@ -1064,7 +1065,8 @@ export default function AITestDialog({
               const response = await chatCompletion([
                 {
                   role: "system",
-                  content: `你是一个专业的解释助手。请根据提供的上下文信息和文件内容，简明扼要地解释用户询问的关键词或术语，重点关注其在当前项目的含义。回答限制在200字以内。
+                  content: getLocalizedPrompt(
+                    `你是一个专业的解释助手。请根据提供的上下文信息和文件内容，简明扼要地解释用户询问的关键词或术语，重点关注其在当前项目的含义。回答限制在200字以内。
 
 在回答时遵循以下规则：
 1. 如果上下文中包含关于关键词的明确信息，优先使用这些信息进行解释
@@ -1073,10 +1075,22 @@ export default function AITestDialog({
 4. 如果缺乏具体信息，可以基于文件类型和项目上下文做出合理推测
 5. 总是包括关键词在项目中的实际或可能的应用场景
 6. 清晰、简洁地表达，使用技术准确的语言`,
+
+                    `You are a professional explanation assistant. Based on the provided context information and file content, concisely explain the keyword or term the user is asking about, focusing on its meaning in the current project. Limit your answer to 200 characters.
+
+Follow these rules when answering:
+1. If the context contains explicit information about the keyword, prioritize using this information for explanation
+2. For file names or module names, explain their function and purpose in the project
+3. For technical terms, explain their general meaning and specific application in the current project
+4. If specific information is lacking, make reasonable inferences based on file type and project context
+5. Always include the actual or potential application scenarios of the keyword in the project
+6. Express clearly and concisely, using technically accurate language`
+                  ),
                 },
                 {
                   role: "user",
-                  content: `基于以下上下文信息和文件内容，请解释"${keyword}"这个术语或概念在当前项目中的含义：
+                  content: getLocalizedPrompt(
+                    `基于以下上下文信息和文件内容，请解释"${keyword}"这个术语或概念在当前项目中的含义：
 
 上下文信息:
 ${contextInfo}
@@ -1088,6 +1102,20 @@ ${fileContents}
 - 如果这是一个文件名(如"import_to_supabase.py")，解释此文件可能的功能
 - 如果这是一个技术术语(如"vectorization")，解释其在当前技术栈中的含义
 - 如果这是一个框架组件(如"AITestDialog")，解释其用途和功能`,
+
+                    `Based on the following context information and file content, please explain the meaning of the term or concept "${keyword}" in the current project:
+
+Context information:
+${contextInfo}
+
+File content:
+${fileContents}
+
+If there is not enough information in the context, please make the most likely explanation based on your technical knowledge and the project context. For example:
+- If this is a file name (like "import_to_supabase.py"), explain the possible function of this file
+- If this is a technical term (like "vectorization"), explain its meaning in the current technology stack
+- If this is a framework component (like "AITestDialog"), explain its purpose and functionality`
+                  ),
                 },
               ]);
               console.log(`基于以下上下文信息和文件内容，请解释"${keyword}"这个术语或概念在当前项目中的含义：
@@ -2040,6 +2068,7 @@ ${aiResponse}
   const handleCustomInputSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (customInput.trim()) {
+      // 保留用户输入的换行符，不做额外处理
       continueConversation(customInput.trim());
     }
   };
@@ -2204,22 +2233,43 @@ ${aiResponse}
         <div className="p-3 sm:p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
           <div className="max-w-3xl mx-auto">
             <form onSubmit={handleCustomInputSubmit} className="relative">
-              <input
-                type="text"
+              <textarea
                 value={customInput}
                 onChange={(e) => setCustomInput(e.target.value)}
-                placeholder={isTesting ? "AI正在思考中..." : "输入您的问题..."}
+                onKeyDown={(e) => {
+                  // Ctrl+Enter 发送
+                  if (e.key === "Enter" && e.ctrlKey) {
+                    e.preventDefault();
+                    if (customInput.trim() && !isTesting && !isComplete) {
+                      handleCustomInputSubmit(e);
+                    }
+                  }
+                  // 普通回车换行
+                  else if (e.key === "Enter" && !e.ctrlKey && !e.shiftKey) {
+                    e.preventDefault();
+                    setCustomInput((prev) => prev + "\n");
+                  }
+                }}
+                placeholder={
+                  isTesting
+                    ? t("vectorReport.aiDialog.thinking") || "AI正在思考中..."
+                    : t("vectorReport.aiDialog.customInputPlaceholder") ||
+                      "输入您的问题...按Ctrl+Enter发送"
+                }
                 disabled={isTesting || isComplete}
-                className="w-full px-3 sm:px-4 py-2.5 sm:py-3 pr-20 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm sm:text-base"
+                className="w-full px-3 sm:px-4 py-2.5 sm:py-3 pr-20 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm sm:text-base min-h-[80px] max-h-[200px] resize-y whitespace-pre-wrap"
+                rows={4}
               />
 
-              <div className="absolute right-2 top-1.5 sm:top-2 flex space-x-1">
+              <div className="absolute right-2 bottom-2 sm:bottom-2.5 flex space-x-1">
                 {!isTesting && !isComplete && (
                   <button
                     type="button"
                     onClick={() => setShowOptions(!showOptions)}
                     className="p-1.5 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 rounded-md hover:bg-gray-100 dark:hover:bg-gray-600"
-                    title="显示建议问题"
+                    title={
+                      t("vectorReport.aiDialog.optionsTitle") || "显示建议问题"
+                    }
                   >
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
@@ -2246,7 +2296,7 @@ ${aiResponse}
                       ? "text-gray-400 cursor-not-allowed"
                       : "text-blue-600 hover:text-blue-700 dark:text-blue-500 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20"
                   }`}
-                  title="发送"
+                  title={t("vectorReport.aiDialog.send") || "发送"}
                 >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -2298,13 +2348,27 @@ ${aiResponse}
 
             {/* 轮次信息和终止按钮 */}
             <div className="flex justify-between items-center mt-2 sm:mt-3 text-xs text-gray-500 dark:text-gray-400">
-              <div>
+              <div className="flex items-center">
                 {currentRound > 0
                   ? t("vectorReport.aiDialog.round", {
                       current: String(currentRound),
                       max: String(maxRounds),
                     })
                   : t("vectorReport.aiDialog.initializing")}
+                <span className="ml-3 text-blue-500 dark:text-blue-400 hidden sm:inline-block">
+                  <kbd className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded border border-gray-300 dark:border-gray-600 mr-1">
+                    Ctrl
+                  </kbd>
+                  +
+                  <kbd className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded border border-gray-300 dark:border-gray-600 ml-1">
+                    Enter
+                  </kbd>{" "}
+                  发送 |
+                  <kbd className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded border border-gray-300 dark:border-gray-600 mx-1">
+                    Enter
+                  </kbd>{" "}
+                  换行
+                </span>
               </div>
               <button
                 onClick={handleTerminate}

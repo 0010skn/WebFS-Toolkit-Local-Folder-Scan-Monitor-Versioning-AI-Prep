@@ -344,8 +344,9 @@
       "round": "Round {current}/{max}",
       "initializing": "Initializing dialogue...",
       "optionsTitle": "Select next action:",
-      "customInputPlaceholder": "Or input a custom question...",
-      "send": "Send"
+      "customInputPlaceholder": "Enter your question...press Ctrl+Enter to send",
+      "send": "Send",
+      "thinking": "AI is thinking..."
     },
     "knowledgeResults": "Related Knowledge Entries ({count})",
     "knowledgeEntries": "Knowledge Entries",
@@ -382,6 +383,8 @@
     "contentLabel": "Content (Markdown format)",
     "selectOrCreateMessage": "Select or create a knowledge entry to view content",
     "processingZip": "Processing ZIP file...",
-    "zipImportSuccess": "Successfully imported {total} Markdown files from ZIP"
+    "zipImportSuccess": "Successfully imported {total} Markdown files from ZIP",
+    "searchGenerate": "Generate",
+    "generateFailed": "Generation failed: {message}"
   }
 }

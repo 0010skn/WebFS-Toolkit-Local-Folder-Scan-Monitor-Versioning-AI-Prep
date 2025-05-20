@@ -24,6 +24,7 @@ import {
 } from "@/lib/knowledgeUtils";
 import Markdown from "markdown-to-jsx";
 import { useTranslations } from "./LocaleProvider";
+import { searchGpt } from "@/lib/vectorizeService";
 
 // 定义导入结果接口
 interface ImportResult {
@@ -45,6 +46,8 @@ export default function KnowledgeModal() {
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
   const [activeTab, setActiveTab] = useState<"view" | "edit">("view");
   const [isProcessingZip, setIsProcessingZip] = useState(false);
+  const [isGeneratingContent, setIsGeneratingContent] = useState(false);
+  const [generatedContent, setGeneratedContent] = useState("");
 
   const mdFileInputRef = useRef<HTMLInputElement>(null);
   const knFileInputRef = useRef<HTMLInputElement>(null);
@@ -313,6 +316,39 @@ export default function KnowledgeModal() {
           message: error instanceof Error ? error.message : "未知错误",
         })
       );
+    }
+  };
+
+  // 处理搜索生成内容
+  const handleSearchGenerate = async () => {
+    if (!editing.title.trim()) {
+      alert(t("knowledgeModal.titleRequired"));
+      return;
+    }
+
+    setIsGeneratingContent(true);
+    setGeneratedContent("");
+
+    try {
+      // 调用searchGpt函数，使用流式更新
+      const content = await searchGpt(editing.title, (chunk) => {
+        setGeneratedContent((prev) => prev + chunk);
+      });
+
+      // 直接使用返回的完整内容更新编辑状态
+      setEditing((prev) => ({
+        ...prev,
+        content: content,
+      }));
+    } catch (error) {
+      console.error("生成内容失败:", error);
+      alert(
+        t("knowledgeModal.generateFailed", {
+          message: error instanceof Error ? error.message : "未知错误",
+        })
+      );
+    } finally {
+      setIsGeneratingContent(false);
     }
   };
 
@@ -730,47 +766,130 @@ export default function KnowledgeModal() {
                                 ({t("knowledgeModal.titleImportant")})
                               </span>
                             </label>
-                            <input
-                              type="text"
-                              value={editing.title}
-                              onChange={(e) =>
-                                setEditing((prev) => ({
-                                  ...prev,
-                                  title: e.target.value,
-                                }))
-                              }
-                              className="w-full px-3 py-2 border dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-                              placeholder={t("knowledgeModal.titlePlaceholder")}
-                            />
+                            <div className="flex gap-2">
+                              <input
+                                type="text"
+                                value={editing.title}
+                                onChange={(e) =>
+                                  setEditing((prev) => ({
+                                    ...prev,
+                                    title: e.target.value,
+                                  }))
+                                }
+                                className="w-full px-3 py-2 border dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                                placeholder={t(
+                                  "knowledgeModal.titlePlaceholder"
+                                )}
+                              />
+                              <button
+                                onClick={handleSearchGenerate}
+                                disabled={
+                                  isGeneratingContent || !editing.title.trim()
+                                }
+                                className={`flex items-center justify-center px-3 py-2 rounded-md text-white ${
+                                  isGeneratingContent || !editing.title.trim()
+                                    ? "bg-gray-400 cursor-not-allowed"
+                                    : "bg-emerald-600 hover:bg-emerald-700"
+                                }`}
+                                title={t("knowledgeModal.searchGenerate")}
+                              >
+                                {isGeneratingContent ? (
+                                  <svg
+                                    className="animate-spin h-5 w-5 text-white"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                  >
+                                    <circle
+                                      className="opacity-25"
+                                      cx="12"
+                                      cy="12"
+                                      r="10"
+                                      stroke="currentColor"
+                                      strokeWidth="4"
+                                    ></circle>
+                                    <path
+                                      className="opacity-75"
+                                      fill="currentColor"
+                                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                    ></path>
+                                  </svg>
+                                ) : (
+                                  <>
+                                    <svg
+                                      xmlns="http://www.w3.org/2000/svg"
+                                      className="h-5 w-5 mr-1"
+                                      fill="none"
+                                      viewBox="0 0 24 24"
+                                      stroke="currentColor"
+                                    >
+                                      <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={2}
+                                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                                      />
+                                    </svg>
+                                    {t("knowledgeModal.searchGenerate")}
+                                  </>
+                                )}
+                              </button>
+                            </div>
                           </div>
                           <div className="mb-4">
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                               {t("knowledgeModal.contentLabel")}
                             </label>
-                            <textarea
-                              value={editing.content}
-                              onChange={(e) =>
-                                setEditing((prev) => ({
-                                  ...prev,
-                                  content: e.target.value,
-                                }))
-                              }
-                              className="w-full px-3 py-2 border dark:border-gray-600 rounded-md h-96 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 font-mono"
-                              placeholder={t(
-                                "knowledgeModal.contentPlaceholder"
-                              )}
-                            />
+                            {isGeneratingContent ? (
+                              <div className="w-full px-3 py-2 border dark:border-gray-600 rounded-md h-96 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 font-mono overflow-y-auto">
+                                {generatedContent ? (
+                                  <div className="prose dark:prose-invert prose-sm max-w-none">
+                                    <Markdown>{generatedContent}</Markdown>
+                                  </div>
+                                ) : (
+                                  // 骨架屏加载效果
+                                  <div className="animate-pulse space-y-4">
+                                    <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
+                                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-full"></div>
+                                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-5/6"></div>
+                                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-full"></div>
+                                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-4/6"></div>
+                                    <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mt-6"></div>
+                                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-full"></div>
+                                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-5/6"></div>
+                                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-full"></div>
+                                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
+                                  </div>
+                                )}
+                              </div>
+                            ) : (
+                              <textarea
+                                value={editing.content}
+                                onChange={(e) =>
+                                  setEditing((prev) => ({
+                                    ...prev,
+                                    content: e.target.value,
+                                  }))
+                                }
+                                className="w-full px-3 py-2 border dark:border-gray-600 rounded-md h-96 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 font-mono"
+                                placeholder={t(
+                                  "knowledgeModal.contentPlaceholder"
+                                )}
+                              />
+                            )}
                           </div>
                           <div className="flex justify-end space-x-3">
                             <button
                               onClick={cancelEdit}
                               className="px-4 py-2 border dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                              disabled={isGeneratingContent}
                             >
                               {t("resultDisplay.cancel")}
                             </button>
                             <button
                               onClick={saveEntry}
                               className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md"
+                              disabled={isGeneratingContent}
                             >
                               {t("settings.save")}
                             </button>
