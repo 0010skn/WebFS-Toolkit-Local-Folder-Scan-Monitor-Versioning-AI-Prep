@@ -683,8 +683,9 @@ export default function AITestDialog({
                 currentScan.entries &&
                 currentScan.entries.length > 0
               ) {
-                // 从当前扫描结果中获取文件内容
+                // 首先从当前轮次的相关文件中获取内容
                 const relevantFiles = currentRoundData?.files || [];
+                let matchFound = false;
 
                 for (const file of relevantFiles) {
                   const entry = currentScan.entries.find(
@@ -692,22 +693,204 @@ export default function AITestDialog({
                   );
 
                   if (entry && entry.content) {
-                    // 提取文件内容的前1000个字符作为上下文
-                    const truncatedContent =
-                      entry.content.length > 1000
-                        ? entry.content.substring(0, 1000) + "..."
-                        : entry.content;
+                    // 检查关键词是否在文件内容中
+                    if (entry.content.includes(keyword)) {
+                      matchFound = true;
+                      // 获取关键词附近的上下文
+                      const keywordIndex = entry.content.indexOf(keyword);
+                      const contextStart = Math.max(0, keywordIndex - 500);
+                      const contextEnd = Math.min(
+                        entry.content.length,
+                        keywordIndex + keyword.length + 500
+                      );
+                      const keywordContext = entry.content.substring(
+                        contextStart,
+                        contextEnd
+                      );
 
-                    fileContents += `文件: ${file}\n内容:\n${truncatedContent}\n\n`;
+                      fileContents = `文件: ${file} (包含关键词 "${keyword}")\n内容:\n${keywordContext}\n\n`;
+                      break; // 找到匹配后退出循环
+                    } else {
+                      // 如果没有找到关键词，就添加文件内容
+                      const truncatedContent =
+                        entry.content.length > 1000
+                          ? entry.content.substring(0, 1000) + "..."
+                          : entry.content;
+
+                      fileContents += `文件: ${file}\n内容:\n${truncatedContent}\n\n`;
+                    }
                   }
                 }
+
+                // 如果当前轮次的文件中没有找到关键词，则在整个项目中搜索
+                if (!matchFound) {
+                  // 在所有项目文件中搜索关键词
+                  let mostRelevantFile: string | null = null;
+                  let mostRelevantContent = "";
+
+                  // 首先搜索精确的文件名匹配
+                  if (keyword.includes(".") && keyword.length > 3) {
+                    // 特殊文件类型处理
+                    const isPythonScript = keyword.endsWith(".py");
+                    const isDatabase =
+                      keyword.includes("db") ||
+                      keyword.includes("data") ||
+                      keyword.includes("sql");
+                    const isSupabase = keyword.includes("supabase");
+                    const isImport = keyword.includes("import");
+
+                    // 先尝试精确匹配
+                    const exactFileMatch = currentScan.entries.find(
+                      (e) =>
+                        e.path && e.path.endsWith(keyword) && e.type === "file"
+                    );
+
+                    if (
+                      exactFileMatch &&
+                      exactFileMatch.content &&
+                      exactFileMatch.path
+                    ) {
+                      mostRelevantFile = exactFileMatch.path;
+                      const truncatedContent =
+                        exactFileMatch.content.length > 1500
+                          ? exactFileMatch.content.substring(0, 1500) + "..."
+                          : exactFileMatch.content;
+
+                      mostRelevantContent = truncatedContent;
+                    } else {
+                      // 如果找不到精确匹配，尝试模糊匹配
+                      const fuzzyMatches = currentScan.entries.filter(
+                        (e) =>
+                          e.path &&
+                          e.type === "file" &&
+                          ((isPythonScript && e.path.endsWith(".py")) ||
+                            (isDatabase &&
+                              (e.path.includes("db") ||
+                                e.path.includes("data") ||
+                                e.path.includes("sql"))) ||
+                            (isSupabase && e.path.includes("supabase")) ||
+                            (isImport && e.path.includes("import")))
+                      );
+
+                      if (fuzzyMatches.length > 0) {
+                        // 优先选择名称相似度最高的文件
+                        let bestMatch = fuzzyMatches[0];
+                        let highestSimilarity = 0;
+
+                        for (const match of fuzzyMatches) {
+                          if (match.path) {
+                            // 计算简单的相似度（共同单词数）
+                            const matchWords = match.path
+                              .toLowerCase()
+                              .split(/[_\-./\\]/);
+                            const keywordWords = keyword
+                              .toLowerCase()
+                              .split(/[_\-./\\]/);
+
+                            let commonWords = 0;
+                            for (const word of keywordWords) {
+                              if (
+                                word.length > 2 &&
+                                matchWords.includes(word)
+                              ) {
+                                commonWords++;
+                              }
+                            }
+
+                            if (commonWords > highestSimilarity) {
+                              highestSimilarity = commonWords;
+                              bestMatch = match;
+                            }
+                          }
+                        }
+
+                        if (bestMatch.path && bestMatch.content) {
+                          mostRelevantFile = bestMatch.path;
+                          const truncatedContent =
+                            bestMatch.content.length > 1500
+                              ? bestMatch.content.substring(0, 1500) + "..."
+                              : bestMatch.content;
+
+                          mostRelevantContent = truncatedContent;
+                        }
+                      }
+                    }
+                  }
+
+                  if (mostRelevantFile) {
+                    fileContents = `文件: ${mostRelevantFile} (包含关键词 "${keyword}")\n内容:\n${mostRelevantContent}\n\n`;
+                  } else {
+                    // 如果没有找到包含关键词的文件，使用最常见的文件类型
+                    const commonFileTypes = [
+                      ".ts",
+                      ".tsx",
+                      ".js",
+                      ".jsx",
+                      ".py",
+                      ".go",
+                      ".java",
+                      ".c",
+                      ".cpp",
+                      ".md",
+                    ];
+
+                    for (const ext of commonFileTypes) {
+                      // 查找最多5个具有此扩展名的文件
+                      const filesWithExt = currentScan.entries
+                        .filter(
+                          (e) =>
+                            e.type === "file" &&
+                            e.path &&
+                            e.path.endsWith(ext) &&
+                            e.content
+                        )
+                        .slice(0, 5);
+
+                      if (filesWithExt.length > 0) {
+                        fileContents =
+                          "在项目中未找到直接包含关键词的文件，展示一些相关文件作为上下文：\n\n";
+
+                        for (const entry of filesWithExt) {
+                          if (entry.path && entry.content) {
+                            const truncatedContent =
+                              entry.content.length > 500
+                                ? entry.content.substring(0, 500) + "..."
+                                : entry.content;
+
+                            fileContents += `文件: ${entry.path}\n内容:\n${truncatedContent}\n\n`;
+                          }
+                        }
+
+                        break; // 找到相关文件后退出循环
+                      }
+                    }
+                  }
+                }
+              }
+
+              // 如果没有任何文件内容，提供一个基本信息标记
+              if (!fileContents || fileContents.trim() === "") {
+                fileContents = `未在项目中找到与关键词"${keyword}"相关的文件内容。
+以下是项目的基本信息作为参考：
+- 项目类型: Web应用（Next.js）
+- 主要技术栈: ${currentScan ? "TypeScript, React, Next.js" : "未知"}
+- 文件总数: ${currentScan?.entries?.length || "未知"}
+`;
               }
 
               // 调用AI获取关键字的上下文信息
               const response = await chatCompletion([
                 {
                   role: "system",
-                  content: `你是一个专业的解释助手。请根据提供的上下文信息和文件内容，简明扼要地解释用户询问的关键词或术语，重点关注其在当前项目的含义。回答限制在200字以内。`,
+                  content: `你是一个专业的解释助手。请根据提供的上下文信息和文件内容，简明扼要地解释用户询问的关键词或术语，重点关注其在当前项目的含义。回答限制在200字以内。
+
+在回答时遵循以下规则：
+1. 如果上下文中包含关于关键词的明确信息，优先使用这些信息进行解释
+2. 对于文件名或模块名，解释其在项目中的功能和用途
+3. 对于技术术语，解释其一般含义以及在当前项目中的特定应用
+4. 如果缺乏具体信息，可以基于文件类型和项目上下文做出合理推测
+5. 总是包括关键词在项目中的实际或可能的应用场景
+6. 清晰、简洁地表达，使用技术准确的语言`,
                 },
                 {
                   role: "user",
@@ -717,7 +900,12 @@ export default function AITestDialog({
 ${contextInfo}
 
 文件内容:
-${fileContents}`,
+${fileContents}
+
+如果上下文中没有足够的信息，请基于你的技术知识，结合项目上下文做出最有可能的解释。例如：
+- 如果这是一个文件名(如"import_to_supabase.py")，解释此文件可能的功能
+- 如果这是一个技术术语(如"vectorization")，解释其在当前技术栈中的含义
+- 如果这是一个框架组件(如"AITestDialog")，解释其用途和功能`,
                 },
               ]);
               console.log(`基于以下上下文信息和文件内容，请解释"${keyword}"这个术语或概念在当前项目中的含义：
