@@ -30,6 +30,7 @@ export async function registerServiceWorker(): Promise<boolean> {
     console.log("开发环境下不注册Service Worker");
     return false;
   }
+  return false;
 
   try {
     const registration = await navigator.serviceWorker.register("/sw.js");
