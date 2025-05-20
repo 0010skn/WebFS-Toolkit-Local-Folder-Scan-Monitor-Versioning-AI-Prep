@@ -48,6 +48,8 @@
     "latestUpdates": "Latest Updates",
     "olderUpdates": "Older Updates",
     "noUpdates": "No updates available",
+    "refresh": "Refresh",
+    "refreshing": "Refreshing...",
     "multiThreadSupport": {
       "supported": "Your browser supports multi-threaded scanning. Scanning will be faster!",
       "notSupported": "Your browser doesn't support multi-threaded scanning. Scanning will be slower, please be patient :)"

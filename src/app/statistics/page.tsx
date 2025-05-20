@@ -1,14 +1,22 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import StatisticsContent from "@/components/StatisticsContent";
 import { useTranslations } from "@/components/LocaleProvider";
 
 export default function StatisticsPage() {
   const router = useRouter();
-
   const { t } = useTranslations();
+  const [mounted, setMounted] = useState(false);
+
+  // 确保组件在客户端挂载后才渲染，避免水合错误
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // 如果组件未挂载，返回null
+  if (!mounted) return null;
 
   return (
     <div className="container mx-auto px-4 py-6">

@@ -48,6 +48,8 @@
     "latestUpdates": "最新更新",
     "olderUpdates": "历史更新",
     "noUpdates": "暂无更新记录",
+    "refresh": "刷新",
+    "refreshing": "刷新中...",
     "multiThreadSupport": {
       "supported": "当前浏览器支持多线程扫描，扫描速度将更快！",
       "notSupported": "当前浏览器不支持多线程扫描 扫描会有点慢 耐心等一下:)"

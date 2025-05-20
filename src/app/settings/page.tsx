@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAtom } from "jotai";
 import { themeAtom } from "@/lib/store";
@@ -14,6 +14,12 @@ export default function SettingsPage() {
   const router = useTransitionRouter();
   const { t, locale, setLocale } = useTranslations();
   const [theme, setTheme] = useAtom(themeAtom);
+  const [mounted, setMounted] = useState(false);
+
+  // 确保组件在客户端挂载后才渲染，避免水合错误
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // 切换主题
   const handleThemeChange = (newTheme: "light" | "dark") => {
@@ -31,6 +37,9 @@ export default function SettingsPage() {
       onTransitionReady: slideInOut,
     });
   };
+
+  // 如果组件未挂载，返回null
+  if (!mounted) return null;
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-6 transition-colors duration-300">

@@ -198,22 +198,55 @@ export default function ChangelogPage() {
   const { t } = useTranslations();
   const [changelog, setChangelog] = useState<ChangelogEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  // 确保组件在客户端挂载后才渲染，避免水合错误
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // 加载更新日志数据
+  const loadChangelog = async () => {
+    try {
+      const data = await fetchChangelogData();
+      setChangelog(data);
+    } catch (error) {
+      console.error("Failed to load changelog:", error);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  // 刷新更新日志数据
+  const handleRefresh = async () => {
+    if (refreshing) return; // 防止重复刷新
+
+    setRefreshing(true);
+    try {
+      const data = await fetchChangelogData();
+
+      // 使用动画效果平滑过渡
+      setTimeout(() => {
+        setChangelog(data);
+        setRefreshing(false);
+      }, 300);
+    } catch (error) {
+      console.error("Failed to refresh changelog:", error);
+      setRefreshing(false);
+    }
+  };
 
   useEffect(() => {
-    async function loadChangelog() {
+    if (mounted) {
       setLoading(true);
-      try {
-        const data = await fetchChangelogData();
-        setChangelog(data);
-      } catch (error) {
-        console.error("Failed to load changelog:", error);
-      } finally {
-        setLoading(false);
-      }
+      loadChangelog();
     }
+  }, [mounted]);
 
-    loadChangelog();
-  }, []);
+  // 如果组件未挂载，返回null
+  if (!mounted) return null;
 
   return (
     <div className="min-h-screen bg-[#f7f7f8] dark:bg-[#343541] transition-colors duration-300">
@@ -241,26 +274,55 @@ export default function ChangelogPage() {
               {t("changelog.description")}
             </p>
           </div>
-          <button
-            onClick={() => router.back()}
-            className="px-4 py-2 bg-[#10a37f] hover:bg-[#0e8f6f] text-white rounded-md transition-colors duration-200 flex items-center"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-5 w-5 mr-1"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
+
+          <div className="flex items-center space-x-3">
+            {/* 刷新按钮 */}
+            <button
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="px-4 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 transition-colors duration-200 flex items-center rounded-md"
+              title={t("changelog.refresh")}
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M10 19l-7-7m0 0l7-7m-7 7h18"
-              />
-            </svg>
-            {t("changelog.backToHome")}
-          </button>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className={`h-5 w-5 mr-2 ${
+                  refreshing ? "animate-spin text-[#10a37f]" : ""
+                }`}
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                />
+              </svg>
+              {refreshing ? t("changelog.refreshing") : t("changelog.refresh")}
+            </button>
+
+            <button
+              onClick={() => router.back()}
+              className="px-4 py-2 bg-[#10a37f] hover:bg-[#0e8f6f] text-white rounded-md transition-colors duration-200 flex items-center"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5 mr-1"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M10 19l-7-7m0 0l7-7m-7 7h18"
+                />
+              </svg>
+              {t("changelog.backToHome")}
+            </button>
+          </div>
         </div>
 
         {loading ? (
@@ -269,6 +331,48 @@ export default function ChangelogPage() {
             <p className="mt-4 text-gray-600 dark:text-gray-300">
               加载更新日志中...
             </p>
+          </div>
+        ) : refreshing ? (
+          <div className="opacity-60 transition-opacity duration-300">
+            {/* 在刷新时显示当前内容，但添加透明度效果 */}
+            <div className="space-y-12">
+              {/* 内容与下面的正常显示相同，但添加了透明度效果 */}
+              <section>
+                <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-6 border-b border-gray-200 dark:border-gray-700 pb-2 flex items-center">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-5 w-5 mr-2 text-[#10a37f]"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                  {t("changelog.latestUpdates")}
+                </h2>
+                <div className="space-y-6">
+                  {changelog.slice(0, 5).map((entry, index) => (
+                    <div
+                      key={index}
+                      className="bg-white dark:bg-[#444654] rounded-lg shadow-sm overflow-hidden border border-gray-100 dark:border-gray-700"
+                    >
+                      {/* 简化的内容结构 */}
+                      <div className="p-6 animate-pulse">
+                        <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mb-4"></div>
+                        <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mb-2"></div>
+                        <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-2/3 mb-2"></div>
+                        <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/3"></div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            </div>
           </div>
         ) : changelog.length > 0 ? (
           <div className="space-y-12">
