@@ -15,6 +15,14 @@ export interface FileSystemEntry {
 export interface ScanResult {
   entries: FileSystemEntry[]; // 所有条目，包括文件和目录
   timestamp: number; // 扫描时间戳
+  codeStructure?: {
+    functions: FunctionInfo[]; // 函数和方法信息
+    totalFiles?: number; // 总文件数
+    totalFunctions?: number; // 总函数数
+    totalMethods?: number; // 总方法数
+    totalClasses?: number; // 总类数
+    totalLines?: number; // 总代码行数
+  };
 }
 
 // 文件变化记录类型

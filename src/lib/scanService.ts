@@ -4,6 +4,7 @@ import {
   scanDirectory,
   generateDiffReport,
   generateTextReport,
+  collectCodeStructureInfo,
 } from "./scanUtils";
 import {
   createFileObserver,
@@ -65,10 +66,17 @@ export async function performScan(
   const endTime = new Date();
   const duration = endTime.getTime() - startTime.getTime();
   console.log(`扫描耗时: ${duration} 毫秒`);
+
+  // 收集代码结构信息
+  console.log("开始收集代码结构信息...");
+  const codeStructure = collectCodeStructureInfo(entries);
+  console.log(`收集了 ${codeStructure.functions.length} 个函数和方法信息`);
+
   // 返回扫描结果
   return {
     entries,
     timestamp: Date.now(),
+    codeStructure,
   };
 }
 

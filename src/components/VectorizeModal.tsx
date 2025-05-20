@@ -185,7 +185,18 @@ export default function VectorizeModal({ onClose }: VectorizeModalProps) {
     setProcessingPhase(t("vectorReport.processingPhases.collecting"));
     const filePaths = currentScan.entries
       .filter((entry) => entry.type === "file")
-      .map((entry) => entry.path);
+      .map((entry) => {
+        // 查找该文件中的函数和方法信息
+        const functions = currentScan.codeStructure?.functions
+          .filter((func) => func.filePath === entry.path)
+          .map((func) => `${func.type}:${func.name}[${func.lines.join("-")}]`);
+
+        // 如果有函数信息，添加到文件路径中
+        if (functions && functions.length > 0) {
+          return `${entry.path} (${functions.join(", ")})`;
+        }
+        return entry.path;
+      });
 
     // 添加调试日志
     console.log("提取的文件路径数量:", filePaths.length);
@@ -229,7 +240,12 @@ export default function VectorizeModal({ onClose }: VectorizeModalProps) {
         parsedResult.query = query;
       }
 
-      setRelevantFiles(parsedResult.relevant_paths || []);
+      // 过滤相关路径，移除函数信息部分以获取实际的文件路径
+      const relevantPaths = parsedResult.relevant_paths
+        ? parsedResult.relevant_paths.map((path) => path.split(" (")[0])
+        : [];
+
+      setRelevantFiles(relevantPaths);
       setRelevantKnowledge(parsedResult.knowledge_entries || []);
 
       // 读取相关文件的内容
@@ -237,16 +253,28 @@ export default function VectorizeModal({ onClose }: VectorizeModalProps) {
       const contents: { [path: string]: string } = {};
 
       // 查找文件内容
-      if (
-        parsedResult.relevant_paths &&
-        parsedResult.relevant_paths.length > 0
-      ) {
-        for (const path of parsedResult.relevant_paths) {
+      if (relevantPaths && relevantPaths.length > 0) {
+        for (const path of relevantPaths) {
           const fileEntry = currentScan.entries.find(
             (entry) => entry.path === path
           );
           if (fileEntry && fileEntry.content) {
-            contents[path] = fileEntry.content;
+            // 查找该文件中的函数和方法信息
+            const functions = currentScan.codeStructure?.functions.filter(
+              (func) => func.filePath === path
+            );
+
+            // 如果有函数信息，添加到文件内容中
+            let enhancedContent = fileEntry.content;
+            if (functions && functions.length > 0) {
+              enhancedContent = `/* 文件中的函数和方法:
+${functions
+  .map((func) => `${func.type}: ${func.name} [行 ${func.lines.join("-")}]`)
+  .join("\n")}
+*/\n\n${fileEntry.content}`;
+            }
+
+            contents[path] = enhancedContent;
           } else if (fileEntry) {
             // 如果找到了文件但没有内容，可能是因为文件太大或非文本文件
             contents[path] = `[文件内容不可用: ${
@@ -278,14 +306,44 @@ export default function VectorizeModal({ onClose }: VectorizeModalProps) {
         textResult += "\n";
       }
 
+      // 添加代码结构信息
+      if (currentScan.codeStructure) {
+        textResult += `## 代码结构统计\n`;
+        const stats = currentScan.codeStructure;
+        textResult += `- 总文件数: ${stats.totalFiles || 0}\n`;
+        textResult += `- 总函数数: ${stats.totalFunctions || 0}\n`;
+        textResult += `- 总方法数: ${stats.totalMethods || 0}\n`;
+        textResult += `- 总类数: ${stats.totalClasses || 0}\n`;
+        textResult += `- 总代码行数: ${stats.totalLines || 0}\n\n`;
+      }
+
       // 添加相关文件列表
-      if (
-        parsedResult.relevant_paths &&
-        parsedResult.relevant_paths.length > 0
-      ) {
-        textResult += `## 相关文件 (${parsedResult.relevant_paths.length}个)\n`;
-        parsedResult.relevant_paths.forEach((path, index) => {
-          textResult += `${index + 1}. ${path}\n`;
+      if (relevantPaths && relevantPaths.length > 0) {
+        textResult += `## 相关文件 (${relevantPaths.length}个)\n`;
+
+        // 为每个文件添加函数信息
+        relevantPaths.forEach((path, index) => {
+          // 查找该文件中的函数和方法
+          const functions = currentScan.codeStructure?.functions.filter(
+            (func) => func.filePath === path
+          );
+
+          if (functions && functions.length > 0) {
+            textResult += `${index + 1}. ${path}\n`;
+            textResult += `   函数和方法:\n`;
+            functions.forEach((func) => {
+              textResult += `   - ${func.type}: ${
+                func.name
+              } [行 ${func.lines.join("-")}]\n`;
+
+              // 如果有调用信息，也添加
+              if (func.calls && func.calls.length > 0) {
+                textResult += `     调用: ${func.calls.join(", ")}\n`;
+              }
+            });
+          } else {
+            textResult += `${index + 1}. ${path}\n`;
+          }
         });
         textResult += "\n";
       } else {
@@ -550,7 +608,6 @@ export default function VectorizeModal({ onClose }: VectorizeModalProps) {
         </button>
       </div>
 
-      {/* 模态窗口内容 - ChatGPT风格 */}
       <div className="p-6 flex-1 overflow-y-auto">
         <p className="text-sm text-gray-600 dark:text-gray-300 mb-5">
           {t("vectorReport.description")}

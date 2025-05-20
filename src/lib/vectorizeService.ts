@@ -426,6 +426,7 @@ export async function findRelevantFiles(
       `你是一个专业的代码项目分析工具，你的任务是分析用户的查询，并从项目中找出与查询最相关的文件和知识库条目。
 请基于文件路径、文件名以及知识库条目标题的语义相关性，找出最相关的资源。
 如果提供了文件内容，也请考虑内容的相关性。
+你还可以基于文件中的函数和方法名称进行匹配，某些文件路径中包含了函数信息，格式为: "文件路径 (函数类型:函数名[行号], ...)"。
 
 用户查询: "${query}"
 
@@ -433,6 +434,7 @@ export async function findRelevantFiles(
       `You are a professional code project analysis tool. Your task is to analyze the user's query and find the most relevant files and knowledge base entries from the project.
 Please identify the most relevant resources based on the semantic relevance of file paths, file names, and knowledge base entry titles.
 If file contents are provided, please also consider the relevance of the content.
+You can also match based on function and method names within files. Some file paths include function information in the format: "file_path (function_type:function_name[line_numbers], ...)".
 
 User query: "${query}"
 

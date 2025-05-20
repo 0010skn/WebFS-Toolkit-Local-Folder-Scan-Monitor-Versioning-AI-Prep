@@ -274,6 +274,9 @@ const ToolCard = ({ children }: { children: React.ReactNode }) => {
 const FileIndexCard = ({ data }: { data?: string }) => {
   // 解析传入的数据
   const [files, setFiles] = useState<string[]>([]);
+  const [functionMap, setFunctionMap] = useState<{ [key: string]: string[] }>(
+    {}
+  );
 
   useEffect(() => {
     // 在组件挂载后安全地解析数据
@@ -284,7 +287,28 @@ const FileIndexCard = ({ data }: { data?: string }) => {
 
         if (Array.isArray(parsed)) {
           // 如果已经是数组，直接使用
-          setFiles(parsed.filter((item) => typeof item === "string"));
+          const fileList = parsed.filter((item) => typeof item === "string");
+
+          // 提取文件路径和函数信息
+          const functionsObj: { [key: string]: string[] } = {};
+          const cleanPaths: string[] = [];
+
+          fileList.forEach((filePath) => {
+            // 检查文件路径是否包含函数信息 "filepath (function:name[lines], ...)"
+            const match = filePath.match(/^(.+?)\s+\((.+)\)$/);
+            if (match) {
+              const path = match[1];
+              const functionStr = match[2];
+              const functions = functionStr.split(", ");
+              functionsObj[path] = functions;
+              cleanPaths.push(path);
+            } else {
+              cleanPaths.push(filePath);
+            }
+          });
+
+          setFiles(cleanPaths);
+          setFunctionMap(functionsObj);
         } else if (parsed && typeof parsed === "object") {
           // 如果是对象，转换为字符串数组
           const values = Object.values(parsed);
@@ -329,14 +353,29 @@ const FileIndexCard = ({ data }: { data?: string }) => {
 
         <div className="bg-white/80 dark:bg-gray-900/50 rounded p-2 max-h-40 overflow-y-auto overflow-x-auto">
           {Array.isArray(files) && files.length > 0 ? (
-            files.map((file, index) => (
-              <div
-                key={index}
-                className="font-mono text-xs text-gray-700 dark:text-gray-300 py-0.5 border-b border-gray-100 dark:border-gray-800 last:border-0 whitespace-pre-wrap break-words"
-              >
-                {file}
-              </div>
-            ))
+            <div className="space-y-2">
+              {files.map((file, index) => (
+                <div key={index} className="pb-2 last:pb-0">
+                  <div className="font-mono text-xs text-gray-700 dark:text-gray-300 py-0.5 border-b border-gray-100 dark:border-gray-800 whitespace-pre-wrap break-words font-semibold">
+                    {file}
+                  </div>
+
+                  {/* 显示函数和方法信息 */}
+                  {functionMap[file] && functionMap[file].length > 0 && (
+                    <div className="pl-4 mt-1 space-y-0.5">
+                      {functionMap[file].map((func, funcIndex) => (
+                        <div
+                          key={funcIndex}
+                          className="text-xs text-gray-600 dark:text-gray-400 font-mono"
+                        >
+                          {func}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
           ) : (
             <div className="text-xs text-gray-500 dark:text-gray-400 italic">
               未找到相关文件

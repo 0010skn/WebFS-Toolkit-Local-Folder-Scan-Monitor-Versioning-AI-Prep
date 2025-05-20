@@ -51,6 +51,62 @@ const TEXT_FILE_EXTENSIONS = [
   ".ini",
   ".conf",
   ".toml",
+  // 添加更多编程语言支持
+  ".dart", // Dart
+  ".lua", // Lua
+  ".r", // R
+  ".scala", // Scala
+  ".groovy", // Groovy
+  ".pl", // Perl
+  ".sql", // SQL
+  ".m", // Objective-C/Swift
+  ".mm", // Objective-C++
+  ".f", // Fortran
+  ".f90", // Fortran
+  ".hs", // Haskell
+  ".ex", // Elixir
+  ".exs", // Elixir
+  ".erl", // Erlang
+  ".clj", // Clojure
+  ".elm", // Elm
+  ".coffee", // CoffeeScript
+  ".hbs", // Handlebars
+  ".pug", // Pug
+  ".sass", // Sass
+  ".nim", // Nim
+  ".purs", // PureScript
+  ".hack", // Hack
+  ".fs", // F#
+  ".fsi", // F#
+  ".fsx", // F#
+  ".rkt", // Racket
+  ".sol", // Solidity
+  ".zig", // Zig
+  ".jl", // Julia
+  ".d", // D
+  ".v", // V/Verilog
+  ".svelte", // Svelte
+  ".astro", // Astro
+  ".ipynb", // Jupyter Notebook
+  ".tf", // Terraform
+  ".hcl", // HCL
+  ".proto", // Protocol Buffers
+  ".graphql", // GraphQL
+  ".gql", // GraphQL
+  ".prisma", // Prisma
+  ".tsx", // React TypeScript
+  ".jsx", // React JavaScript
+  ".mdx", // MDX
+  ".razor", // Razor
+  ".cshtml", // Razor
+  ".vbhtml", // Razor
+  ".gradle", // Gradle
+  ".csproj", // C# Project
+  ".vbproj", // Visual Basic Project
+  ".fsproj", // F# Project
+  ".vcxproj", // Visual C++ Project
+  ".user", // User settings
+  ".editorconfig", // Editor config
 ];
 
 // 进度更新回调类型
@@ -485,103 +541,304 @@ function extractFunctionsAndMethods(
 
   const functions = functionsMap.get(filePath)!;
   const lines = content.split("\n");
+  const fileExtension = filePath
+    .substring(filePath.lastIndexOf("."))
+    .toLowerCase();
 
-  // 检测JavaScript/TypeScript中的函数
-  const funcRegex = /(?:export\s+)?(?:async\s+)?(?:function\s+)(\w+)\s*\(/g;
-  const methodRegex =
-    /(?:public|private|protected|static|async)?\s*(\w+)\s*\([^)]*\)\s*(?::\s*\w+)?\s*{/g;
-  const arrowFuncRegex =
-    /(?:const|let|var)\s+(\w+)\s*=\s*(?:async\s+)?\([^)]*\)\s*=>/g;
-  const classRegex = /(?:export\s+)?class\s+(\w+)/g;
+  // 根据文件类型选择合适的正则表达式
+  let funcRegex, methodRegex, arrowFuncRegex, classRegex, constructorRegex;
+
+  // JavaScript/TypeScript/React
+  if ([".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs"].includes(fileExtension)) {
+    // 函数定义正则表达式（包括导出、异步等变体）
+    funcRegex = /(?:export\s+)?(?:async\s+)?(?:function\s+)(\w+)\s*\(/g;
+    // 方法定义正则表达式（包括访问修饰符、静态、异步等变体）
+    methodRegex =
+      /(?:public|private|protected|static|async)?\s*(\w+)\s*\([^)]*\)\s*(?::\s*\w+)?\s*{/g;
+    // 箭头函数正则表达式
+    arrowFuncRegex =
+      /(?:const|let|var)\s+(\w+)\s*=\s*(?:async\s+)?\([^)]*\)\s*=>/g;
+    // 类定义正则表达式
+    classRegex = /(?:export\s+)?class\s+(\w+)/g;
+    // 构造函数正则表达式
+    constructorRegex = /constructor\s*\(/g;
+  }
+  // Python
+  else if ([".py"].includes(fileExtension)) {
+    // Python函数定义
+    funcRegex = /def\s+(\w+)\s*\(/g;
+    // Python类定义
+    classRegex = /class\s+(\w+)(?:\(.*\))?:/g;
+    // Python中没有箭头函数和典型的方法语法，但方法在类内定义
+    methodRegex = null;
+    arrowFuncRegex = null;
+    constructorRegex = /def\s+__init__\s*\(/g;
+  }
+  // Java, Kotlin
+  else if ([".java", ".kt"].includes(fileExtension)) {
+    funcRegex =
+      /(?:public|private|protected|static)?\s+(?:final\s+)?(?:\w+(?:<[^>]+>)?)\s+(\w+)\s*\([^)]*\)\s*(?:throws\s+\w+(?:,\s*\w+)*)?\s*{/g;
+    methodRegex =
+      /(?:@\w+(?:\([^)]*\))?\s*)*(?:public|private|protected)?\s*(?:static\s+)?(?:final\s+)?(?:\w+(?:<[^>]+>)?)\s+(\w+)\s*\([^)]*\)\s*(?:throws\s+\w+(?:,\s*\w+)*)?\s*{/g;
+    classRegex =
+      /(?:public|private|protected)?\s*(?:static\s+)?(?:final\s+)?class\s+(\w+)(?:<[^>]+>)?(?:\s+extends\s+\w+(?:<[^>]+>)?)?(?:\s+implements\s+\w+(?:<[^>]+>)?(?:,\s*\w+(?:<[^>]+>)?)*)?/g;
+    arrowFuncRegex = null;
+    constructorRegex = /(?:public|private|protected)?\s+(\w+)\s*\([^)]*\)\s*{/g; // 构造函数名与类名相同
+  }
+  // C/C++
+  else if ([".c", ".cpp", ".cc", ".h", ".hpp"].includes(fileExtension)) {
+    funcRegex =
+      /(?:static\s+)?(?:inline\s+)?(?:constexpr\s+)?(?:\w+(?:::\w+)*(?:<[^>]+>)?)\s+(\w+)\s*\([^)]*\)\s*(?:const|noexcept|override|final)?\s*{/g;
+    methodRegex =
+      /(?:virtual\s+)?(?:static\s+)?(?:inline\s+)?(?:constexpr\s+)?(?:\w+(?:::\w+)*(?:<[^>]+>)?)\s+(\w+)::\w+\s*\([^)]*\)\s*(?:const|noexcept|override|final)?\s*{/g;
+    classRegex =
+      /(?:class|struct)\s+(\w+)(?:\s*:\s*(?:public|protected|private)\s+\w+(?:::\w+)*(?:<[^>]+>)?(?:\s*,\s*(?:public|protected|private)\s+\w+(?:::\w+)*(?:<[^>]+>)?)*)?/g;
+    arrowFuncRegex = null;
+    constructorRegex =
+      /(\w+)::\1\s*\([^)]*\)\s*(?::\s*\w+\([^)]*\)(?:\s*,\s*\w+\([^)]*\))*)?\s*{/g;
+  }
+  // C#
+  else if ([".cs"].includes(fileExtension)) {
+    funcRegex =
+      /(?:public|private|protected|internal|static|async)?\s+(?:override\s+)?(?:\w+(?:<[^>]+>)?)\s+(\w+)\s*\([^)]*\)\s*(?:where\s+\w+\s*:\s*\w+(?:,\s*\w+)*)?\s*{/g;
+    methodRegex =
+      /(?:public|private|protected|internal)?\s+(?:virtual\s+)?(?:static\s+)?(?:async\s+)?(?:override\s+)?(?:\w+(?:<[^>]+>)?)\s+(\w+)\s*\([^)]*\)\s*(?:where\s+\w+\s*:\s*\w+(?:,\s*\w+)*)?\s*{/g;
+    classRegex =
+      /(?:public|private|protected|internal)?\s*(?:static\s+)?(?:partial\s+)?(?:sealed\s+)?class\s+(\w+)(?:<[^>]+>)?(?:\s*:\s*\w+(?:<[^>]+>)?(?:\s*,\s*\w+(?:<[^>]+>)?)*)?/g;
+    arrowFuncRegex =
+      /(?:public|private|protected|internal)?\s+(?:static\s+)?(?:\w+(?:<[^>]+>)?)\s+(\w+)\s*=>\s*[^;]+;/g;
+    constructorRegex =
+      /(?:public|private|protected|internal)?\s+(\w+)\s*\([^)]*\)\s*(?::\s*base\([^)]*\))?\s*{/g;
+  }
+  // Go
+  else if ([".go"].includes(fileExtension)) {
+    funcRegex = /func\s+(\w+)\s*\([^)]*\)\s*(?:\([^)]*\)|[^{]*)\s*{/g;
+    methodRegex =
+      /func\s*\(\s*\w+\s+\*?\w+\s*\)\s*(\w+)\s*\([^)]*\)\s*(?:\([^)]*\)|[^{]*)\s*{/g;
+    classRegex = /type\s+(\w+)\s+struct\s*{/g;
+    arrowFuncRegex = null;
+    constructorRegex = null;
+  }
+  // Swift
+  else if ([".swift"].includes(fileExtension)) {
+    funcRegex = /func\s+(\w+)\s*\([^)]*\)(?:\s*->\s*(?:\w+|[^{]*))?/g;
+    methodRegex = /func\s+(\w+)\s*\([^)]*\)(?:\s*->\s*(?:\w+|[^{]*))?/g;
+    classRegex =
+      /(?:public\s+|private\s+|internal\s+|open\s+|fileprivate\s+)?class\s+(\w+)(?:\s*:\s*\w+(?:\s*,\s*\w+)*)?/g;
+    arrowFuncRegex = /(?:let|var)\s+(\w+)\s*=\s*{(?:[^}]*)\s*->\s*(?:[^}]*)}/g;
+    constructorRegex = /init\s*\([^)]*\)/g;
+  }
+  // Rust
+  else if ([".rs"].includes(fileExtension)) {
+    funcRegex = /fn\s+(\w+)\s*(?:<[^>]+>)?\s*\([^)]*\)(?:\s*->\s*[^{]*)?/g;
+    methodRegex =
+      /impl(?:<[^>]+>)?\s+(?:[^{]+)\s*{[\s\S]*?fn\s+(\w+)\s*(?:<[^>]+>)?\s*\([^)]*\)(?:\s*->\s*[^{]*)?/g;
+    classRegex =
+      /struct\s+(\w+)(?:<[^>]+>)?|enum\s+(\w+)(?:<[^>]+>)?|trait\s+(\w+)(?:<[^>]+>)?/g;
+    arrowFuncRegex = null;
+    constructorRegex = /fn\s+new\s*\([^)]*\)(?:\s*->\s*[^{]*)?/g;
+  }
+  // PHP
+  else if ([".php"].includes(fileExtension)) {
+    funcRegex = /function\s+(\w+)\s*\([^)]*\)\s*(?::\s*\??\w+)?/g;
+    methodRegex =
+      /(?:public|private|protected|static)?\s+function\s+(\w+)\s*\([^)]*\)\s*(?::\s*\??\w+)?/g;
+    classRegex =
+      /class\s+(\w+)(?:\s+extends\s+\w+)?(?:\s+implements\s+\w+(?:\s*,\s*\w+)*)?/g;
+    arrowFuncRegex =
+      /(?:public|private|protected|static)?\s+\$(\w+)\s*=\s*(?:static\s+)?function\s*\([^)]*\)\s*(?:use\s*\([^)]*\))?\s*{/g;
+    constructorRegex = /function\s+__construct\s*\([^)]*\)/g;
+  }
+  // 默认情况下使用宽松的正则表达式，适用于大多数编程语言
+  else {
+    funcRegex = /(?:function|func|def|fn|sub|procedure)\s+(\w+)\s*\(/g;
+    methodRegex =
+      /(?:\w+\.)?\s*(\w+)\s*\([^)]*\)\s*(?:->|:|=>)?\s*(?:{|\(|begin)/g;
+    classRegex = /(?:class|interface|trait|struct|record|type)\s+(\w+)/g;
+    arrowFuncRegex =
+      /(?:const|let|var)\s+(\w+)\s*=\s*(?:async\s+)?\([^)]*\)\s*(?:=>|->)/g;
+    constructorRegex = /(?:constructor|init|new|create|__init__|__new__)\s*\(/g;
+  }
 
   // 提取函数定义
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
 
     // 查找函数
-    let funcMatch;
-    while ((funcMatch = funcRegex.exec(line)) !== null) {
-      const funcName = funcMatch[1];
-      const startLine = i + 1;
-      const endLine = findFunctionEnd(lines, i);
-      functions.push({
-        name: funcName,
-        type: "函数",
-        lines: [startLine, endLine],
-      });
+    if (funcRegex) {
+      let funcMatch;
+      while ((funcMatch = funcRegex.exec(line)) !== null) {
+        const funcName = funcMatch[1];
+        const startLine = i + 1;
+        const endLine = findFunctionEnd(lines, i);
+        functions.push({
+          name: funcName,
+          type: "函数",
+          lines: [startLine, endLine],
+        });
 
-      // 解析函数体中的调用
-      analyzeFunctionCalls(
-        filePath,
-        funcName,
-        lines.slice(i, endLine).join("\n"),
-        callsMap
-      );
+        // 解析函数体中的调用
+        analyzeFunctionCalls(
+          filePath,
+          funcName,
+          lines.slice(i, endLine).join("\n"),
+          callsMap
+        );
 
-      i = endLine - 1; // 跳过函数体
+        i = endLine - 1; // 跳过函数体
+      }
     }
 
     // 查找箭头函数
-    let arrowMatch;
-    while ((arrowMatch = arrowFuncRegex.exec(line)) !== null) {
-      const funcName = arrowMatch[1];
-      const startLine = i + 1;
-      const endLine = findFunctionEnd(lines, i);
-      functions.push({
-        name: funcName,
-        type: "箭头函数",
-        lines: [startLine, endLine],
-      });
+    if (arrowFuncRegex) {
+      let arrowMatch;
+      while ((arrowMatch = arrowFuncRegex.exec(line)) !== null) {
+        const funcName = arrowMatch[1];
+        const startLine = i + 1;
+        const endLine = findFunctionEnd(lines, i);
+        functions.push({
+          name: funcName,
+          type: "箭头函数",
+          lines: [startLine, endLine],
+        });
 
-      // 解析函数体中的调用
-      analyzeFunctionCalls(
-        filePath,
-        funcName,
-        lines.slice(i, endLine).join("\n"),
-        callsMap
-      );
+        // 解析函数体中的调用
+        analyzeFunctionCalls(
+          filePath,
+          funcName,
+          lines.slice(i, endLine).join("\n"),
+          callsMap
+        );
 
-      i = endLine - 1; // 跳过函数体
+        i = endLine - 1; // 跳过函数体
+      }
     }
 
     // 查找类
-    let classMatch;
-    while ((classMatch = classRegex.exec(line)) !== null) {
-      const className = classMatch[1];
-      const startLine = i + 1;
-      const endLine = findClassEnd(lines, i);
-      functions.push({
-        name: className,
-        type: "类",
-        lines: [startLine, endLine],
-      });
+    if (classRegex) {
+      let classMatch;
+      while ((classMatch = classRegex.exec(line)) !== null) {
+        const className = classMatch[1] || classMatch[2] || classMatch[3]; // 支持多种捕获组模式
+        if (!className) continue;
 
-      // 在类内查找方法
-      const classBody = lines.slice(i, endLine).join("\n");
-      let methodMatch;
-      while ((methodMatch = methodRegex.exec(classBody)) !== null) {
-        const methodName = methodMatch[1];
-        // 计算方法在文件中的实际行号
-        const methodStartLine =
-          i + classBody.substring(0, methodMatch.index).split("\n").length;
-        const methodEndLine = findMethodEnd(lines, methodStartLine);
-
+        const startLine = i + 1;
+        const endLine = findClassEnd(lines, i);
         functions.push({
-          name: `${className}.${methodName}`,
-          type: "方法",
-          lines: [methodStartLine, methodEndLine],
+          name: className,
+          type: "类",
+          lines: [startLine, endLine],
         });
 
-        // 解析方法体中的调用
-        analyzeFunctionCalls(
-          filePath,
-          `${className}.${methodName}`,
-          lines.slice(methodStartLine, methodEndLine).join("\n"),
-          callsMap
-        );
-      }
+        // 在类内查找方法
+        const classBody = lines.slice(i, endLine).join("\n");
 
-      i = endLine - 1; // 跳过类定义
+        // 构造函数
+        if (constructorRegex) {
+          let constructorMatch;
+          const constructorRegexCopy = new RegExp(
+            constructorRegex.source,
+            constructorRegex.flags
+          );
+          while (
+            (constructorMatch = constructorRegexCopy.exec(classBody)) !== null
+          ) {
+            // 计算构造函数在文件中的实际行号
+            const ctorStartLine =
+              i +
+              classBody.substring(0, constructorMatch.index).split("\n").length;
+            const ctorEndLine = findMethodEnd(lines, ctorStartLine);
+
+            functions.push({
+              name: `${className}.constructor`,
+              type: "方法",
+              lines: [ctorStartLine, ctorEndLine],
+            });
+
+            // 解析构造函数体中的调用
+            analyzeFunctionCalls(
+              filePath,
+              `${className}.constructor`,
+              lines.slice(ctorStartLine, ctorEndLine).join("\n"),
+              callsMap
+            );
+          }
+        }
+
+        // 其他方法
+        if (methodRegex) {
+          let methodMatch;
+          const methodRegexCopy = new RegExp(
+            methodRegex.source,
+            methodRegex.flags
+          );
+          while ((methodMatch = methodRegexCopy.exec(classBody)) !== null) {
+            const methodName = methodMatch[1];
+            if (!methodName) continue;
+
+            // 计算方法在文件中的实际行号
+            const methodStartLine =
+              i + classBody.substring(0, methodMatch.index).split("\n").length;
+            const methodEndLine = findMethodEnd(lines, methodStartLine);
+
+            functions.push({
+              name: `${className}.${methodName}`,
+              type: "方法",
+              lines: [methodStartLine, methodEndLine],
+            });
+
+            // 解析方法体中的调用
+            analyzeFunctionCalls(
+              filePath,
+              `${className}.${methodName}`,
+              lines.slice(methodStartLine, methodEndLine).join("\n"),
+              callsMap
+            );
+          }
+        }
+
+        i = endLine - 1; // 跳过类定义
+      }
+    }
+
+    // 查找独立的方法（不在类内部）
+    if (
+      methodRegex &&
+      !line.trim().startsWith("//") &&
+      !line.trim().startsWith("/*")
+    ) {
+      let methodMatch;
+      while ((methodMatch = methodRegex.exec(line)) !== null) {
+        // 检查这是否是一个独立方法而不是类内方法（已在上面处理）
+        const methodName = methodMatch[1];
+        const context = lines.slice(Math.max(0, i - 5), i).join("\n");
+
+        // 如果前面没有类定义，则认为是独立方法
+        if (
+          !context.includes("class ") &&
+          !context.includes("interface ") &&
+          !context.includes("struct ") &&
+          !context.includes("trait ")
+        ) {
+          const startLine = i + 1;
+          const endLine = findMethodEnd(lines, i);
+
+          functions.push({
+            name: methodName,
+            type: "函数", // 独立方法作为函数处理
+            lines: [startLine, endLine],
+          });
+
+          // 解析方法体中的调用
+          analyzeFunctionCalls(
+            filePath,
+            methodName,
+            lines.slice(i, endLine).join("\n"),
+            callsMap
+          );
+
+          i = endLine - 1; // 跳过方法体
+        }
+      }
     }
   }
 }
@@ -648,19 +905,188 @@ function analyzeFunctionCalls(
   }
 
   const calls = callsMap.get(key)!;
+  const fileExtension = filePath
+    .substring(filePath.lastIndexOf("."))
+    .toLowerCase();
 
-  // 简单的函数调用检测，实际项目中可能需要更复杂的分析
-  const callRegex = /(?<!\w)(\w+)\s*\(/g;
-  let match;
+  // 移除注释，使解析更准确
+  const bodyWithoutComments = functionBody
+    .replace(/\/\/.*$/gm, "") // 移除单行注释
+    .replace(/\/\*[\s\S]*?\*\//g, ""); // 移除多行注释
 
-  while ((match = callRegex.exec(functionBody)) !== null) {
-    const calledFunc = match[1];
-    // 避免将自己加入调用列表
-    if (
-      calledFunc !== funcName &&
-      !calledFunc.match(/^(if|for|while|switch|catch)$/)
+  // 根据文件类型使用不同的调用检测规则
+  let callRegex;
+
+  // JavaScript/TypeScript等使用的函数调用模式
+  if ([".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs"].includes(fileExtension)) {
+    callRegex = /(?<!\w|\.|\$)(\w+)\s*\(/g;
+
+    // 还要检测对象方法调用
+    const methodCallRegex = /(\w+)\.(\w+)\s*\(/g;
+    let methodMatch;
+    while ((methodMatch = methodCallRegex.exec(bodyWithoutComments)) !== null) {
+      const objectName = methodMatch[1];
+      const methodName = methodMatch[2];
+
+      // 避免将自己加入调用列表，排除常见关键字和内置方法
+      if (
+        `${objectName}.${methodName}` !== funcName &&
+        ![
+          "if",
+          "for",
+          "while",
+          "switch",
+          "catch",
+          "console.log",
+          "parseInt",
+          "parseFloat",
+        ].includes(methodName)
+      ) {
+        calls.add(`${objectName}.${methodName}`);
+      }
+    }
+  }
+  // Python
+  else if ([".py"].includes(fileExtension)) {
+    callRegex = /(?<!\w|\.)(\w+)\s*\(/g;
+
+    // 检测方法调用
+    const methodCallRegex = /(\w+)\.(\w+)\s*\(/g;
+    let methodMatch;
+    while ((methodMatch = methodCallRegex.exec(bodyWithoutComments)) !== null) {
+      const objectName = methodMatch[1];
+      const methodName = methodMatch[2];
+
+      // 排除常见内置方法
+      if (
+        ![
+          "print",
+          "len",
+          "str",
+          "int",
+          "float",
+          "list",
+          "dict",
+          "set",
+          "tuple",
+        ].includes(methodName)
+      ) {
+        calls.add(`${objectName}.${methodName}`);
+      }
+    }
+
+    // 还要检测装饰器
+    const decoratorRegex = /@(\w+)/g;
+    let decoratorMatch;
+    while (
+      (decoratorMatch = decoratorRegex.exec(bodyWithoutComments)) !== null
     ) {
-      calls.add(calledFunc);
+      const decoratorName = decoratorMatch[1];
+      calls.add(decoratorName);
+    }
+  }
+  // Java/Kotlin
+  else if ([".java", ".kt"].includes(fileExtension)) {
+    callRegex = /(?<!\w|\.)(\w+)\s*\(/g;
+
+    // 处理方法调用
+    const methodCallRegex = /(?:(\w+)\.)?(\w+)\s*\(/g;
+    let methodMatch;
+    while ((methodMatch = methodCallRegex.exec(bodyWithoutComments)) !== null) {
+      const objectName = methodMatch[1];
+      const methodName = methodMatch[2];
+
+      if (objectName) {
+        calls.add(`${objectName}.${methodName}`);
+      } else if (
+        methodName !== funcName &&
+        !["if", "for", "while", "switch", "catch", "super", "this"].includes(
+          methodName
+        )
+      ) {
+        calls.add(methodName);
+      }
+    }
+  }
+  // C/C++/C#
+  else if ([".c", ".cpp", ".cc", ".h", ".hpp", ".cs"].includes(fileExtension)) {
+    callRegex = /(?<!\w|::|\.|\->)(\w+)\s*\(/g;
+
+    // 处理方法调用，包括:: ->操作符
+    const methodCallRegex = /(?:(\w+)(?:::|\.|->))?(\w+)\s*\(/g;
+    let methodMatch;
+    while ((methodMatch = methodCallRegex.exec(bodyWithoutComments)) !== null) {
+      const objectName = methodMatch[1];
+      const methodName = methodMatch[2];
+
+      if (objectName) {
+        calls.add(`${objectName}.${methodName}`);
+      } else if (
+        methodName !== funcName &&
+        ![
+          "if",
+          "for",
+          "while",
+          "switch",
+          "catch",
+          "sizeof",
+          "malloc",
+          "free",
+        ].includes(methodName)
+      ) {
+        calls.add(methodName);
+      }
+    }
+  }
+  // Go
+  else if ([".go"].includes(fileExtension)) {
+    callRegex = /(?<!\w|\.)(\w+)\s*\(/g;
+
+    const methodCallRegex = /(?:(\w+)\.)?(\w+)\s*\(/g;
+    let methodMatch;
+    while ((methodMatch = methodCallRegex.exec(bodyWithoutComments)) !== null) {
+      const objectName = methodMatch[1];
+      const methodName = methodMatch[2];
+
+      if (objectName) {
+        calls.add(`${objectName}.${methodName}`);
+      } else if (
+        methodName !== funcName &&
+        ![
+          "if",
+          "for",
+          "switch",
+          "select",
+          "defer",
+          "go",
+          "make",
+          "len",
+          "cap",
+        ].includes(methodName)
+      ) {
+        calls.add(methodName);
+      }
+    }
+  }
+  // 默认情况使用通用的函数调用检测
+  else {
+    callRegex = /(?<!\w|\.)(\w+)\s*\(/g;
+  }
+
+  // 处理一般函数调用
+  if (callRegex) {
+    let match;
+    while ((match = callRegex.exec(bodyWithoutComments)) !== null) {
+      const calledFunc = match[1];
+      // 避免将自己加入调用列表和常见的控制结构关键字
+      if (
+        calledFunc !== funcName &&
+        !calledFunc.match(
+          /^(if|for|while|switch|catch|return|throw|try|finally)$/
+        )
+      ) {
+        calls.add(calledFunc);
+      }
     }
   }
 }
@@ -824,7 +1250,7 @@ export function generateDiffReport(
 }
 
 // 收集代码结构信息
-function collectCodeStructureInfo(
+export function collectCodeStructureInfo(
   entries: FileSystemEntry[]
 ): ChangeReport["codeStructure"] {
   // 函数和方法信息数组
