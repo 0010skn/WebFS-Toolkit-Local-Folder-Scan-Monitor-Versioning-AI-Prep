@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
 import { Providers } from "./providers";
-import { ViewTransitions } from "next-view-transitions";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -70,30 +69,25 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <ViewTransitions>
-      <html lang="zh">
-        <head>
-          <meta name="application-name" content="Folda-Scan" />
-          <meta name="apple-mobile-web-app-capable" content="yes" />
-          <meta
-            name="apple-mobile-web-app-status-bar-style"
-            content="default"
-          />
-          <meta name="apple-mobile-web-app-title" content="Folda-Scan" />
-          <meta name="format-detection" content="telephone=no" />
-          <meta name="mobile-web-app-capable" content="yes" />
-          <meta name="msapplication-TileColor" content="#4f46e5" />
-          <meta name="msapplication-tap-highlight" content="no" />
-          <meta name="theme-color" content="#4f46e5" />
-          <link rel="manifest" href="/manifest.json" />
-          <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
-        </head>
-        <body
-          className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-        >
-          <Providers>{children}</Providers>
-        </body>
-      </html>
-    </ViewTransitions>
+    <html lang="zh">
+      <head>
+        <meta name="application-name" content="Folda-Scan" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <meta name="apple-mobile-web-app-title" content="Folda-Scan" />
+        <meta name="format-detection" content="telephone=no" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="msapplication-TileColor" content="#4f46e5" />
+        <meta name="msapplication-tap-highlight" content="no" />
+        <meta name="theme-color" content="#4f46e5" />
+        <link rel="manifest" href="/manifest.json" />
+        <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+      </head>
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+      >
+        <Providers>{children}</Providers>
+      </body>
+    </html>
   );
 }

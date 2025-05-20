@@ -6,6 +6,7 @@ import { LocaleProvider } from "../components/LocaleProvider";
 import { useViewport } from "../lib/useViewport";
 import { setupGlobalViewport } from "../lib/viewportScript";
 import { registerServiceWorker, captureInstallPrompt } from "../lib/pwaUtils";
+import { ViewTransitions } from "next-view-transitions";
 
 export function Providers({ children }: { children: ReactNode }) {
   // 直接在Providers组件中调用useViewport hook
@@ -32,8 +33,10 @@ export function Providers({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <JotaiProvider>
-      <LocaleProvider>{children}</LocaleProvider>
-    </JotaiProvider>
+    <ViewTransitions>
+      <JotaiProvider>
+        <LocaleProvider>{children}</LocaleProvider>
+      </JotaiProvider>
+    </ViewTransitions>
   );
 }
