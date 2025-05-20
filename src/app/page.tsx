@@ -19,6 +19,7 @@ import VersionManager from "../components/VersionManager";
 import SettingsButton from "../components/SettingsModal";
 import BrowserCompatCheck from "../components/BrowserCompatCheck";
 import KnowledgeModal from "../components/KnowledgeModal";
+import MultiThreadScanAlert from "../components/MultiThreadScanAlert";
 
 export default function Home() {
   const [directoryHandle] = useAtom(directoryHandleAtom);
@@ -61,6 +62,13 @@ export default function Home() {
   // 环境变量页面跳转
   const handleGoToEnvFile = () => {
     router.push("/docker?tab=env", {
+      onTransitionReady: slideInOut,
+    });
+  };
+
+  // 更新日志页面跳转
+  const handleGoToChangelog = () => {
+    router.push("/changelog", {
       onTransitionReady: slideInOut,
     });
   };
@@ -178,6 +186,14 @@ export default function Home() {
                             className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
                           >
                             {t("knowledgeModal.title")}
+                          </button>
+
+                          {/* 更新日志按钮 */}
+                          <button
+                            onClick={handleGoToChangelog}
+                            className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+                          >
+                            {t("changelog.title")}
                           </button>
                         </div>
                       </div>
@@ -319,6 +335,28 @@ export default function Home() {
                       </svg>
                       {t("knowledgeModal.title")}
                     </button>
+
+                    {/* 更新日志按钮 */}
+                    <button
+                      onClick={handleGoToChangelog}
+                      className="text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white px-3 py-2 rounded-md text-sm font-medium flex items-center"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-5 w-5 mr-1"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                        />
+                      </svg>
+                      {t("changelog.title")}
+                    </button>
                   </div>
                 </>
               )}
@@ -410,6 +448,9 @@ export default function Home() {
             className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6"
           >
             <div className="space-y-6">
+              {/* 多线程扫描支持检测提示 */}
+              <MultiThreadScanAlert />
+
               <section className="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden transition-colors duration-300">
                 <div className="p-6">
                   <div className="flex items-center justify-between mb-4">

@@ -38,6 +38,21 @@
     "developer": "开发者",
     "copyright": "© 2024 Folda-Scan 团队。保留所有权利。"
   },
+  "changelog": {
+    "title": "更新日志",
+    "description": "跟踪 Folda-Scan 的最新更新和改进",
+    "date": "日期",
+    "version": "版本",
+    "changes": "变更内容",
+    "backToHome": "返回首页",
+    "latestUpdates": "最新更新",
+    "olderUpdates": "历史更新",
+    "noUpdates": "暂无更新记录",
+    "multiThreadSupport": {
+      "supported": "当前浏览器支持多线程扫描，扫描速度将更快！",
+      "notSupported": "当前浏览器不支持多线程扫描 扫描会有点慢 耐心等一下:)"
+    }
+  },
   "folderPicker": {
     "selectFolder": "选择文件夹",
     "selecting": "选择中...",

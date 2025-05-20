@@ -38,6 +38,21 @@
     "developer": "Developer",
     "copyright": "© 2024 Folda-Scan Team. All rights reserved."
   },
+  "changelog": {
+    "title": "Changelog",
+    "description": "Track the latest updates and improvements to Folda-Scan",
+    "date": "Date",
+    "version": "Version",
+    "changes": "Changes",
+    "backToHome": "Back to Home",
+    "latestUpdates": "Latest Updates",
+    "olderUpdates": "Older Updates",
+    "noUpdates": "No updates available",
+    "multiThreadSupport": {
+      "supported": "Your browser supports multi-threaded scanning. Scanning will be faster!",
+      "notSupported": "Your browser doesn't support multi-threaded scanning. Scanning will be slower, please be patient :)"
+    }
+  },
   "folderPicker": {
     "selectFolder": "Select Folder",
     "selecting": "Selecting...",
