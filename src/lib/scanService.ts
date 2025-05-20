@@ -47,14 +47,21 @@ export async function checkGitignoreExists(
 
 // 执行一次扫描操作
 export async function performScan(
-  dirHandle: FileSystemDirectoryHandle
+  dirHandle: FileSystemDirectoryHandle,
+  progressCallback?: (progress: number) => void
 ): Promise<ScanResult> {
   // 创建gitignore过滤器
   const shouldInclude = await createGitignoreFilter(dirHandle);
   const startTime = new Date();
   console.log("开始扫描目录...", startTime.toLocaleString());
   // 扫描目录
-  const entries = await scanDirectory(dirHandle, shouldInclude);
+  const entries = await scanDirectory(
+    dirHandle,
+    shouldInclude,
+    "",
+    1024 * 1024 * 1,
+    progressCallback
+  );
   const endTime = new Date();
   const duration = endTime.getTime() - startTime.getTime();
   console.log(`扫描耗时: ${duration} 毫秒`);

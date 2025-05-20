@@ -53,6 +53,23 @@ const TEXT_FILE_EXTENSIONS = [
   ".toml",
 ];
 
+// 进度更新回调类型
+type ProgressCallback = (progress: number) => void;
+
+// 进度更新函数
+export function updateScanProgress(
+  current: number,
+  total: number,
+  callback: ProgressCallback
+): void {
+  // 确保进度值在0-100之间
+  const progress = Math.min(
+    Math.max(Math.round((current / total) * 100), 0),
+    100
+  );
+  callback(progress);
+}
+
 // 读取 .gitignore 文件并创建过滤器
 export async function createGitignoreFilter(
   rootHandle: FileSystemDirectoryHandle
@@ -103,7 +120,8 @@ export async function scanDirectory(
   dirHandle: FileSystemDirectoryHandle,
   shouldInclude: (path: string) => boolean,
   basePath: string = "",
-  maxContentSize: number = 1024 * 1024 * 1 // 减小默认限制为1MB以提高性能
+  maxContentSize: number = 1024 * 1024 * 1, // 减小默认限制为1MB以提高性能
+  progressCallback?: ProgressCallback // 添加进度回调参数
 ): Promise<FileSystemEntry[]> {
   const entries: FileSystemEntry[] = [];
   const BATCH_SIZE = 100; // 批处理大小
@@ -112,6 +130,78 @@ export async function scanDirectory(
   // 创建一个工作队列来控制并发
   const dirQueue: { handle: FileSystemDirectoryHandle; path: string }[] = [];
   let activeWorkers = 0;
+
+  // 用于进度计算的变量
+  let totalItems = 1; // 初始值为1，表示根目录
+  let processedItems = 0;
+  let lastProgressUpdate = 0;
+
+  // 首先计算大致的项目总数，以便更准确地报告进度
+  if (progressCallback) {
+    try {
+      let estimatedCount = 0;
+      // 快速计算项目数量的函数 - 提到外面以避免严格模式错误
+      const countItems = async (
+        handle: FileSystemDirectoryHandle,
+        path: string = ""
+      ): Promise<number> => {
+        let count = 1; // 目录本身算一个
+        try {
+          for await (const [name, entry] of handle.entries()) {
+            const entryPath = path ? `${path}/${name}` : name;
+
+            // 跳过 .fe 和 .git 目录
+            if (
+              name === ".fe" ||
+              path.startsWith(".fe/") ||
+              name === ".git" ||
+              path.startsWith(".git/")
+            ) {
+              continue;
+            }
+
+            // 应用 gitignore 过滤
+            if (!shouldInclude(entryPath)) {
+              continue;
+            }
+
+            if (entry.kind === "directory") {
+              // 对于目录，递归计数但限制深度
+              count += await countItems(
+                entry as FileSystemDirectoryHandle,
+                entryPath
+              );
+            } else {
+              count += 1;
+            }
+          }
+        } catch (error) {
+          console.error(`计算 ${path || "根目录"} 中的项目数量时出错:`, error);
+        }
+        return count;
+      };
+
+      // 限制计数时间，最多花费500ms进行估算
+      const timeoutPromise = new Promise<number>((resolve) => {
+        setTimeout(() => resolve(100), 500); // 如果超时，返回一个默认估计值
+      });
+
+      // 与实际计数竞争
+      estimatedCount = await Promise.race([
+        countItems(dirHandle),
+        timeoutPromise,
+      ]);
+
+      totalItems = Math.max(estimatedCount, 100); // 确保至少有100个项目，避免过早达到100%
+      console.log(`估计项目总数: ${totalItems}`);
+
+      // 初始进度为0
+      progressCallback(0);
+    } catch (error) {
+      console.error("计算项目总数时出错:", error);
+      totalItems = 1000; // 使用默认值
+    }
+  }
 
   // 处理单个目录的函数
   async function processDirectory(
@@ -135,6 +225,16 @@ export async function scanDirectory(
           type: "directory",
         };
         localEntries.push(dirEntry);
+
+        // 更新进度
+        processedItems++;
+        if (
+          progressCallback &&
+          (processedItems % 10 === 0 || Date.now() - lastProgressUpdate > 100)
+        ) {
+          updateScanProgress(processedItems, totalItems, progressCallback);
+          lastProgressUpdate = Date.now();
+        }
       }
 
       // 分批处理文件，每批BATCH_SIZE个
@@ -192,6 +292,21 @@ export async function scanDirectory(
                   }
                 }
                 localEntries.push(entry);
+
+                // 更新进度
+                processedItems++;
+                if (
+                  progressCallback &&
+                  (processedItems % 10 === 0 ||
+                    Date.now() - lastProgressUpdate > 100)
+                ) {
+                  updateScanProgress(
+                    processedItems,
+                    totalItems,
+                    progressCallback
+                  );
+                  lastProgressUpdate = Date.now();
+                }
               } else if (handle.kind === "directory") {
                 // 将子目录添加到队列中，而不是立即处理
                 dirQueue.push({
@@ -201,6 +316,8 @@ export async function scanDirectory(
               }
             } catch (itemError) {
               console.error(`处理项目 ${path} 时出错:`, itemError);
+              // 即使出错也计入处理项
+              processedItems++;
             }
           })
         );
@@ -241,6 +358,11 @@ export async function scanDirectory(
       if (dirQueue.length > 0 || activeWorkers > 0) {
         await new Promise((resolve) => setTimeout(resolve, 0));
       }
+    }
+
+    // 扫描完成，进度设为100%
+    if (progressCallback) {
+      progressCallback(100);
     }
   }
 

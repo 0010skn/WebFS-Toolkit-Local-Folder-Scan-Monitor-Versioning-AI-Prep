@@ -47,6 +47,12 @@ const CodeBlock = ({
   const language = className ? className.replace(/language-/, "") : "";
   const [copied, setCopied] = useState(false);
 
+  // 如果是单行代码，不做特殊处理，保留原始的 ` 格式，让 processMarkdown 函数处理
+  const isSingleLine = !children.includes("\n") && children.trim().length < 50;
+  if (isSingleLine) {
+    return <code>{children}</code>;
+  }
+
   // 高亮块动画
   const handleCopy = () => {
     navigator.clipboard.writeText(children || "");
@@ -1121,6 +1127,70 @@ export default function AITestDialog({
       /(\[.*?\]\(.*?\))/g,
       '<span class="break-all">$1</span>'
     );
+
+    // 防止文件名和函数关键字被错误地渲染为代码块
+    // 1. 修复文件名格式: 将 ```filename.ext``` 替换为 `filename.ext`
+    processed = processed.replace(
+      /```([a-zA-Z0-9_\-\.]+\.[a-zA-Z0-9]+)```/g,
+      "`$1`"
+    );
+
+    // 2. 修复函数名和关键字: 将 ```keyword``` 替换为 `keyword`
+    processed = processed.replace(/```([a-zA-Z0-9_]+)```/g, "`$1`");
+
+    // 3. 防止单行路径被渲染为代码块
+    processed = processed.replace(
+      /```((?:\/|\.\/|\.\.\/)[a-zA-Z0-9_\-\.\/]+)```/g,
+      "`$1`"
+    );
+
+    // 首先处理特殊格式的代码引用，这一步必须在处理普通代码块之前进行
+    // 5. 识别文件路径+行数格式，例如：```12:15:app/components/Todo.tsx
+    // 格式为：```startLine:endLine:filepath
+    const codeReferences: string[] = [];
+    processed = processed.replace(
+      /```(\d+):(\d+):([a-zA-Z0-9_\-\.\/\\]+)(?:\n|$)/g,
+      (match, startLine, endLine, filePath) => {
+        const replacement = `<div class="flex items-center bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-t-md border-b border-gray-300 dark:border-gray-600">
+          <span class="flex items-center text-xs text-gray-600 dark:text-gray-300">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+            </svg>
+            <span class="font-medium">${filePath}</span>
+            <span class="mx-1.5 text-gray-400">•</span>
+            <span>行 ${startLine}-${endLine}</span>
+          </span>
+        </div>`;
+        codeReferences.push(replacement);
+        return `__CODE_REFERENCE_${codeReferences.length - 1}__`;
+      }
+    );
+
+    // 4. 将特殊格式 `xxx` 渲染为粗体蓝色下划线文本，而不是代码块
+    // 但避免修改代码块内的内容
+
+    // 然后，将普通代码块内容替换为占位符，以保护它们不被处理
+    const codeBlocks: string[] = [];
+    processed = processed.replace(/```[\s\S]*?```/g, (match) => {
+      codeBlocks.push(match);
+      return `__CODE_BLOCK_${codeBlocks.length - 1}__`;
+    });
+
+    // 处理单行反引号
+    processed = processed.replace(
+      /`([^`]+)`/g,
+      '<span class="font-bold text-blue-600 dark:text-blue-400 underline">$1</span>'
+    );
+
+    // 恢复代码引用
+    codeReferences.forEach((reference, index) => {
+      processed = processed.replace(`__CODE_REFERENCE_${index}__`, reference);
+    });
+
+    // 恢复代码块
+    codeBlocks.forEach((block, index) => {
+      processed = processed.replace(`__CODE_BLOCK_${index}__`, block);
+    });
 
     return processed;
   };

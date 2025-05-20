@@ -63,34 +63,19 @@ export default function ScanControls() {
 
   // 模拟扫描进度动画
   useEffect(() => {
-    let progress = 0;
-    let interval: NodeJS.Timeout | null = null;
     let timer: NodeJS.Timeout | null = null;
 
     if (scanStatus === "scanning") {
-      setScanProgress(0);
+      // 不再需要模拟进度，现在使用真实进度
       setScanCompleted(false);
-
-      interval = setInterval(() => {
-        if (progress < 95) {
-          progress += Math.random() * 10;
-          progress = Math.min(progress, 95);
-          setScanProgress(progress);
-        } else {
-          if (interval) clearInterval(interval);
-        }
-      }, 150);
     } else if (scanStatus === "idle" && scanProgress > 0) {
-      setScanProgress(100);
-      setScanCompleted(true);
-
+      // 扫描完成后，延迟重置进度条
       timer = setTimeout(() => {
         setScanProgress(0);
       }, 1500);
     }
 
     return () => {
-      if (interval) clearInterval(interval);
       if (timer) clearTimeout(timer);
     };
   }, [scanStatus]);
@@ -147,6 +132,7 @@ export default function ScanControls() {
     try {
       setScanStatus("scanning");
       setErrorMessage(null);
+      setScanProgress(0); // 重置进度为0
 
       // 尝试读取README.md文件
       try {
@@ -163,8 +149,15 @@ export default function ScanControls() {
         setReadmeContent(null);
       }
 
-      // 执行扫描
-      const scanResult = await performScan(directoryHandle);
+      // 执行扫描，传递进度回调函数
+      const scanResult = await performScan(directoryHandle, (progress) => {
+        // 更新UI进度
+        setScanProgress(progress);
+        // 当进度达到100%时设置完成标志
+        if (progress === 100) {
+          setScanCompleted(true);
+        }
+      });
 
       // 如果之前已有扫描结果，则前一次结果变为上一次结果
       if (currentScan) {
