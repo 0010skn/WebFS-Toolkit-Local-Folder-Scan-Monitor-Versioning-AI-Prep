@@ -387,94 +387,110 @@ const FileIndexCard = ({ data }: { data?: string }) => {
   );
 };
 
+// 添加或修改样式部分，可以放在组件的样式区域
+const tooltipStyles = `
+.keyword-tooltip {
+  position: fixed;
+  z-index: 1000;
+  background-color: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(8px);
+  border: 1px solid #e2e8f0;
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  padding: 1rem;
+  max-width: 90vw;
+  max-height: 70vh;
+  overflow-y: auto;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
+
+.dark .keyword-tooltip {
+  background-color: rgba(31, 41, 55, 0.95);
+  backdrop-filter: blur(8px);
+  border-color: #374151;
+  color: #f3f4f6;
+}
+
+.keyword-tooltip-content {
+  position: relative;
+  background-color: transparent;
+}
+
+.keyword-tooltip code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  padding: 0.1rem 0.2rem;
+  border-radius: 0.25rem;
+}
+
+.dark .keyword-tooltip code {
+  background-color: #374151;
+}
+
+.keyword-tooltip .line-number {
+  color: #6b7280;
+  user-select: none;
+}
+
+.dark .keyword-tooltip .line-number {
+  color: #9ca3af;
+}
+
+.keyword-tooltip .highlight {
+  background-color: rgba(252, 211, 77, 0.2);
+  font-weight: 600;
+}
+
+.dark .keyword-tooltip .highlight {
+  background-color: rgba(252, 211, 77, 0.15);
+}
+
+.top-arrow, .bottom-arrow {
+  position: absolute;
+  width: 0;
+  height: 0;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+}
+
+.top-arrow {
+  top: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-bottom: 8px solid #e2e8f0;
+}
+
+.dark .top-arrow {
+  border-bottom-color: #374151;
+}
+
+.bottom-arrow {
+  bottom: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-top: 8px solid #e2e8f0;
+}
+
+.dark .bottom-arrow {
+  border-top-color: #374151;
+}
+`;
+
 export default function AITestDialog({
   onClose,
   initialPrompt,
   projectFilePaths = [],
 }: AITestDialogProps) {
-  // 添加全局样式
+  // 添加样式到head
   useEffect(() => {
     // 创建样式元素
-    const styleElement = document.createElement("style");
-    styleElement.innerHTML = `
-      .keyword-tooltip {
-        display: none;
-        position: fixed;
-        z-index: 1000;
-        pointer-events: none;
-        width: 280px;
-      }
+    const styleEl = document.createElement("style");
+    styleEl.textContent = tooltipStyles;
+    document.head.appendChild(styleEl);
 
-      .keyword-tooltip-content {
-        position: relative;
-        background-color: white;
-        border-radius: 0.5rem;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-        padding: 0.75rem;
-        width: 100%;
-        font-size: 0.875rem;
-        line-height: 1.25rem;
-        color: #374151;
-        animation: tooltip-fade-in 0.2s ease-out forwards;
-        max-width: 100%;
-        pointer-events: auto;
-      }
-
-      @media (prefers-color-scheme: dark) {
-        .keyword-tooltip-content {
-          background-color: #1f2937;
-          color: #e5e7eb;
-        }
-      }
-
-      .keyword-tooltip-arrow {
-        position: absolute;
-        left: 1rem;
-        transform: rotate(45deg);
-        width: 0.5rem;
-        height: 0.5rem;
-        background-color: inherit;
-      }
-
-      .bottom-arrow {
-        bottom: -0.25rem;
-      }
-
-      .top-arrow {
-        top: -0.25rem;
-      }
-
-      /* 在移动设备上的样式 */
-      @media (max-width: 767px) {
-        .keyword-tooltip {
-          width: 280px;
-          max-width: 90vw;
-        }
-        .keyword-tooltip-content {
-          max-width: 100%;
-          font-size: 0.8rem;
-          padding: 0.5rem;
-        }
-      }
-
-      @keyframes tooltip-fade-in {
-        from {
-          opacity: 0;
-          transform: translateY(0.25rem);
-        }
-        to {
-          opacity: 1;
-          transform: translateY(-0.5rem);
-        }
-      }
-    `;
-
-    // 添加到文档头部
-    document.head.appendChild(styleElement);
-
-    // 组件卸载时移除样式
+    // 清理函数
     return () => {
-      document.head.removeChild(styleElement);
+      document.head.removeChild(styleEl);
     };
   }, []);
   const { t } = useTranslations();
@@ -616,21 +632,20 @@ export default function AITestDialog({
               }
             }
 
-            // 显示加载状态
+            // 显示加载中的状态
             tooltipElement.innerHTML = `
-              <div class="keyword-tooltip-content">
-                <div class="flex items-center">
-                  <div class="animate-spin mr-2">
-                    <svg class="w-4 h-4 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                  </div>
-                  <span>正在获取信息...</span>
+              <div class="keyword-tooltip-content bg-transparent">
+                <div class="text-sm flex items-center space-x-2">
+                  <div class="animate-spin h-4 w-4 border-2 border-emerald-500 rounded-full border-t-transparent"></div>
+                  <span>正在获取 "${keyword}" 的相关信息...</span>
                 </div>
-                <div class="keyword-tooltip-arrow ${
-                  position === "bottom" ? "top-arrow" : "bottom-arrow"
-                }"></div>
+                ${
+                  position !== "center"
+                    ? `<div class="keyword-tooltip-arrow ${
+                        position === "bottom" ? "top-arrow" : "bottom-arrow"
+                      }"></div>`
+                    : ""
+                }
               </div>
             `;
 
@@ -735,19 +750,76 @@ export default function AITestDialog({
                     // 检查关键词是否在文件内容中
                     if (entry.content.includes(keyword)) {
                       matchFound = true;
-                      // 获取关键词附近的上下文
-                      const keywordIndex = entry.content.indexOf(keyword);
-                      const contextStart = Math.max(0, keywordIndex - 500);
-                      const contextEnd = Math.min(
-                        entry.content.length,
-                        keywordIndex + keyword.length + 500
-                      );
-                      const keywordContext = entry.content.substring(
-                        contextStart,
-                        contextEnd
+                      // 获取关键词附近的上下文，并增加行号
+                      const lines = entry.content.split("\n");
+                      const keywordLine = lines.findIndex((line) =>
+                        line.includes(keyword)
                       );
 
-                      fileContents = `文件: ${file} (包含关键词 "${keyword}")\n内容:\n${keywordContext}\n\n`;
+                      if (keywordLine !== -1) {
+                        // 提取关键词前后10行的内容，添加行号
+                        const startLine = Math.max(0, keywordLine - 10);
+                        const endLine = Math.min(
+                          lines.length - 1,
+                          keywordLine + 10
+                        );
+                        let keywordContext = "";
+
+                        for (let i = startLine; i <= endLine; i++) {
+                          const linePrefix = `${i + 1}| `;
+                          const lineContent =
+                            i === keywordLine
+                              ? lines[i].replace(keyword, `**${keyword}**`) // 加粗关键词
+                              : lines[i];
+                          keywordContext += `${linePrefix}${lineContent}\n`;
+                        }
+
+                        // 查找该文件中包含关键词所在行的函数/方法
+                        let functionContext = "";
+                        if (
+                          currentScan.codeStructure &&
+                          currentScan.codeStructure.functions
+                        ) {
+                          const containingFunctions =
+                            currentScan.codeStructure.functions.filter(
+                              (func) =>
+                                func.filePath === file &&
+                                func.lines[0] <= keywordLine + 1 &&
+                                func.lines[1] >= keywordLine + 1
+                            );
+
+                          if (containingFunctions.length > 0) {
+                            functionContext = `\n关键词位于以下函数/方法中:\n`;
+                            containingFunctions.forEach((func) => {
+                              functionContext += `- ${func.type}: ${func.name} [行 ${func.lines[0]}-${func.lines[1]}]\n`;
+                              // 添加函数调用关系
+                              if (func.calls && func.calls.length > 0) {
+                                functionContext += `  调用: ${func.calls.join(
+                                  ", "
+                                )}\n`;
+                              }
+                            });
+                          }
+                        }
+
+                        fileContents = `文件: ${file} (关键词 "${keyword}" 出现在第 ${
+                          keywordLine + 1
+                        } 行)\n${functionContext}\n代码上下文:\n${keywordContext}\n\n`;
+                      } else {
+                        // 对于长文本，查找关键词的位置并提取周围内容
+                        const keywordIndex = entry.content.indexOf(keyword);
+                        const contextStart = Math.max(0, keywordIndex - 500);
+                        const contextEnd = Math.min(
+                          entry.content.length,
+                          keywordIndex + keyword.length + 500
+                        );
+                        const keywordContext = entry.content.substring(
+                          contextStart,
+                          contextEnd
+                        );
+
+                        fileContents = `文件: ${file} (包含关键词 "${keyword}")\n内容:\n${keywordContext}\n\n`;
+                      }
                       break; // 找到匹配后退出循环
                     } else {
                       // 如果没有找到关键词，就添加文件内容
@@ -763,144 +835,215 @@ export default function AITestDialog({
 
                 // 如果当前轮次的文件中没有找到关键词，则在整个项目中搜索
                 if (!matchFound) {
-                  // 在所有项目文件中搜索关键词
-                  let mostRelevantFile: string | null = null;
-                  let mostRelevantContent = "";
-
-                  // 首先搜索精确的文件名匹配
-                  if (keyword.includes(".") && keyword.length > 3) {
-                    // 特殊文件类型处理
-                    const isPythonScript = keyword.endsWith(".py");
-                    const isDatabase =
-                      keyword.includes("db") ||
-                      keyword.includes("data") ||
-                      keyword.includes("sql");
-                    const isSupabase = keyword.includes("supabase");
-                    const isImport = keyword.includes("import");
-
-                    // 先尝试精确匹配
-                    const exactFileMatch = currentScan.entries.find(
-                      (e) =>
-                        e.path && e.path.endsWith(keyword) && e.type === "file"
-                    );
-
-                    if (
-                      exactFileMatch &&
-                      exactFileMatch.content &&
-                      exactFileMatch.path
-                    ) {
-                      mostRelevantFile = exactFileMatch.path;
-                      const truncatedContent =
-                        exactFileMatch.content.length > 1500
-                          ? exactFileMatch.content.substring(0, 1500) + "..."
-                          : exactFileMatch.content;
-
-                      mostRelevantContent = truncatedContent;
-                    } else {
-                      // 如果找不到精确匹配，尝试模糊匹配
-                      const fuzzyMatches = currentScan.entries.filter(
-                        (e) =>
-                          e.path &&
-                          e.type === "file" &&
-                          ((isPythonScript && e.path.endsWith(".py")) ||
-                            (isDatabase &&
-                              (e.path.includes("db") ||
-                                e.path.includes("data") ||
-                                e.path.includes("sql"))) ||
-                            (isSupabase && e.path.includes("supabase")) ||
-                            (isImport && e.path.includes("import")))
+                  // 检查关键词是否是一个函数/方法名
+                  let foundFunction = false;
+                  if (
+                    currentScan.codeStructure &&
+                    currentScan.codeStructure.functions
+                  ) {
+                    const functionsWithName =
+                      currentScan.codeStructure.functions.filter(
+                        (func) =>
+                          func.name.includes(keyword) ||
+                          keyword.includes(func.name)
                       );
 
-                      if (fuzzyMatches.length > 0) {
-                        // 优先选择名称相似度最高的文件
-                        let bestMatch = fuzzyMatches[0];
-                        let highestSimilarity = 0;
+                    if (functionsWithName.length > 0) {
+                      foundFunction = true;
+                      fileContents = `关键词 "${keyword}" 似乎是一个函数/方法名:\n\n`;
 
-                        for (const match of fuzzyMatches) {
-                          if (match.path) {
-                            // 计算简单的相似度（共同单词数）
-                            const matchWords = match.path
-                              .toLowerCase()
-                              .split(/[_\-./\\]/);
-                            const keywordWords = keyword
-                              .toLowerCase()
-                              .split(/[_\-./\\]/);
+                      functionsWithName.forEach((func) => {
+                        fileContents += `- ${func.type}: ${func.name} [在文件 ${func.filePath} 的第 ${func.lines[0]}-${func.lines[1]} 行]\n`;
 
-                            let commonWords = 0;
-                            for (const word of keywordWords) {
-                              if (
-                                word.length > 2 &&
-                                matchWords.includes(word)
-                              ) {
-                                commonWords++;
-                              }
-                            }
-
-                            if (commonWords > highestSimilarity) {
-                              highestSimilarity = commonWords;
-                              bestMatch = match;
-                            }
-                          }
+                        // 添加函数调用关系
+                        if (func.calls && func.calls.length > 0) {
+                          fileContents += `  调用: ${func.calls.join(", ")}\n`;
                         }
 
-                        if (bestMatch.path && bestMatch.content) {
-                          mostRelevantFile = bestMatch.path;
-                          const truncatedContent =
-                            bestMatch.content.length > 1500
-                              ? bestMatch.content.substring(0, 1500) + "..."
-                              : bestMatch.content;
-
-                          mostRelevantContent = truncatedContent;
+                        // 尝试获取函数的源代码
+                        const funcFile = currentScan.entries.find(
+                          (e) => e.path === func.filePath && e.type === "file"
+                        );
+                        if (funcFile && funcFile.content) {
+                          const lines = funcFile.content.split("\n");
+                          // 获取函数源代码（行号范围从1开始，数组索引从0开始）
+                          const functionCode = lines
+                            .slice(func.lines[0] - 1, func.lines[1])
+                            .join("\n");
+                          fileContents += `\n源代码:\n${functionCode}\n\n`;
                         }
-                      }
+                      });
                     }
                   }
 
-                  if (mostRelevantFile) {
-                    fileContents = `文件: ${mostRelevantFile} (包含关键词 "${keyword}")\n内容:\n${mostRelevantContent}\n\n`;
-                  } else {
-                    // 如果没有找到包含关键词的文件，使用最常见的文件类型
-                    const commonFileTypes = [
-                      ".ts",
-                      ".tsx",
-                      ".js",
-                      ".jsx",
-                      ".py",
-                      ".go",
-                      ".java",
-                      ".c",
-                      ".cpp",
-                      ".md",
-                    ];
+                  if (!foundFunction) {
+                    // 在所有项目文件中搜索关键词
+                    let mostRelevantFile: string | null = null;
+                    let mostRelevantContent = "";
+                    let mostRelevantLineNumber = -1;
 
-                    for (const ext of commonFileTypes) {
-                      // 查找最多5个具有此扩展名的文件
-                      const filesWithExt = currentScan.entries
-                        .filter(
+                    // 搜索所有文件内容
+                    for (const entry of currentScan.entries) {
+                      if (
+                        entry.type === "file" &&
+                        entry.content &&
+                        entry.content.includes(keyword)
+                      ) {
+                        mostRelevantFile = entry.path || null;
+                        // 找出关键词所在行
+                        const lines = entry.content.split("\n");
+                        const keywordLine = lines.findIndex((line) =>
+                          line.includes(keyword)
+                        );
+
+                        if (keywordLine !== -1) {
+                          mostRelevantLineNumber = keywordLine + 1;
+                          // 提取关键词前后10行的内容，添加行号
+                          const startLine = Math.max(0, keywordLine - 10);
+                          const endLine = Math.min(
+                            lines.length - 1,
+                            keywordLine + 10
+                          );
+                          let contextWithLines = "";
+
+                          for (let i = startLine; i <= endLine; i++) {
+                            const linePrefix = `${i + 1}| `;
+                            const lineContent =
+                              i === keywordLine
+                                ? lines[i].replace(keyword, `**${keyword}**`)
+                                : lines[i];
+                            contextWithLines += `${linePrefix}${lineContent}\n`;
+                          }
+
+                          mostRelevantContent = contextWithLines;
+                          break; // 找到一个匹配就退出
+                        } else {
+                          // 如果无法确定确切行，提取包含关键词的部分
+                          const keywordIndex = entry.content.indexOf(keyword);
+                          const contextStart = Math.max(0, keywordIndex - 300);
+                          const contextEnd = Math.min(
+                            entry.content.length,
+                            keywordIndex + keyword.length + 300
+                          );
+                          mostRelevantContent = entry.content.substring(
+                            contextStart,
+                            contextEnd
+                          );
+                        }
+                      }
+                    }
+
+                    if (mostRelevantFile) {
+                      const lineInfo =
+                        mostRelevantLineNumber > 0
+                          ? `(关键词出现在第 ${mostRelevantLineNumber} 行)`
+                          : "";
+                      fileContents = `文件: ${mostRelevantFile} ${lineInfo}\n内容:\n${mostRelevantContent}\n\n`;
+
+                      // 如果找到了关键词所在行，检查它是否在某个函数/方法内
+                      if (
+                        mostRelevantLineNumber > 0 &&
+                        currentScan.codeStructure &&
+                        currentScan.codeStructure.functions
+                      ) {
+                        const containingFunctions =
+                          currentScan.codeStructure.functions.filter(
+                            (func) =>
+                              func.filePath === mostRelevantFile &&
+                              func.lines[0] <= mostRelevantLineNumber &&
+                              func.lines[1] >= mostRelevantLineNumber
+                          );
+
+                        if (containingFunctions.length > 0) {
+                          fileContents += `关键词位于以下函数/方法中:\n`;
+                          containingFunctions.forEach((func) => {
+                            fileContents += `- ${func.type}: ${func.name} [行 ${func.lines[0]}-${func.lines[1]}]\n`;
+                            if (func.calls && func.calls.length > 0) {
+                              fileContents += `  调用: ${func.calls.join(
+                                ", "
+                              )}\n`;
+                            }
+                          });
+                          fileContents += "\n";
+                        }
+                      }
+                    } else {
+                      // 如果找不到精确匹配，尝试模糊匹配
+                      // 先尝试精确匹配文件名
+                      if (keyword.includes(".") && keyword.length > 3) {
+                        const exactFileMatch = currentScan.entries.find(
                           (e) =>
-                            e.type === "file" &&
                             e.path &&
-                            e.path.endsWith(ext) &&
-                            e.content
-                        )
-                        .slice(0, 5);
+                            e.path.endsWith(keyword) &&
+                            e.type === "file"
+                        );
 
-                      if (filesWithExt.length > 0) {
-                        fileContents =
-                          "在项目中未找到直接包含关键词的文件，展示一些相关文件作为上下文：\n\n";
+                        if (
+                          exactFileMatch &&
+                          exactFileMatch.content &&
+                          exactFileMatch.path
+                        ) {
+                          mostRelevantFile = exactFileMatch.path;
+                          // 显示文件的前30行，通常包含重要导入和声明
+                          const lines = exactFileMatch.content
+                            .split("\n")
+                            .slice(0, 30);
+                          mostRelevantContent = lines
+                            .map((line, idx) => `${idx + 1}| ${line}`)
+                            .join("\n");
+                        }
+                      }
 
-                        for (const entry of filesWithExt) {
-                          if (entry.path && entry.content) {
-                            const truncatedContent =
-                              entry.content.length > 500
-                                ? entry.content.substring(0, 500) + "..."
-                                : entry.content;
+                      if (mostRelevantFile) {
+                        fileContents = `文件: ${mostRelevantFile} (文件名匹配关键词 "${keyword}")\n内容:\n${mostRelevantContent}\n\n`;
+                      } else {
+                        // 如果没有找到包含关键词的文件，使用最常见的文件类型
+                        const commonFileTypes = [
+                          ".ts",
+                          ".tsx",
+                          ".js",
+                          ".jsx",
+                          ".py",
+                          ".go",
+                          ".java",
+                          ".c",
+                          ".cpp",
+                          ".md",
+                        ];
 
-                            fileContents += `文件: ${entry.path}\n内容:\n${truncatedContent}\n\n`;
+                        for (const ext of commonFileTypes) {
+                          // 查找最多3个具有此扩展名的文件
+                          const filesWithExt = currentScan.entries
+                            .filter(
+                              (e) =>
+                                e.type === "file" &&
+                                e.path &&
+                                e.path.endsWith(ext) &&
+                                e.content
+                            )
+                            .slice(0, 3);
+
+                          if (filesWithExt.length > 0) {
+                            fileContents =
+                              "在项目中未找到直接包含关键词的文件，展示一些相关文件作为上下文：\n\n";
+
+                            for (const entry of filesWithExt) {
+                              if (entry.path && entry.content) {
+                                // 只显示文件的前15行（通常包含导入语句和主要定义）
+                                const topLines = entry.content
+                                  .split("\n")
+                                  .slice(0, 15);
+                                const formattedLines = topLines
+                                  .map((line, idx) => `${idx + 1}| ${line}`)
+                                  .join("\n");
+
+                                fileContents += `文件: ${entry.path}\n内容(前15行):\n${formattedLines}\n\n`;
+                              }
+                            }
+
+                            break; // 找到相关文件后退出循环
                           }
                         }
-
-                        break; // 找到相关文件后退出循环
                       }
                     }
                   }
@@ -956,10 +1099,23 @@ ${contextInfo}
 ${fileContents}`);
               const explanation = response.choices[0].message.content;
 
+              // 确保markdown风格的加粗符号会被正确渲染为HTML
+              const formattedExplanation = explanation
+                .replace(
+                  /\*\*([^*]+)\*\*/g,
+                  '<span class="font-bold text-emerald-600">$1</span>'
+                )
+                .replace(
+                  /`([^`]+)`/g,
+                  '<code class="bg-gray-100 dark:bg-gray-700 px-1 rounded">$1</code>'
+                )
+                .replace(/\n/g, "<br>")
+                .replace(/(\d+\|)/g, '<span class="text-gray-500">$1</span>');
+
               // 更新气泡提示内容
               tooltipElement.innerHTML = `
-                <div class="keyword-tooltip-content">
-                  <div class="text-sm whitespace-pre-wrap">${explanation}</div>
+                <div class="keyword-tooltip-content bg-transparent">
+                  <div class="text-sm whitespace-pre-wrap text-left font-mono">${formattedExplanation}</div>
                   ${
                     position !== "center"
                       ? `<div class="keyword-tooltip-arrow ${
@@ -972,7 +1128,7 @@ ${fileContents}`);
             } catch (error) {
               console.error("获取关键字信息出错:", error);
               tooltipElement.innerHTML = `
-                <div class="keyword-tooltip-content">
+                <div class="keyword-tooltip-content bg-transparent">
                   <div class="text-sm text-red-500 whitespace-pre-wrap">获取信息失败，请重试</div>
                   ${
                     position !== "center"
@@ -1779,7 +1935,7 @@ ${fileContents}`);
     let keywordCounter = 0;
     processed = processed.replace(/`([^`]+)`/g, (match, keyword) => {
       const id = `keyword-${keywordCounter++}`;
-      return `<span id="${id}" class="font-bold text-blue-600 dark:text-blue-400 underline cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900/30 px-0.5 rounded transition-colors" data-keyword="${keyword}" data-tooltip-id="${id}-tooltip" data-tooltip-content="加载中...">${keyword}</span><div id="${id}-tooltip" class="keyword-tooltip"></div>`;
+      return `<span id="${id}" class="font-bold text-blue-600 dark:text-blue-400 underline cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900/30 px-0.5 rounded transition-colors" data-keyword="${keyword}" data-tooltip-id="${id}-tooltip" data-tooltip-content="加载中...">${keyword}</span><div id="${id}-tooltip" class="keyword-tooltip" style="display:none;"></div>`;
     });
 
     // 最后，恢复代码块
