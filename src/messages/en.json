@@ -301,6 +301,7 @@
     "testResult": "AI Response",
     "testInstructions": "Test how this prompt performs with the AI model",
     "testPlaceholder": "AI response will appear here...",
+    "testComplete": "The test has completed all 60 conversation rounds. Test complete. To continue, please restart the test.",
     "processingPhases": {
       "initializing": "Initializing vectorization engine",
       "collecting": "Collecting project file data",

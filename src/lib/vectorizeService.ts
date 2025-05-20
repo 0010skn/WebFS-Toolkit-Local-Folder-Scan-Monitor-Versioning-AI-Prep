@@ -130,7 +130,7 @@ export async function testWithAI(
     const conversationHistory: Array<{ role: string; content: string }> =
       customHistory || [];
     let currentRound = 0;
-    const maxRounds = 20;
+    const maxRounds = 60;
 
     // 如果没有提供自定义历史，则创建新的对话历史
     if (!customHistory) {
@@ -146,23 +146,16 @@ export async function testWithAI(
 3. 展示对项目整体架构的理解
 4. 提供具体、可操作的建议
 
-## ⚠️ 必须严格遵守的格式规则：
-- 当引用源代码区域时，你必须使用以下格式：\`\`\`startLine:endLine:filePath\`\`\`
-  示例: \`\`\`12:15:app/components/Todo.tsx\`\`\`
-  不要增加任何额外空行、语言标识或其他内容
-  正确: \`\`\`12:15:app/components/Todo.tsx\`\`\`
-  错误: \`\`\`typescript 12:15:app/components/Todo.tsx\`\`\`
-  错误: \`\`\`12:15:app/components/Todo.tsx\n\`\`\`
-- 每次引用源代码时，必须包含行号和文件路径
-- 此格式将被专门处理为特殊的代码引用格式，所以必须精确使用
-
-其他格式指南：
+重要格式指南：
 - 只在显示实际代码片段时才使用代码块（\`\`\`语言 ...代码... \`\`\`）
-- 避免在普通解释文本中使用代码块格式
+- 避免在普通解释文本,名词,文件夹,文件名中使用代码块格式
 - 当引用变量名、函数名或简短代码片段时，使用单行代码格式（\`代码\`）而非代码块
 - 对于文件名，请使用单行代码格式，例如：\`filename.tsx\` 而非 \`\`\`filename.tsx\`\`\`
 - 对于函数名和关键字，请使用单行代码格式，例如：\`function\` 而非 \`\`\`function\`\`\`
-- 保持回答简洁明了，避免不必要的标记和格式
+- **非常重要：当引用源代码区域时，必须使用以下格式：\`\`\`起始行:结束行:文件路径\`\`\`**
+  例如：\`\`\`12:15:app/components/Todo.tsx\`\`\` 这将显示为带有文件路径和行号的特殊格式
+- 保持回答清晰简洁，避免不必要的标记和格式
+- 长代码片段使用代码块格式
 
 注意：所有必要的文件内容已经在用户消息中提供，不需要使用工具调用来获取文件内容。直接基于用户消息中提供的文件内容回答问题。
 
@@ -179,22 +172,16 @@ Please actively analyze the code and project information provided by the user, w
 3. Demonstrate understanding of the overall project architecture
 4. Offer specific, actionable advice
 
-## ⚠️ MANDATORY FORMATTING RULES:
-- When referencing source code regions, you MUST use EXACTLY this format: \`\`\`startLine:endLine:filePath\`\`\`
-  Example: \`\`\`12:15:app/components/Todo.tsx\`\`\`
-  DO NOT add any extra line breaks, language identifiers, or other content
-  CORRECT: \`\`\`12:15:app/components/Todo.tsx\`\`\`
-  WRONG: \`\`\`typescript 12:15:app/components/Todo.tsx\`\`\`
-  WRONG: \`\`\`12:15:app/components/Todo.tsx\n\`\`\`
-- You MUST include line numbers and file path EVERY TIME you reference source code
-- This format will be specially processed as a code reference format, so it must be used exactly
-
-Other formatting guidelines:
+Important formatting guidelines:
 - Only use code blocks (\`\`\`language ...code... \`\`\`) when displaying actual code snippets
 - Avoid using code block formatting for regular explanatory text, nouns, folder names, or file names
 - When referencing variable names, function names, or short code snippets, use inline code format (\`code\`) rather than code blocks
+- Keep your answers clear and concise, avoiding unnecessary markup and formatting
+- Use code block formatting for long code snippets
 - For file names, please use inline code format, for example: \`filename.tsx\` rather than \`\`\`filename.tsx\`\`\`
 - For function names and keywords, please use inline code format, for example: \`function\` rather than \`\`\`function\`\`\`
+- **VERY IMPORTANT: When referencing source code regions, you MUST use the format: \`\`\`startLine:endLine:filePath\`\`\`**
+   For example: \`\`\`12:15:app/components/Todo.tsx\`\`\` This will be displayed as a special format with file path and line numbers
 - Keep your answers clear and concise, avoiding unnecessary markup and formatting
 
 Note: All necessary file contents have already been provided in the user's message. You don't need to use tool calls to get file contents. Answer questions directly based on the file contents provided in the user's message.
@@ -331,23 +318,15 @@ async function simulateRound(
 3. 展示对项目整体架构的理解
 4. 提供具体、可操作的建议
 
-## ⚠️ 必须严格遵守的格式规则：
-- 当引用源代码区域时，你必须使用以下格式：\`\`\`startLine:endLine:filePath\`\`\`
-  示例: \`\`\`12:15:app/components/Todo.tsx\`\`\`
-  不要增加任何额外空行、语言标识或其他内容
-  正确: \`\`\`12:15:app/components/Todo.tsx\`\`\`
-  错误: \`\`\`typescript 12:15:app/components/Todo.tsx\`\`\`
-  错误: \`\`\`12:15:app/components/Todo.tsx\n\`\`\`
-- 每次引用源代码时，必须包含行号和文件路径
-- 此格式将被专门处理为特殊的代码引用格式，所以必须精确使用
-
-其他格式指南：
+重要格式指南：
 - 只在显示实际代码片段时才使用代码块（\`\`\`语言 ...代码... \`\`\`）
 - 避免在普通解释文本中使用代码块格式
 - 当引用变量名、函数名或简短代码片段时，使用单行代码格式（\`代码\`）而非代码块
 - 对于文件名，请使用单行代码格式，例如：\`filename.tsx\` 而非 \`\`\`filename.tsx\`\`\`
 - 对于函数名和关键字，请使用单行代码格式，例如：\`function\` 而非 \`\`\`function\`\`\`
-- 保持回答简洁明了，避免不必要的标记和格式
+- **非常重要：当引用源代码区域时，必须使用以下格式：\`\`\`起始行:结束行:文件路径\`\`\`**
+  例如：\`\`\`12:15:app/components/Todo.tsx\`\`\` 这将显示为带有文件路径和行号的特殊格式
+- 保持回答清晰简洁，避免不必要的标记和格式
 
 注意：所有必要的文件内容已经在用户消息中提供，不需要使用工具调用来获取文件内容。直接基于用户消息中提供的文件内容回答问题。
 
@@ -364,22 +343,16 @@ Please actively analyze the code and project information provided by the user, w
 3. Demonstrate understanding of the overall project architecture
 4. Offer specific, actionable advice
 
-## ⚠️ MANDATORY FORMATTING RULES:
-- When referencing source code regions, you MUST use EXACTLY this format: \`\`\`startLine:endLine:filePath\`\`\`
-  Example: \`\`\`12:15:app/components/Todo.tsx\`\`\`
-  DO NOT add any extra line breaks, language identifiers, or other content
-  CORRECT: \`\`\`12:15:app/components/Todo.tsx\`\`\`
-  WRONG: \`\`\`typescript 12:15:app/components/Todo.tsx\`\`\`
-  WRONG: \`\`\`12:15:app/components/Todo.tsx\n\`\`\`
-- You MUST include line numbers and file path EVERY TIME you reference source code
-- This format will be specially processed as a code reference format, so it must be used exactly
-
-Other formatting guidelines:
+Important formatting guidelines:
 - Only use code blocks (\`\`\`language ...code... \`\`\`) when displaying actual code snippets
 - Avoid using code block formatting for regular explanatory text, nouns, folder names, or file names
 - When referencing variable names, function names, or short code snippets, use inline code format (\`code\`) rather than code blocks
+- Keep your answers clear and concise, avoiding unnecessary markup and formatting
+- Use code block formatting for long code snippets
 - For file names, please use inline code format, for example: \`filename.tsx\` rather than \`\`\`filename.tsx\`\`\`
 - For function names and keywords, please use inline code format, for example: \`function\` rather than \`\`\`function\`\`\`
+- **VERY IMPORTANT: When referencing source code regions, you MUST use the format: \`\`\`startLine:endLine:filePath\`\`\`**
+   For example: \`\`\`12:15:app/components/Todo.tsx\`\`\` This will be displayed as a special format with file path and line numbers
 - Keep your answers clear and concise, avoiding unnecessary markup and formatting
 
 Note: All necessary file contents have already been provided in the user's message. You don't need to use tool calls to get file contents. Answer questions directly based on the file contents provided in the user's message.

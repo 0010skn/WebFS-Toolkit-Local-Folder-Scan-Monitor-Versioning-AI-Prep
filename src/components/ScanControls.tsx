@@ -133,6 +133,7 @@ export default function ScanControls() {
       setScanStatus("scanning");
       setErrorMessage(null);
       setScanProgress(0); // 重置进度为0
+      setScanCompleted(false); // 重置完成状态
 
       // 尝试读取README.md文件
       try {
@@ -155,9 +156,14 @@ export default function ScanControls() {
         setScanProgress(progress);
         // 当进度达到100%时设置完成标志
         if (progress === 100) {
-          setScanCompleted(true);
+          console.log("扫描进度达到100%");
+          // 不立即设置完成，等待实际扫描结果返回后再设置
         }
       });
+
+      // 扫描实际完成，设置完成状态
+      console.log("扫描实际完成，设置完成状态");
+      setScanCompleted(true);
 
       // 如果之前已有扫描结果，则前一次结果变为上一次结果
       if (currentScan) {

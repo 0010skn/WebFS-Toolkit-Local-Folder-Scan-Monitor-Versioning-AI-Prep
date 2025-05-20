@@ -30,6 +30,7 @@
     "react-dom": "^18",
     "react-markdown": "^10.1.0",
     "react-syntax-highlighter": "^15.6.1",
+    "react-tooltip": "^5.28.1",
     "reactflow": "^11.11.4"
   },
   "devDependencies": {

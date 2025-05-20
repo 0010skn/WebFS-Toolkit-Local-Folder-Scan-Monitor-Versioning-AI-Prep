@@ -8,6 +8,7 @@ import {
   findRelevantFiles,
   parseFilePathsResult,
   getKnowledgeContent,
+  chatCompletion,
 } from "../lib/vectorizeService";
 import Markdown from "markdown-to-jsx";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
@@ -352,6 +353,91 @@ export default function AITestDialog({
   initialPrompt,
   projectFilePaths = [],
 }: AITestDialogProps) {
+  // 添加全局样式
+  useEffect(() => {
+    // 创建样式元素
+    const styleElement = document.createElement("style");
+    styleElement.innerHTML = `
+      .keyword-tooltip {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        pointer-events: none;
+        width: 280px;
+      }
+
+      .keyword-tooltip-content {
+        position: relative;
+        background-color: white;
+        border-radius: 0.5rem;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        padding: 0.75rem;
+        width: 100%;
+        font-size: 0.875rem;
+        line-height: 1.25rem;
+        color: #374151;
+        animation: tooltip-fade-in 0.2s ease-out forwards;
+        max-width: 100%;
+        pointer-events: auto;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        .keyword-tooltip-content {
+          background-color: #1f2937;
+          color: #e5e7eb;
+        }
+      }
+
+      .keyword-tooltip-arrow {
+        position: absolute;
+        left: 1rem;
+        transform: rotate(45deg);
+        width: 0.5rem;
+        height: 0.5rem;
+        background-color: inherit;
+      }
+
+      .bottom-arrow {
+        bottom: -0.25rem;
+      }
+
+      .top-arrow {
+        top: -0.25rem;
+      }
+
+      /* 在移动设备上的样式 */
+      @media (max-width: 767px) {
+        .keyword-tooltip {
+          width: 280px;
+          max-width: 90vw;
+        }
+        .keyword-tooltip-content {
+          max-width: 100%;
+          font-size: 0.8rem;
+          padding: 0.5rem;
+        }
+      }
+
+      @keyframes tooltip-fade-in {
+        from {
+          opacity: 0;
+          transform: translateY(0.25rem);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(-0.5rem);
+        }
+      }
+    `;
+
+    // 添加到文档头部
+    document.head.appendChild(styleElement);
+
+    // 组件卸载时移除样式
+    return () => {
+      document.head.removeChild(styleElement);
+    };
+  }, []);
   const { t } = useTranslations();
   const { resolvedTheme } = useTheme();
 
@@ -385,7 +471,7 @@ export default function AITestDialog({
     Array<{ role: string; content: string }>
   >([]);
   const contentRef = useRef<HTMLDivElement>(null);
-  const maxRounds = 20;
+  const maxRounds = 60;
   const [showOptions, setShowOptions] = useState(false);
   const [responseSegments, setResponseSegments] = useState<{
     [key: number]: string;
@@ -426,6 +512,314 @@ export default function AITestDialog({
       scrollToCurrentResponse();
     }
   }, [isTesting, dialogRounds.length, currentRound, scrollToCurrentResponse]);
+
+  // 处理关键字点击事件，获取关键字的上下文信息
+  useEffect(() => {
+    // 添加点击事件监听器
+    const handleKeywordClick = async (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+
+      // 检查是否点击了关键字元素
+      if (
+        target &&
+        target.classList.contains("text-blue-600") &&
+        target.hasAttribute("data-keyword")
+      ) {
+        const keyword = target.getAttribute("data-keyword");
+        const tooltipId = target.getAttribute("data-tooltip-id");
+
+        if (keyword && tooltipId) {
+          const tooltipElement = document.getElementById(tooltipId);
+
+          if (tooltipElement) {
+            // 获取元素位置
+            const rect = target.getBoundingClientRect();
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
+
+            // 检测是否为移动设备（宽度小于768px）
+            const isMobile = viewportWidth < 768;
+
+            // 固定气泡宽度
+            const tooltipWidth = isMobile ? 300 : 280;
+
+            // 计算最佳位置
+            let tooltipX, tooltipY;
+            let position = "top"; // 默认在上方
+
+            if (isMobile) {
+              // 在移动设备上，将气泡水平居中显示
+              tooltipX = (viewportWidth - tooltipWidth) / 2;
+
+              // 垂直位置：优先显示在屏幕中上部
+              const idealY = Math.min(viewportHeight * 0.3, rect.top - 20);
+              tooltipY = Math.max(10, idealY);
+              position = "center"; // 在移动设备上始终使用中心位置样式
+            } else {
+              // 在桌面设备上，将气泡显示在元素附近
+              tooltipX = rect.left;
+              tooltipY = rect.top - 10;
+
+              // 水平方向调整，确保不超出右侧边界
+              if (tooltipX + tooltipWidth > viewportWidth) {
+                tooltipX = Math.max(0, viewportWidth - tooltipWidth - 10);
+              }
+
+              // 垂直方向调整，如果上方空间不足，则显示在元素下方
+              const tooltipHeight = 150; // 估计高度
+              const spaceAbove = rect.top;
+              const spaceBelow = viewportHeight - rect.bottom;
+
+              if (spaceAbove < tooltipHeight && spaceBelow > spaceAbove) {
+                // 如果上方空间不足且下方空间更多，则显示在下方
+                tooltipY = rect.bottom + 10;
+                position = "bottom";
+              }
+            }
+
+            // 显示加载状态
+            tooltipElement.innerHTML = `
+              <div class="keyword-tooltip-content">
+                <div class="flex items-center">
+                  <div class="animate-spin mr-2">
+                    <svg class="w-4 h-4 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                  </div>
+                  <span>正在获取信息...</span>
+                </div>
+                <div class="keyword-tooltip-arrow ${
+                  position === "bottom" ? "top-arrow" : "bottom-arrow"
+                }"></div>
+              </div>
+            `;
+
+            // 设置位置
+            tooltipElement.style.left = `${tooltipX}px`;
+            tooltipElement.style.top = `${tooltipY}px`;
+            tooltipElement.style.transform =
+              position === "top" ? "translateY(-100%)" : "translateY(0)";
+            tooltipElement.style.display = "block";
+
+            try {
+              // 获取当前对话轮次的上下文
+              const currentRoundData = dialogRounds[currentRound - 1];
+
+              // 从conversationHistory获取完整的对话历史
+              let contextInfo = "对话历史:\n";
+
+              // 使用conversationHistory而不是dialogRounds，确保获取完整历史
+              for (let i = 0; i < conversationHistory.length; i++) {
+                const message = conversationHistory[i];
+                if (message.role === "user") {
+                  contextInfo += `用户: ${message.content.substring(0, 100)}${
+                    message.content.length > 100 ? "..." : ""
+                  }\n`;
+                } else if (message.role === "assistant") {
+                  contextInfo += `AI: ${message.content.substring(0, 100)}${
+                    message.content.length > 100 ? "..." : ""
+                  }\n`;
+                }
+              }
+
+              // 添加索引的文件信息
+              if (
+                currentRoundData &&
+                currentRoundData.files &&
+                currentRoundData.files.length > 0
+              ) {
+                contextInfo += "\n相关文件:\n";
+                currentRoundData.files.forEach((file) => {
+                  contextInfo += `- ${file}\n`;
+                });
+              }
+
+              // 添加知识库条目信息
+              if (
+                currentRoundData &&
+                currentRoundData.knowledgeEntries &&
+                currentRoundData.knowledgeEntries.length > 0
+              ) {
+                contextInfo += "\n相关知识库条目:\n";
+                currentRoundData.knowledgeEntries.forEach((entry) => {
+                  contextInfo += `- ${entry}\n`;
+                });
+              }
+
+              // 确保上下文信息不为空
+              if (
+                contextInfo.trim() === "对话历史:" ||
+                contextInfo.trim() === ""
+              ) {
+                contextInfo = "当前项目信息:\n";
+                // 添加一些基本项目信息
+                if (
+                  currentScan &&
+                  currentScan.entries &&
+                  currentScan.entries.length > 0
+                ) {
+                  contextInfo += `- 项目包含 ${currentScan.entries.length} 个文件\n`;
+                  // 添加一些主要文件类型
+                  const fileTypes = new Set<string>();
+                  currentScan.entries.forEach((entry) => {
+                    if (entry.path) {
+                      const ext = entry.path.split(".").pop()?.toLowerCase();
+                      if (ext) fileTypes.add(ext);
+                    }
+                  });
+                  if (fileTypes.size > 0) {
+                    contextInfo += `- 主要文件类型: ${Array.from(
+                      fileTypes
+                    ).join(", ")}\n`;
+                  }
+                }
+              }
+
+              // 获取当前对话中的文件内容
+              let fileContents = "";
+              if (
+                currentScan &&
+                currentScan.entries &&
+                currentScan.entries.length > 0
+              ) {
+                // 从当前扫描结果中获取文件内容
+                const relevantFiles = currentRoundData?.files || [];
+
+                for (const file of relevantFiles) {
+                  const entry = currentScan.entries.find(
+                    (e) => e.path === file && e.type === "file"
+                  );
+
+                  if (entry && entry.content) {
+                    // 提取文件内容的前1000个字符作为上下文
+                    const truncatedContent =
+                      entry.content.length > 1000
+                        ? entry.content.substring(0, 1000) + "..."
+                        : entry.content;
+
+                    fileContents += `文件: ${file}\n内容:\n${truncatedContent}\n\n`;
+                  }
+                }
+              }
+
+              // 调用AI获取关键字的上下文信息
+              const response = await chatCompletion([
+                {
+                  role: "system",
+                  content: `你是一个专业的解释助手。请根据提供的上下文信息和文件内容，简明扼要地解释用户询问的关键词或术语，重点关注其在当前项目的含义。回答限制在200字以内。`,
+                },
+                {
+                  role: "user",
+                  content: `基于以下上下文信息和文件内容，请解释"${keyword}"这个术语或概念在当前项目中的含义：
+
+上下文信息:
+${contextInfo}
+
+文件内容:
+${fileContents}`,
+                },
+              ]);
+              console.log(`基于以下上下文信息和文件内容，请解释"${keyword}"这个术语或概念在当前项目中的含义：
+
+上下文信息:
+${contextInfo}
+
+文件内容:
+${fileContents}`);
+              const explanation = response.choices[0].message.content;
+
+              // 更新气泡提示内容
+              tooltipElement.innerHTML = `
+                <div class="keyword-tooltip-content">
+                  <div class="text-sm whitespace-pre-wrap">${explanation}</div>
+                  ${
+                    position !== "center"
+                      ? `<div class="keyword-tooltip-arrow ${
+                          position === "bottom" ? "top-arrow" : "bottom-arrow"
+                        }"></div>`
+                      : ""
+                  }
+                </div>
+              `;
+            } catch (error) {
+              console.error("获取关键字信息出错:", error);
+              tooltipElement.innerHTML = `
+                <div class="keyword-tooltip-content">
+                  <div class="text-sm text-red-500 whitespace-pre-wrap">获取信息失败，请重试</div>
+                  ${
+                    position !== "center"
+                      ? `<div class="keyword-tooltip-arrow ${
+                          position === "bottom" ? "top-arrow" : "bottom-arrow"
+                        }"></div>`
+                      : ""
+                  }
+                </div>
+              `;
+            }
+
+            // 点击其他地方或按ESC键关闭气泡提示
+            const closeTooltip = (e: MouseEvent | KeyboardEvent) => {
+              // 如果是点击事件，检查点击位置
+              if (e.type === "click") {
+                const clickEvent = e as MouseEvent;
+                // 如果点击的是目标元素本身，不关闭
+                if (clickEvent.target === target) {
+                  return;
+                }
+                // 如果点击的是提示内部元素，不关闭
+                if (tooltipElement.contains(clickEvent.target as Node)) {
+                  return;
+                }
+              }
+
+              // 如果是键盘事件，检查是否按下ESC键
+              if (e.type === "keydown") {
+                const keyEvent = e as KeyboardEvent;
+                if (keyEvent.key !== "Escape") {
+                  return;
+                }
+              }
+
+              // 关闭提示
+              tooltipElement.style.display = "none";
+              document.removeEventListener("click", closeTooltip);
+              document.removeEventListener("keydown", closeTooltip);
+            };
+
+            // 延迟添加事件监听器，避免立即触发
+            setTimeout(() => {
+              document.addEventListener("click", closeTooltip);
+              document.addEventListener("keydown", closeTooltip);
+            }, 100);
+
+            // 鼠标移出元素也关闭提示
+            const mouseLeaveHandler = () => {
+              // 延迟关闭，给用户时间移动到提示上
+              setTimeout(() => {
+                if (tooltipElement.style.display === "block") {
+                  tooltipElement.style.display = "none";
+                  document.removeEventListener("click", closeTooltip);
+                  document.removeEventListener("keydown", closeTooltip);
+                  target.removeEventListener("mouseleave", mouseLeaveHandler);
+                }
+              }, 300);
+            };
+
+            target.addEventListener("mouseleave", mouseLeaveHandler);
+          }
+        }
+      }
+    };
+
+    // 添加全局点击事件监听器
+    document.addEventListener("click", handleKeywordClick);
+
+    // 组件卸载时移除事件监听器
+    return () => {
+      document.removeEventListener("click", handleKeywordClick);
+    };
+  }, []);
 
   // 自动滚动到底部 - 保留原有的滚动逻辑，但不在上面的效果触发时执行
   useEffect(() => {
@@ -1144,50 +1538,24 @@ export default function AITestDialog({
       "`$1`"
     );
 
-    // 首先处理特殊格式的代码引用，这一步必须在处理普通代码块之前进行
-    // 5. 识别文件路径+行数格式，例如：```12:15:app/components/Todo.tsx
-    // 格式为：```startLine:endLine:filepath
-    const codeReferences: string[] = [];
-    processed = processed.replace(
-      /```(\d+):(\d+):([a-zA-Z0-9_\-\.\/\\]+)(?:\n|$)/g,
-      (match, startLine, endLine, filePath) => {
-        const replacement = `<div class="flex items-center bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-t-md border-b border-gray-300 dark:border-gray-600">
-          <span class="flex items-center text-xs text-gray-600 dark:text-gray-300">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
-            </svg>
-            <span class="font-medium">${filePath}</span>
-            <span class="mx-1.5 text-gray-400">•</span>
-            <span>行 ${startLine}-${endLine}</span>
-          </span>
-        </div>`;
-        codeReferences.push(replacement);
-        return `__CODE_REFERENCE_${codeReferences.length - 1}__`;
-      }
-    );
-
     // 4. 将特殊格式 `xxx` 渲染为粗体蓝色下划线文本，而不是代码块
     // 但避免修改代码块内的内容
 
-    // 然后，将普通代码块内容替换为占位符，以保护它们不被处理
+    // 首先，将代码块内容替换为占位符，以保护它们不被处理
     const codeBlocks: string[] = [];
     processed = processed.replace(/```[\s\S]*?```/g, (match) => {
       codeBlocks.push(match);
       return `__CODE_BLOCK_${codeBlocks.length - 1}__`;
     });
 
-    // 处理单行反引号
-    processed = processed.replace(
-      /`([^`]+)`/g,
-      '<span class="font-bold text-blue-600 dark:text-blue-400 underline">$1</span>'
-    );
-
-    // 恢复代码引用
-    codeReferences.forEach((reference, index) => {
-      processed = processed.replace(`__CODE_REFERENCE_${index}__`, reference);
+    // 然后处理单行反引号，使其可点击并显示气泡提示
+    let keywordCounter = 0;
+    processed = processed.replace(/`([^`]+)`/g, (match, keyword) => {
+      const id = `keyword-${keywordCounter++}`;
+      return `<span id="${id}" class="font-bold text-blue-600 dark:text-blue-400 underline cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900/30 px-0.5 rounded transition-colors" data-keyword="${keyword}" data-tooltip-id="${id}-tooltip" data-tooltip-content="加载中...">${keyword}</span><div id="${id}-tooltip" class="keyword-tooltip"></div>`;
     });
 
-    // 恢复代码块
+    // 最后，恢复代码块
     codeBlocks.forEach((block, index) => {
       processed = processed.replace(`__CODE_BLOCK_${index}__`, block);
     });
