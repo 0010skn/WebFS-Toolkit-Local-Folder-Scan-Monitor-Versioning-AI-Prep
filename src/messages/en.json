@@ -393,5 +393,13 @@
     "zipImportSuccess": "Successfully imported {total} Markdown files from ZIP",
     "searchGenerate": "Generate",
     "generateFailed": "Generation failed: {message}"
+  },
+  "rssFeed": {
+    "title": "Linux DO - Latest Topics",
+    "loading": "Loading...",
+    "readMore": "Read More",
+    "author": "Author",
+    "uncategorized": "Uncategorized",
+    "error": "Failed to fetch RSS feed"
   }
 }

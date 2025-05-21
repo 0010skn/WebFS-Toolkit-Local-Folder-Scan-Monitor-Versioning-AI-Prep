@@ -13,6 +13,7 @@
     "@tailwindcss/typography": "^0.5.16",
     "@types/crypto-js": "^4.2.2",
     "@types/js-yaml": "^4.0.9",
+    "@types/xml2js": "^0.4.14",
     "crypto-js": "^4.2.0",
     "diff": "^8.0.1",
     "framer-motion": "^12.11.3",
@@ -31,7 +32,8 @@
     "react-markdown": "^10.1.0",
     "react-syntax-highlighter": "^15.6.1",
     "react-tooltip": "^5.28.1",
-    "reactflow": "^11.11.4"
+    "reactflow": "^11.11.4",
+    "xml2js": "^0.6.2"
   },
   "devDependencies": {
     "@types/node": "^20",

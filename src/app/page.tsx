@@ -20,6 +20,7 @@ import SettingsButton from "../components/SettingsModal";
 import BrowserCompatCheck from "../components/BrowserCompatCheck";
 import KnowledgeModal from "../components/KnowledgeModal";
 import MultiThreadScanAlert from "../components/MultiThreadScanAlert";
+import RssFeed from "../components/RssFeed";
 
 export default function Home() {
   const [directoryHandle] = useAtom(directoryHandleAtom);
@@ -508,6 +509,9 @@ export default function Home() {
                           </button>
                         </div>
                       </div>
+
+                      {/* Linux.do RSS Feed */}
+                      <RssFeed />
                     </div>
                   </motion.div>
 
