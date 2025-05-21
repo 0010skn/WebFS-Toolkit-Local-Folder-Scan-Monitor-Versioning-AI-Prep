@@ -395,11 +395,11 @@
     "generateFailed": "Generation failed: {message}"
   },
   "rssFeed": {
-    "title": "Linux DO - Latest Topics",
+    "title": "MIT Technology News",
     "loading": "Loading...",
     "readMore": "Read More",
     "author": "Author",
-    "uncategorized": "Uncategorized",
+    "uncategorized": "Technology",
     "error": "Failed to fetch RSS feed"
   }
 }

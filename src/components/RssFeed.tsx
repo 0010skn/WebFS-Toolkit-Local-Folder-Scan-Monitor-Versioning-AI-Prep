@@ -12,7 +12,29 @@ interface RssItem {
   category?: string;
   pubDate: string;
   creator?: string;
+  thumbnail?: string;
 }
+
+// 添加骨架屏组件
+const SkeletonCard = () => (
+  <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+    <div className="p-4">
+      <div className="flex justify-between items-start mb-3">
+        <div className="h-6 w-20 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+        <div className="h-4 w-16 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+      </div>
+      <div className="w-full h-40 bg-gray-200 dark:bg-gray-700 rounded mb-3 animate-pulse"></div>
+      <div className="h-6 w-full bg-gray-200 dark:bg-gray-700 rounded mb-2 animate-pulse"></div>
+      <div className="h-6 w-3/4 bg-gray-200 dark:bg-gray-700 rounded mb-3 animate-pulse"></div>
+      <div className="h-4 w-full bg-gray-200 dark:bg-gray-700 rounded mb-2 animate-pulse"></div>
+      <div className="h-4 w-3/4 bg-gray-200 dark:bg-gray-700 rounded mb-3 animate-pulse"></div>
+      <div className="flex justify-between items-center">
+        <div className="h-4 w-1/3 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+        <div className="h-4 w-1/4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+      </div>
+    </div>
+  </div>
+);
 
 export default function RssFeed() {
   const { t } = useTranslations();
@@ -24,36 +46,41 @@ export default function RssFeed() {
     const fetchRss = async () => {
       try {
         setLoading(true);
-        const response = await fetch("https://linux.do/latest.rss", {
-          cache: "no-store",
-        });
+        const rssToJsonUrl = "https://api.rss2json.com/v1/api.json?rss_url=";
+        const techNewsRss = "https://news.mit.edu/rss/feed";
+        const response = await fetch(
+          `${rssToJsonUrl}${encodeURIComponent(techNewsRss)}`,
+          {
+            cache: "no-store",
+          }
+        );
 
         if (!response.ok) {
           throw new Error(`获取RSS失败: ${response.status}`);
         }
 
-        const xmlText = await response.text();
-        const result = await parseStringPromise(xmlText, {
-          explicitArray: false,
-        });
+        const data = await response.json();
 
-        if (result?.rss?.channel?.item) {
-          const rssItems = Array.isArray(result.rss.channel.item)
-            ? result.rss.channel.item
-            : [result.rss.channel.item];
-
-          const parsedItems = rssItems
+        // RSS2JSON 返回的是已解析好的JSON格式，不需要进一步解析XML
+        if (data.status === "ok" && data.items && data.items.length > 0) {
+          const parsedItems = data.items
             .map((item: any) => ({
               title: item.title,
               link: item.link,
-              description: item.description,
-              category: item.category,
+              description: item.description || "",
+              category:
+                item.categories && item.categories.length > 0
+                  ? item.categories[0]
+                  : "Technology",
               pubDate: item.pubDate,
-              creator: item["dc:creator"],
+              creator: item.author,
+              thumbnail: item.thumbnail || "",
             }))
             .slice(0, 10); // 只显示前10条
 
           setItems(parsedItems);
+        } else {
+          throw new Error("RSS 源返回数据格式不正确");
         }
       } catch (err) {
         console.error("获取RSS feed失败:", err);
@@ -106,11 +133,29 @@ export default function RssFeed() {
   if (loading) {
     return (
       <div className="w-full mt-6">
-        <div className="text-center py-8">
-          <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
-          <p className="mt-2 text-gray-600 dark:text-gray-400">
-            {t("rssFeed.loading")}
-          </p>
+        <h2 className="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-200 flex items-center">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-5 w-5 mr-2 text-red-600"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"
+            />
+          </svg>
+          MIT Technology News
+        </h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          {Array(4)
+            .fill(0)
+            .map((_, index) => (
+              <SkeletonCard key={index} />
+            ))}
         </div>
       </div>
     );
@@ -129,7 +174,7 @@ export default function RssFeed() {
       <h2 className="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-200 flex items-center">
         <svg
           xmlns="http://www.w3.org/2000/svg"
-          className="h-5 w-5 mr-2 text-blue-500"
+          className="h-5 w-5 mr-2 text-red-600"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -138,13 +183,13 @@ export default function RssFeed() {
             strokeLinecap="round"
             strokeLinejoin="round"
             strokeWidth={2}
-            d="M6 5c7.18 0 13 5.82 13 13M6 11a7 7 0 017 7m-6 0a1 1 0 11-2 0 1 1 0 012 0z"
+            d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"
           />
         </svg>
-        {t("rssFeed.title")}
+        MIT Technology News
       </h2>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
         {items.map((item, index) => (
           <motion.div
             key={index}
@@ -154,8 +199,8 @@ export default function RssFeed() {
             className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-md transition-shadow duration-200"
           >
             <div className="p-4">
-              <div className="flex justify-between items-start mb-2">
-                <span className="inline-block px-2 py-1 text-xs font-medium bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-300 rounded">
+              <div className="flex justify-between items-start mb-3">
+                <span className="inline-block px-2 py-1 text-xs font-medium bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-300 rounded">
                   {item.category || t("rssFeed.uncategorized")}
                 </span>
                 <span className="text-xs text-gray-500 dark:text-gray-400">
@@ -163,16 +208,26 @@ export default function RssFeed() {
                 </span>
               </div>
 
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2 line-clamp-2">
+              {item.thumbnail && (
+                <div className="mb-3 overflow-hidden rounded">
+                  <img
+                    src={item.thumbnail}
+                    alt={item.title}
+                    className="w-full h-48 object-cover transform hover:scale-105 transition-transform duration-300"
+                  />
+                </div>
+              )}
+
+              <h3 className="text-base font-medium text-gray-900 dark:text-white mb-2 line-clamp-2">
                 {extractCdata(item.title)}
               </h3>
 
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-3 line-clamp-2">
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-3 line-clamp-3">
                 {extractFirstParagraph(item.description)}
               </p>
 
               <div className="flex justify-between items-center">
-                <span className="text-xs text-gray-500 dark:text-gray-400">
+                <span className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-[50%]">
                   {item.creator
                     ? `${t("rssFeed.author")}: ${extractCdata(item.creator)}`
                     : ""}
@@ -181,7 +236,7 @@ export default function RssFeed() {
                   href={item.link}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
+                  className="text-sm font-medium text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300"
                 >
                   {t("rssFeed.readMore")} →
                 </a>

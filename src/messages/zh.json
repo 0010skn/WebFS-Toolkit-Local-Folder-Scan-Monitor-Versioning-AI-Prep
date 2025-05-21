@@ -398,11 +398,11 @@
     "generateFailed": "生成失败: {message}"
   },
   "rssFeed": {
-    "title": "Linux DO - 最新话题",
+    "title": "MIT科技新闻",
     "loading": "加载中...",
     "readMore": "阅读全文",
     "author": "作者",
-    "uncategorized": "未分类",
+    "uncategorized": "科技",
     "error": "获取RSS feed失败"
   }
 }
