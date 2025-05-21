@@ -60,6 +60,7 @@ export default function RssFeed() {
         }
 
         const data = await response.json();
+        // 打印data
 
         // RSS2JSON 返回的是已解析好的JSON格式，不需要进一步解析XML
         if (data.status === "ok" && data.items && data.items.length > 0) {
