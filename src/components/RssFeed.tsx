@@ -49,13 +49,28 @@ export default function RssFeed() {
   const chineseRssSources = [
     { url: "https://www.oschina.net/news/rss", title: "开源中国" },
     {
-      url: "http://www.ruanyifeng.com/blog/atom.xml",
-      title: "阮一峰的网络日志",
+      url: "https://www.ithome.com/rss/",
+      title: "IT之家",
     },
-    { url: "https://coolshell.cn/feed", title: "酷壳" },
     {
-      url: "https://www.zhangxinxu.com/wordpress/feed/",
-      title: "张鑫旭的博客",
+      url: "https://sspai.com/feed",
+      title: "少数派",
+    },
+    {
+      url: "https://www.gcores.com/rss",
+      title: "机核",
+    },
+    {
+      url: "https://www.solidot.org/index.rss",
+      title: "Solidot",
+    },
+    {
+      url: "https://feeds.appinn.com/appinns/",
+      title: "Appinn",
+    },
+    {
+      url: "https://www.geekpark.net/rss",
+      title: "GeekPark",
     },
   ];
 
@@ -155,6 +170,8 @@ export default function RssFeed() {
         year: "numeric",
         month: "short",
         day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
       }).format(date);
     } catch (e) {
       return dateString;
@@ -182,6 +199,24 @@ export default function RssFeed() {
       text.split(/\s+/).slice(0, 15).join(" ") +
       (text.split(/\s+/).length > 15 ? "..." : "")
     );
+  };
+
+  // 从文章描述中提取第一张图片的URL
+  const extractImageFromDescription = (description: string): string | null => {
+    if (!description) return null;
+
+    // 处理CDATA
+    const content = extractCdata(description);
+    // 尝试从HTML中匹配图片
+    const imgMatch = content.match(/<img[^>]+src="([^"]+)"/i);
+    return imgMatch ? imgMatch[1] : null;
+  };
+
+  // 处理图片加载错误
+  const handleImageError = (
+    event: React.SyntheticEvent<HTMLImageElement, Event>
+  ) => {
+    event.currentTarget.style.display = "none";
   };
 
   if (loading) {
@@ -319,10 +354,23 @@ export default function RssFeed() {
                   <img
                     src={item.thumbnail}
                     alt={item.title}
+                    onError={handleImageError}
                     className="w-full h-48 object-cover transform hover:scale-105 transition-transform duration-300"
                   />
                 </div>
               )}
+
+              {!item.thumbnail &&
+                extractImageFromDescription(item.description) && (
+                  <div className="mb-3 overflow-hidden rounded">
+                    <img
+                      src={extractImageFromDescription(item.description)!}
+                      alt={item.title}
+                      onError={handleImageError}
+                      className="w-full h-48 object-cover transform hover:scale-105 transition-transform duration-300"
+                    />
+                  </div>
+                )}
 
               <h3 className="text-base font-medium text-gray-900 dark:text-white mb-2 line-clamp-2">
                 {extractCdata(item.title)}
