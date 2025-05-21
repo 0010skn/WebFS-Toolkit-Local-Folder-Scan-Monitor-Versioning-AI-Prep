@@ -199,16 +199,7 @@ export async function observeDirectoryChanges(
     observedPaths.add(rootId);
     console.log(`已开始观察根目录: ${dirHandle.name}`);
 
-    // 获取并观察所有子目录（使用优化后的函数）
-    console.log("正在扫描所有子目录...");
-    const startTime = performance.now();
     const subDirectories = await getAllSubdirectories(dirHandle);
-    const scanTime = performance.now() - startTime;
-    console.log(
-      `扫描完成，找到 ${
-        subDirectories.length
-      } 个子目录，耗时 ${scanTime.toFixed(2)}ms`
-    );
 
     if (subDirectories.length > 0) {
       console.log(`正在观察根目录及${subDirectories.length}个子目录的变化`);

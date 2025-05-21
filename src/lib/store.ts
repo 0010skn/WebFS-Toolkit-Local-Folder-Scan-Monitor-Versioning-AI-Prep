@@ -19,6 +19,9 @@ export const directoryHandleAtom = atom<FileSystemDirectoryHandle | null>(null);
 // 当前扫描结果
 export const currentScanAtom = atom<ScanResult | null>(null);
 
+//需要重新索引的文件路径
+export const needReindexAtom = atom<string[]>([]);
+
 // 上一次扫描结果
 export const previousScanAtom = atom<ScanResult | null>(null);
 

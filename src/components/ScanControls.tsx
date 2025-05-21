@@ -8,6 +8,7 @@ import {
   previousScanAtom,
   changeReportAtom,
   scanStatusAtom,
+  needReindexAtom,
   errorMessageAtom,
   isMonitoringAtom,
   monitorIntervalAtom,
@@ -43,6 +44,7 @@ export default function ScanControls() {
   const [showAllFiles, setShowAllFiles] = useAtom(showAllFilesAtom);
   const [readmeContent, setReadmeContent] = useAtom(readmeContentAtom);
   const [_, setDockerfiles] = useAtom(dockerfilesAtom);
+  const [needReindex, setNeedReindex] = useAtom(needReindexAtom);
 
   const [isDownloading, setIsDownloading] = useState(false);
   const [isUsingObserver, setIsUsingObserver] = useState(false);
@@ -134,6 +136,12 @@ export default function ScanControls() {
       setErrorMessage(null);
       setScanProgress(0); // 重置进度为0
       setScanCompleted(false); // 重置完成状态
+
+      // 检查是否存在需要重新索引的文件
+      console.log(
+        `扫描前检查：needReindex包含 ${needReindex.length} 个文件`,
+        needReindex
+      );
 
       // 尝试读取README.md文件
       try {
@@ -243,7 +251,10 @@ export default function ScanControls() {
   // 文件变化处理函数
   const handleFileChange = async (isObserverChange: boolean) => {
     // 如果正在扫描中，跳过
-    if (scanStatus === "scanning") return;
+    if (scanStatus === "scanning") {
+      console.log("正在扫描中，忽略文件变化通知");
+      return;
+    }
 
     console.log(
       `${t("scanControls.changeDetected")}，由${
@@ -251,8 +262,22 @@ export default function ScanControls() {
       }触发`
     );
 
+    // 检查是否有需要重新索引的文件
+    const currentNeedReindex = needReindex.length > 0;
+    if (currentNeedReindex) {
+      console.log(
+        `有 ${needReindex.length} 个文件需要重新索引，将执行增量扫描`
+      );
+    } else {
+      // 如果没有检测到特定文件变更，则添加一个标记以确保执行增量扫描
+      console.log("没有检测到具体文件变更，添加通配符到重新索引列表");
+      addToReindexList("__CHANGED__:observer_triggered");
+    }
+
     // 执行扫描并更新UI
+    console.log("开始执行文件扫描...");
     await handleScan();
+    console.log("文件扫描完成");
 
     // 强制重新初始化文件观察器，确保新文件夹被监控
     if (isMonitoring && directoryHandle && isObserverChange) {
@@ -295,6 +320,8 @@ export default function ScanControls() {
       setCurrentScan(null);
       setPreviousScan(null);
       setChangeReport(null);
+      // 清空需要重新索引的文件列表
+      setNeedReindex([]);
       // 执行扫描
       setTimeout(() => {
         handleScan();
@@ -369,6 +396,18 @@ export default function ScanControls() {
   // 关闭向量化报告模态窗
   const handleCloseVectorizeModal = () => {
     setShowVectorizeModal(false);
+  };
+
+  // 当有文件发生变化时，将其添加到需要重新索引的列表中
+  const addToReindexList = (filePath: string) => {
+    console.log(`将文件添加到重新索引列表: ${filePath}`);
+    // 检查文件是否已在列表中
+    setNeedReindex((prev) => {
+      if (prev.includes(filePath)) {
+        return prev;
+      }
+      return [...prev, filePath];
+    });
   };
 
   // 如果没有目录句柄，不显示控制器
