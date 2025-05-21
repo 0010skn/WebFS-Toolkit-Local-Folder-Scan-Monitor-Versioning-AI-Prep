@@ -395,11 +395,12 @@
     "generateFailed": "Generation failed: {message}"
   },
   "rssFeed": {
-    "title": "MIT Technology News",
+    "title": "Tech News",
     "loading": "Loading...",
     "readMore": "Read More",
     "author": "Author",
     "uncategorized": "Technology",
-    "error": "Failed to fetch RSS feed"
+    "error": "Failed to fetch RSS feed",
+    "refresh": "Refresh news"
   }
 }

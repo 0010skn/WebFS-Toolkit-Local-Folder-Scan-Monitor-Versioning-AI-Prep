@@ -398,11 +398,12 @@
     "generateFailed": "生成失败: {message}"
   },
   "rssFeed": {
-    "title": "MIT科技新闻",
+    "title": "技术资讯",
     "loading": "加载中...",
     "readMore": "阅读全文",
     "author": "作者",
     "uncategorized": "科技",
-    "error": "获取RSS feed失败"
+    "error": "获取RSS feed失败",
+    "refresh": "刷新资讯"
   }
 }

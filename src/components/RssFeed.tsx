@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useTranslations } from "./LocaleProvider";
 import { parseStringPromise } from "xml2js";
+import { IoMdRefresh } from "react-icons/io";
 
 interface RssItem {
   title: string;
@@ -37,68 +38,121 @@ const SkeletonCard = () => (
 );
 
 export default function RssFeed() {
-  const { t } = useTranslations();
+  const { t, locale } = useTranslations();
   const [items, setItems] = useState<RssItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [currentFeedTitle, setCurrentFeedTitle] = useState("");
+  const [refreshing, setRefreshing] = useState(false);
+
+  // RSS源列表
+  const chineseRssSources = [
+    { url: "https://www.oschina.net/news/rss", title: "开源中国" },
+    {
+      url: "http://www.ruanyifeng.com/blog/atom.xml",
+      title: "阮一峰的网络日志",
+    },
+    { url: "https://coolshell.cn/feed", title: "酷壳" },
+    {
+      url: "https://www.zhangxinxu.com/wordpress/feed/",
+      title: "张鑫旭的博客",
+    },
+    { url: "https://tech.meituan.com/feed/", title: "美团技术团队" },
+  ];
+
+  const englishRssSources = [
+    { url: "https://news.ycombinator.com/rss", title: "Hacker News" },
+    {
+      url: "http://feeds.arstechnica.com/arstechnica/index/",
+      title: "Ars Technica",
+    },
+    { url: "https://techcrunch.com/feed/", title: "TechCrunch" },
+    { url: "https://lobste.rs/rss", title: "Lobsters" },
+    { url: "https://dev.to/feed", title: "DEV Community" },
+    { url: "https://stackoverflow.blog/feed/", title: "Stack Overflow Blog" },
+  ];
+
+  // 判断是否为中文环境
+  const isChineseLocale = locale === "zh";
+
+  // 根据语言选择对应的RSS源列表
+  const rssSources = isChineseLocale ? chineseRssSources : englishRssSources;
+
+  // 随机选择一个RSS源
+  const getRandomRssSource = () => {
+    const randomIndex = Math.floor(Math.random() * rssSources.length);
+    return rssSources[randomIndex];
+  };
+
+  const fetchRss = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      // 随机选择一个RSS源
+      const selectedSource = getRandomRssSource();
+      setCurrentFeedTitle(selectedSource.title);
+
+      const rssToJsonUrl = "https://api.rss2json.com/v1/api.json?rss_url=";
+      const response = await fetch(
+        `${rssToJsonUrl}${encodeURIComponent(selectedSource.url)}`,
+        {
+          cache: "no-store",
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`${t("rssFeed.error")}: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      // RSS2JSON 返回的是已解析好的JSON格式，不需要进一步解析XML
+      if (data.status === "ok" && data.items && data.items.length > 0) {
+        const parsedItems = data.items
+          .map((item: any) => ({
+            title: item.title,
+            link: item.link,
+            description: item.description || "",
+            category:
+              item.categories && item.categories.length > 0
+                ? item.categories[0]
+                : "Technology",
+            pubDate: item.pubDate,
+            creator: item.author,
+            thumbnail: item.thumbnail || "",
+          }))
+          .slice(0, 10); // 只显示前10条
+
+        setItems(parsedItems);
+      } else {
+        throw new Error("RSS 源返回数据格式不正确");
+      }
+    } catch (err) {
+      console.error("获取RSS feed失败:", err);
+      setError(err instanceof Error ? err.message : t("rssFeed.error"));
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  // 点击刷新按钮
+  const handleRefresh = () => {
+    if (refreshing) return;
+    setRefreshing(true);
+    fetchRss();
+  };
 
   useEffect(() => {
-    const fetchRss = async () => {
-      try {
-        setLoading(true);
-        const rssToJsonUrl = "https://api.rss2json.com/v1/api.json?rss_url=";
-        const techNewsRss = "https://news.mit.edu/rss/feed";
-        const response = await fetch(
-          `${rssToJsonUrl}${encodeURIComponent(techNewsRss)}`,
-          {
-            cache: "no-store",
-          }
-        );
-
-        if (!response.ok) {
-          throw new Error(`获取RSS失败: ${response.status}`);
-        }
-
-        const data = await response.json();
-        // 打印data
-
-        // RSS2JSON 返回的是已解析好的JSON格式，不需要进一步解析XML
-        if (data.status === "ok" && data.items && data.items.length > 0) {
-          const parsedItems = data.items
-            .map((item: any) => ({
-              title: item.title,
-              link: item.link,
-              description: item.description || "",
-              category:
-                item.categories && item.categories.length > 0
-                  ? item.categories[0]
-                  : "Technology",
-              pubDate: item.pubDate,
-              creator: item.author,
-              thumbnail: item.thumbnail || "",
-            }))
-            .slice(0, 10); // 只显示前10条
-
-          setItems(parsedItems);
-        } else {
-          throw new Error("RSS 源返回数据格式不正确");
-        }
-      } catch (err) {
-        console.error("获取RSS feed失败:", err);
-        setError(err instanceof Error ? err.message : "获取RSS feed失败");
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchRss();
-  }, []);
+  }, [locale]); // 当语言变化时，重新获取RSS
 
   // 格式化发布日期
   const formatDate = (dateString: string) => {
     try {
       const date = new Date(dateString);
-      return new Intl.DateTimeFormat("zh-CN", {
+      return new Intl.DateTimeFormat(isChineseLocale ? "zh-CN" : "en-US", {
         year: "numeric",
         month: "short",
         day: "numeric",
@@ -134,22 +188,31 @@ export default function RssFeed() {
   if (loading) {
     return (
       <div className="w-full mt-6">
-        <h2 className="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-200 flex items-center">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-5 w-5 mr-2 text-red-600"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
+        <h2 className="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-200 flex items-center justify-between">
+          <div className="flex items-center">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-5 w-5 mr-2 text-red-600"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"
+              />
+            </svg>
+            {t("rssFeed.loading")}
+          </div>
+          <button
+            className="p-2 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+            disabled={true}
+            aria-label="刷新"
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"
-            />
-          </svg>
-          MIT Technology News
+            <IoMdRefresh className="h-5 w-5 animate-spin" />
+          </button>
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
           {Array(4)
@@ -164,30 +227,73 @@ export default function RssFeed() {
 
   if (error) {
     return (
-      <div className="w-full mt-6 bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800/30 rounded-lg p-4">
-        <p className="text-red-600 dark:text-red-400">{error}</p>
+      <div className="w-full mt-6">
+        <h2 className="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-200 flex items-center justify-between">
+          <div className="flex items-center">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-5 w-5 mr-2 text-red-600"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"
+              />
+            </svg>
+            {t("rssFeed.title")}
+          </div>
+          <button
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="p-2 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+            aria-label="刷新"
+          >
+            <IoMdRefresh
+              className={`h-5 w-5 ${refreshing ? "animate-spin" : ""}`}
+            />
+          </button>
+        </h2>
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800/30 rounded-lg p-4">
+          <p className="text-red-600 dark:text-red-400">{error}</p>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="w-full mt-6">
-      <h2 className="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-200 flex items-center">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          className="h-5 w-5 mr-2 text-red-600"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
+      <h2 className="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-200 flex items-center justify-between">
+        <div className="flex items-center">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-5 w-5 mr-2 text-red-600"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"
+            />
+          </svg>
+          {currentFeedTitle}
+        </div>
+        <button
+          onClick={handleRefresh}
+          disabled={refreshing}
+          className="p-2 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+          aria-label="刷新"
         >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"
+          <IoMdRefresh
+            className={`h-5 w-5 ${refreshing ? "animate-spin" : ""}`}
           />
-        </svg>
-        MIT Technology News
+        </button>
       </h2>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
