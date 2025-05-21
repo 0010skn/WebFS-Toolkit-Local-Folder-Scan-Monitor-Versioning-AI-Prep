@@ -143,7 +143,7 @@ export default function RssFeed() {
         throw new Error("RSS 源返回数据格式不正确");
       }
     } catch (err) {
-      console.error("获取RSS feed失败:", err);
+      console.error("获取RSS:", err);
       setError(err instanceof Error ? err.message : t("rssFeed.error"));
     } finally {
       setLoading(false);
