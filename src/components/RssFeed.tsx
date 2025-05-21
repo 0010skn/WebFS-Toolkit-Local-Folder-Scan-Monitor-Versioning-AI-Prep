@@ -57,7 +57,6 @@ export default function RssFeed() {
       url: "https://www.zhangxinxu.com/wordpress/feed/",
       title: "张鑫旭的博客",
     },
-    { url: "https://tech.meituan.com/feed/", title: "美团技术团队" },
   ];
 
   const englishRssSources = [
