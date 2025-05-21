@@ -71,6 +71,13 @@
     "errorTitle": "出错了",
     "dismiss": "关闭"
   },
+  "homePage": {
+    "quickStart": "快速启动",
+    "openKnowledgeBase": "打开知识库",
+    "manageKnowledge": "管理和查询项目相关知识",
+    "viewChangelog": "查看更新日志",
+    "learnUpdates": "了解最新功能和改进"
+  },
   "copy": {
     "copy": "复制",
     "copied": "已复制"

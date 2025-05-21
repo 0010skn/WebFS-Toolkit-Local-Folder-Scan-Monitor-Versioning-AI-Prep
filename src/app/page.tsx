@@ -76,12 +76,12 @@ export default function Home() {
   if (!mounted) return null;
 
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 transition-colors duration-300 flex flex-col">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300 flex flex-col">
       {/* 浏览器兼容性检查组件 */}
       <BrowserCompatCheck />
 
-      {/* Mac风格顶部导航栏 */}
-      <header className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 transition-colors duration-300 sticky top-0 z-10">
+      {/* 顶部导航栏 - 类似VSCode和GitHub的风格 */}
+      <header className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 transition-colors duration-300 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
           <div className="flex justify-between items-center">
             {/* 左侧标题和Logo */}
@@ -89,7 +89,7 @@ export default function Home() {
               <div className="flex-shrink-0">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
-                  className="h-8 w-8 text-blue-500"
+                  className="h-8 w-8 text-blue-600 dark:text-blue-500"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -107,7 +107,7 @@ export default function Home() {
               </h1>
             </div>
 
-            {/* 右侧工具区 - 改进响应式布局 */}
+            {/* 右侧工具区 */}
             <div className="flex flex-wrap items-center gap-2 sm:gap-4">
               <ThemeToggle />
               <SettingsButton />
@@ -367,7 +367,6 @@ export default function Home() {
 
       <AnimatePresence mode="wait">
         {!directoryHandle ? (
-          /* 全屏文件夹选择界面 */
           <motion.div
             key="folder-picker"
             initial={{ opacity: 0 }}
@@ -375,19 +374,19 @@ export default function Home() {
             exit={{ opacity: 0 }}
             className="flex-1 flex items-center justify-center p-4"
           >
-            <div className="max-w-md w-full mx-auto">
-              <div className="bg-white dark:bg-[#343541] rounded-md shadow-sm overflow-hidden transition-colors duration-300 border border-gray-100 dark:border-gray-600">
-                <div className="p-6">
-                  <div className="text-center mb-6">
+            <div className="max-w-3xl w-full mx-auto">
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden transition-colors duration-300 border border-gray-200 dark:border-gray-700">
+                <div className="p-8">
+                  <div className="text-center mb-8">
                     <motion.div
                       initial={{ scale: 0.9, opacity: 0 }}
                       animate={{ scale: 1, opacity: 1 }}
                       transition={{ duration: 0.3 }}
-                      className="inline-block p-4 bg-[#f0f4f9] dark:bg-[#444654] rounded-md mb-5"
+                      className="inline-block p-4 bg-blue-50 dark:bg-blue-900/30 rounded-full mb-6"
                     >
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
-                        className="h-10 w-10 text-[#10a37f]"
+                        className="h-12 w-12 text-blue-600 dark:text-blue-400"
                         fill="none"
                         viewBox="0 0 24 24"
                         stroke="currentColor"
@@ -404,7 +403,7 @@ export default function Home() {
                       initial={{ y: 10, opacity: 0 }}
                       animate={{ y: 0, opacity: 1 }}
                       transition={{ delay: 0.1, duration: 0.3 }}
-                      className="text-2xl font-medium text-gray-900 dark:text-white"
+                      className="text-3xl font-bold text-gray-900 dark:text-white mb-2"
                     >
                       {t("folderPicker.welcomeTitle")}
                     </motion.h2>
@@ -412,7 +411,7 @@ export default function Home() {
                       initial={{ y: 10, opacity: 0 }}
                       animate={{ y: 0, opacity: 1 }}
                       transition={{ delay: 0.2, duration: 0.3 }}
-                      className="mt-2 text-gray-600 dark:text-gray-300 text-sm"
+                      className="text-gray-600 dark:text-gray-300"
                     >
                       {t("folderPicker.welcomeDescription")}
                     </motion.p>
@@ -422,8 +421,94 @@ export default function Home() {
                     initial={{ y: 10, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
                     transition={{ delay: 0.3, duration: 0.3 }}
+                    className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-6 border border-gray-200 dark:border-gray-600"
                   >
-                    <FolderPicker />
+                    <div className="space-y-6">
+                      {/* 文件夹选择器 */}
+                      <FolderPicker />
+
+                      {/* 快速启动区域 - 类似VSCode的欢迎页 */}
+                      <div className="mt-8 pt-6 border-t border-gray-200 dark:border-gray-600">
+                        <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-4 flex items-center">
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="h-4 w-4 mr-2 text-blue-500"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M13 10V3L4 14h7v7l9-11h-7z"
+                            />
+                          </svg>
+                          {t("homePage.quickStart")}
+                        </h3>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <button
+                            onClick={() => setKnowledgeModalOpen(true)}
+                            className="flex items-center text-left p-3 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors border border-gray-200 dark:border-gray-600"
+                          >
+                            <div className="w-8 h-8 bg-purple-50 dark:bg-purple-900/30 rounded-md flex items-center justify-center mr-3">
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                className="h-5 w-5 text-purple-600 dark:text-purple-400"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
+                                />
+                              </svg>
+                            </div>
+                            <div>
+                              <div className="font-medium text-gray-900 dark:text-white text-sm">
+                                {t("homePage.openKnowledgeBase")}
+                              </div>
+                              <div className="text-xs text-gray-500 dark:text-gray-400">
+                                {t("homePage.manageKnowledge")}
+                              </div>
+                            </div>
+                          </button>
+
+                          <button
+                            onClick={handleGoToChangelog}
+                            className="flex items-center text-left p-3 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors border border-gray-200 dark:border-gray-600"
+                          >
+                            <div className="w-8 h-8 bg-green-50 dark:bg-green-900/30 rounded-md flex items-center justify-center mr-3">
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                className="h-5 w-5 text-green-600 dark:text-green-400"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                                />
+                              </svg>
+                            </div>
+                            <div>
+                              <div className="font-medium text-gray-900 dark:text-white text-sm">
+                                {t("homePage.viewChangelog")}
+                              </div>
+                              <div className="text-xs text-gray-500 dark:text-gray-400">
+                                {t("homePage.learnUpdates")}
+                              </div>
+                            </div>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
                   </motion.div>
 
                   <motion.div
@@ -432,7 +517,23 @@ export default function Home() {
                     transition={{ delay: 0.4, duration: 0.3 }}
                     className="mt-6 text-center text-xs text-gray-500 dark:text-gray-400"
                   >
-                    <p>{t("folderPicker.privacyNote")}</p>
+                    <p className="flex items-center justify-center">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-4 w-4 mr-1 text-gray-400"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
+                      </svg>
+                      {t("folderPicker.privacyNote")}
+                    </p>
                   </motion.div>
                 </div>
               </div>
@@ -451,7 +552,7 @@ export default function Home() {
               {/* 多线程扫描支持检测提示 */}
               <MultiThreadScanAlert />
 
-              <section className="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden transition-colors duration-300">
+              <section className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden transition-colors duration-300 border border-gray-200 dark:border-gray-700">
                 <div className="p-6">
                   <div className="flex items-center justify-between mb-4">
                     <FolderPicker />

@@ -71,6 +71,13 @@
     "errorTitle": "Error",
     "dismiss": "Dismiss"
   },
+  "homePage": {
+    "quickStart": "Quick Start",
+    "openKnowledgeBase": "Open Knowledge Base",
+    "manageKnowledge": "Manage and query project knowledge",
+    "viewChangelog": "View Changelog",
+    "learnUpdates": "Learn about latest features and improvements"
+  },
   "copy": {
     "copy": "Copy",
     "copied": "Copied"
