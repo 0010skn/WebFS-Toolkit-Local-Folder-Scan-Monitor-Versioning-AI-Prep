@@ -51,9 +51,13 @@
     "refresh": "刷新",
     "refreshing": "刷新中...",
     "multiThreadSupport": {
-      "supported": "当前浏览器支持多线程扫描，扫描速度将更快！",
-      "notSupported": "当前浏览器不支持多线程扫描 扫描会有点慢 耐心等一下:)"
+      "supported": "当前浏览器支持多线程索引，索引速度将更快！",
+      "notSupported": "当前浏览器不支持多线程索引，索引会有点慢 耐心等一下:)"
     }
+  },
+  "incrementalScan": {
+    "supported": "当前浏览器支持FileSystemObserver API进行增量索引！",
+    "notSupported": "当前环境不支持FileSystemObserver API增量索引，每次索引都是全量索引，这会很慢。建议使用Chrome或Edge浏览器获得更好的性能。"
   },
   "folderPicker": {
     "selectFolder": "选择文件夹",

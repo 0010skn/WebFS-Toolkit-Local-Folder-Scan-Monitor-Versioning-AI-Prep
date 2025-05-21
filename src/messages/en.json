@@ -51,9 +51,13 @@
     "refresh": "Refresh",
     "refreshing": "Refreshing...",
     "multiThreadSupport": {
-      "supported": "Your browser supports multi-threaded scanning. Scanning will be faster!",
-      "notSupported": "Your browser doesn't support multi-threaded scanning. Scanning will be slower, please be patient :)"
+      "supported": "Your browser supports multi-threaded indexing. Indexing will be faster!",
+      "notSupported": "Your browser doesn't support multi-threaded indexing. Indexing will be slower, please be patient :)"
     }
+  },
+  "incrementalScan": {
+    "supported": "Your browser supports FileSystemObserver API for incremental indexing. File changes will be detected in real-time!",
+    "notSupported": "Your browser doesn't support FileSystemObserver API. Each index will be a full index which may be slower. We recommend using Chrome or Edge for better performance."
   },
   "folderPicker": {
     "selectFolder": "Select Folder",

@@ -20,6 +20,7 @@ import SettingsButton from "../components/SettingsModal";
 import BrowserCompatCheck from "../components/BrowserCompatCheck";
 import KnowledgeModal from "../components/KnowledgeModal";
 import MultiThreadScanAlert from "../components/MultiThreadScanAlert";
+import IncrementalScanAlert from "../components/IncrementalScanAlert";
 import RssFeed from "../components/RssFeed";
 
 export default function Home() {
@@ -555,6 +556,9 @@ export default function Home() {
             <div className="space-y-6">
               {/* 多线程扫描支持检测提示 */}
               <MultiThreadScanAlert />
+
+              {/* 增量扫描支持提示 */}
+              <IncrementalScanAlert />
 
               <section className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden transition-colors duration-300 border border-gray-200 dark:border-gray-700">
                 <div className="p-6">
