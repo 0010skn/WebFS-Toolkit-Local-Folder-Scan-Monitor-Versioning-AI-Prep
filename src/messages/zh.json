@@ -260,7 +260,27 @@
       "coreProcesses": {
         "name": "核心流程",
         "prompts": {
-          "mainFlow": "请描述当用户执行主要操作时，从前端到后端的典型处理步骤和关键函数调用顺序。"
+          "mainFlow": "请描述当用户执行主要操作时，从前端到后端的典型处理步骤和关键函数调用顺序。",
+          "inputValidation": "对于用户输入（如URL参数、表单字段、HTTP头部），系统是如何进行处理和过滤的？是否存在未经验证或未充分净化的输入点，可能导致注入类漏洞（如XSS、SQL注入、命令注入）？",
+          "authMechanism": "系统的认证和授权机制是如何实现的？是否存在绕过认证、权限提升或越权访问（IDOR）的潜在风险点？",
+          "sessionManagement": "会话（Session）是如何管理的？是否存在会话固定、会话劫持或跨站请求伪造（CSRF）的风险？",
+          "dependencySecurity": "项目依赖的第三方库或组件版本是否存在已知的公开漏洞（CVE）？如何检查和更新这些依赖？",
+          "sensitiveInfoExposure": "代码、配置文件或日志中是否存在硬编码的凭证、API密钥或其他敏感信息？错误信息是否会泄露过多的系统细节？",
+          "fileUploadHandling": "如果项目支持文件上传，对上传文件的类型、大小和内容是如何校验的？是否存在上传任意文件或路径遍历的风险？",
+          "apiSecurity": "项目的API接口是否有访问控制？是否存在数据泄露、未授权访问或滥用（如无限次重试、数据遍历）的风险？",
+          "businessLogicVulnerabilities": "在核心业务流程中，是否存在可以被恶意利用的逻辑缺陷，例如绕过支付、刷单、数据篡改等？",
+          "configSecurity": "服务器、数据库或中间件的配置是否存在安全隐患，例如默认凭证、不必要的开放端口、不安全的默认设置？",
+          "passwordPolicy": "用户密码是如何存储的（例如，是否加盐哈希）？密码复杂度、重置和找回机制是否存在薄弱环节？",
+          "clickjackingRisk": "前端页面是否采取了防点击劫持的措施（如X-Frame-Options头部）？",
+          "ssrfRisk": "系统是否存在功能点允许用户控制发往内部或其他服务器的请求，可能导致SSRF漏洞？",
+          "xxeRisk": "如果项目处理XML数据，XML解析器是否配置安全，以防止XXE攻击？",
+          "deserializationVulnerabilities": "如果项目使用了对象的序列化和反序列化，输入的数据是否可信？是否存在利用反序列化执行任意代码的风险？",
+          "debuggingFunctions": "生产环境中是否残留了不应存在的调试功能、接口或后门？",
+          "httpSecurityHeaders": "Web应用是否使用了推荐的HTTP安全头部，如CSP (Content Security Policy)、HSTS (HTTP Strict Transport Security)等？",
+          "rateLimiting": "对于登录尝试、API调用等敏感操作，是否有适当的速率限制来防止暴力破解或资源耗尽攻击？",
+          "unsafeRedirects": "系统中的URL重定向或请求转发功能是否可能被恶意用户控制，导致钓鱼或将用户导向恶意站点？",
+          "errorHandling": "当发生错误或异常时，系统是如何处理的？是否会向用户暴露过多内部实现细节或堆栈跟踪信息？",
+          "securityAuditing": "系统是否记录了足够的安全相关日志（如登录尝试、权限变更、关键操作），以便于事后审计和追踪可疑行为？"
         }
       },
       "components": {
@@ -378,9 +398,28 @@
         }
       },
       "performance": {
-        "name": "性能关键路径",
+        "name": "性能",
         "prompts": {
-          "bottlenecks": "在典型操作中，哪些代码路径或计算环节可能对性能影响最大？项目是否有针对性的优化？"
+          "bottleneckIdentification": "项目中哪些部分或操作最容易成为性能瓶颈？通常通过什么方法或工具来定位它们？",
+          "keyPerformanceIndicators": "项目关注哪些关键的性能指标（如响应时间、吞吐量、并发用户数）？这些指标的目标值是多少？",
+          "databasePerformance": "数据库查询的效率如何？是否存在慢查询、不合理的索引或过多的数据库交互影响性能？",
+          "memoryUsage": "应用的内存使用情况如何？是否存在内存泄漏、不合理的内存分配或频繁的GC（垃圾回收）问题？",
+          "cpuUsageAnalysis": "哪些类型的计算或操作最消耗CPU资源？是否有针对性的优化来降低CPU负载？",
+          "networkIO": "网络请求（如API调用、资源加载）的延迟和吞吐量对整体性能影响如何？是否有优化措施（如压缩、CDN）？",
+          "cachingStrategies": "项目中运用了哪些缓存策略（如数据缓存、页面缓存、CDN缓存）来提升性能？缓存的命中率和更新机制是怎样的？",
+          "asyncConcurrentProcessing": "异步处理和并发机制（如线程池、协程、消息队列）是如何被用来优化响应速度和提高系统吞吐能力的？",
+          "algorithmEfficiency": "代码中是否存在低效的算法或数据结构，可能成为性能瓶颈？",
+          "frontendOptimization": "前端性能方面，如页面加载速度（FCP, LCP）、渲染效率、资源大小和用户交互响应，有哪些主要的优化手段和关注点？",
+          "codeLevelOptimization": "在代码编写层面，项目是否采用了一些通用的性能优化技巧（如减少循环嵌套、避免不必要的计算、延迟加载）？",
+          "performanceTesting": "项目如何进行性能测试（如压力测试、负载测试、基准测试）？测试结果如何指导优化？",
+          "scalabilityDesign": "当前架构在负载增加时，其性能表现和水平/垂直扩展能力如何？",
+          "resourceManagement": "关键系统资源（如数据库连接池、线程池）的管理是否高效，以避免资源耗尽或竞争？",
+          "thirdPartyDependencies": "外部API调用或第三方库的性能表现对整体系统性能有何影响？是否有监控和应对策略？",
+          "startupTime": "应用的启动时间和初始化过程对用户感知性能或系统可用性的影响如何？是否有优化空间？",
+          "loggingImpact": "日志记录的级别和方式是否对性能有显著影响？性能监控系统本身是否引入了不可忽视的开销？",
+          "specificScenarioTuning": "针对项目中的特定高并发或大数据量场景，是否进行了专门的性能调优？",
+          "performanceRegression": "是否有机制来防止已优化的性能点发生回归？如何在开发流程中尽早发现潜在性能问题？",
+          "configurationImpact": "项目的配置文件中，哪些参数对性能有直接或间接的重要影响（如线程数、缓存大小、超时设置）？"
         }
       },
       "codeReuse": {

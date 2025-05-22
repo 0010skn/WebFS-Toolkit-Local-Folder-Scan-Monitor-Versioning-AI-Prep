@@ -194,7 +194,27 @@
       "coreProcesses": {
         "name": "Core Processes",
         "prompts": {
-          "mainFlow": "Please describe the typical processing steps and key function call sequence from frontend to backend when a user performs a main operation."
+          "mainFlow": "Please describe the typical processing steps and key function call sequence from frontend to backend when a user performs a main operation.",
+          "inputValidation": "For user inputs (such as URL parameters, form fields, HTTP headers), how does the system process and filter them? Are there any unvalidated or insufficiently sanitized input points that could lead to injection vulnerabilities (such as XSS, SQL injection, command injection)?",
+          "authMechanism": "How are the system's authentication and authorization mechanisms implemented? Are there potential risk points for bypassing authentication, privilege escalation, or unauthorized access (IDOR)?",
+          "sessionManagement": "How are sessions managed? Are there risks of session fixation, session hijacking, or cross-site request forgery (CSRF)?",
+          "dependencySecurity": "Do third-party libraries or components used in the project have known public vulnerabilities (CVEs)? How are these dependencies checked and updated?",
+          "sensitiveInfoExposure": "Are there hardcoded credentials, API keys, or other sensitive information in the code, configuration files, or logs? Do error messages reveal too much system detail?",
+          "fileUploadHandling": "If the project supports file uploads, how are the type, size, and content of uploaded files validated? Is there a risk of uploading arbitrary files or path traversal?",
+          "apiSecurity": "Do the project's API interfaces have access control? Are there risks of data leakage, unauthorized access, or abuse (such as unlimited retries, data traversal)?",
+          "businessLogicVulnerabilities": "In core business processes, are there logical defects that could be maliciously exploited, such as bypassing payment, order fraud, or data tampering?",
+          "configSecurity": "Are there security vulnerabilities in server, database, or middleware configurations, such as default credentials, unnecessary open ports, or insecure default settings?",
+          "passwordPolicy": "How are user passwords stored (e.g., are they salted and hashed)? Are there weaknesses in password complexity, reset, and recovery mechanisms?",
+          "clickjackingRisk": "Have front-end pages taken measures to prevent clickjacking (such as X-Frame-Options header)?",
+          "ssrfRisk": "Are there functionality points in the system that allow users to control requests sent to internal or other servers, potentially leading to Server-Side Request Forgery (SSRF) vulnerabilities?",
+          "xxeRisk": "If the project processes XML data, is the XML parser configured securely to prevent XML External Entity (XXE) attacks?",
+          "deserializationVulnerabilities": "If the project uses object serialization and deserialization, is the input data trustworthy? Is there a risk of executing arbitrary code through deserialization?",
+          "debuggingFunctions": "Are there debugging functions, interfaces, or backdoors in the production environment that should not exist?",
+          "httpSecurityHeaders": "Does the web application use recommended HTTP security headers, such as CSP (Content Security Policy), HSTS (HTTP Strict Transport Security), etc.?",
+          "rateLimiting": "Are there appropriate rate limits for sensitive operations such as login attempts and API calls to prevent brute force attacks or resource exhaustion attacks?",
+          "unsafeRedirects": "Can URL redirection or request forwarding functions in the system be controlled by malicious users, leading to phishing or directing users to malicious sites?",
+          "errorHandling": "How does the system handle errors or exceptions? Does it expose too many internal implementation details or stack trace information to users?",
+          "securityAuditing": "Does the system record sufficient security-related logs (such as login attempts, permission changes, key operations) for post-event auditing and tracking suspicious behavior?"
         }
       },
       "components": {
@@ -312,9 +332,28 @@
         }
       },
       "performance": {
-        "name": "Performance Critical Paths",
+        "name": "Performance",
         "prompts": {
-          "bottlenecks": "In typical operations, which code paths or computational links may have the greatest impact on performance? Does the project have targeted optimizations?"
+          "bottleneckIdentification": "Which parts or operations in the project are most likely to become performance bottlenecks? What methods or tools are typically used to locate them?",
+          "keyPerformanceIndicators": "What key performance indicators (KPIs) does the project focus on (such as response time, throughput, concurrent users)? What are the target values for these indicators?",
+          "databasePerformance": "How efficient are database queries? Are there slow queries, unreasonable indexes, or excessive database interactions affecting performance?",
+          "memoryUsage": "How is the application's memory usage? Are there memory leaks, unreasonable memory allocations, or frequent garbage collection (GC) issues?",
+          "cpuUsageAnalysis": "Which types of calculations or operations consume the most CPU resources? Are there specific optimizations to reduce CPU load?",
+          "networkIO": "How do network requests (such as API calls, resource loading) latency and throughput affect overall performance? Are there optimization measures (such as compression, CDN)?",
+          "cachingStrategies": "What caching strategies (such as data caching, page caching, CDN caching) are used in the project to improve performance? How are cache hit rates and update mechanisms implemented?",
+          "asyncConcurrentProcessing": "How are asynchronous processing and concurrency mechanisms (such as thread pools, coroutines, message queues) used to optimize response speed and improve system throughput?",
+          "algorithmEfficiency": "Are there inefficient algorithms or data structures in the code that could become performance bottlenecks?",
+          "frontendOptimization": "In terms of frontend performance, such as page loading speed (FCP, LCP), rendering efficiency, resource size, and user interaction response, what are the main optimization approaches and focus areas?",
+          "codeLevelOptimization": "At the code writing level, has the project adopted some common performance optimization techniques (such as reducing loop nesting, avoiding unnecessary calculations, lazy loading)?",
+          "performanceTesting": "How does the project conduct performance testing (such as stress testing, load testing, benchmark testing)? How do test results guide optimization?",
+          "scalabilityDesign": "How does the current architecture perform and scale horizontally/vertically when load increases?",
+          "resourceManagement": "Is the management of key system resources (such as database connection pools, thread pools) efficient to avoid resource exhaustion or contention?",
+          "thirdPartyDependencies": "How do external API calls or third-party libraries' performance affect overall system performance? Are there monitoring and response strategies?",
+          "startupTime": "How does the application's startup time and initialization process affect user-perceived performance or system availability? Is there room for optimization?",
+          "loggingImpact": "Do the level and method of logging significantly affect performance? Does the performance monitoring system itself introduce non-negligible overhead?",
+          "specificScenarioTuning": "Has specialized performance tuning been done for specific high-concurrency or large data volume scenarios in the project?",
+          "performanceRegression": "Are there mechanisms to prevent regression of optimized performance points? How are potential performance issues detected early in the development process?",
+          "configurationImpact": "In the project's configuration files, which parameters have direct or indirect important impacts on performance (such as thread count, cache size, timeout settings)?"
         }
       },
       "codeReuse": {
