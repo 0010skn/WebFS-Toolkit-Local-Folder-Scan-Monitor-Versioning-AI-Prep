@@ -72,7 +72,7 @@ export async function buildDirectoryStructureCache(
       }
     }
 
-    console.log(`目录结构缓存已更新，共${directoryStructureCache.size}个目录`);
+    // console.log(`目录结构缓存已更新，共${directoryStructureCache.size}个目录`);
   } catch (error) {
     console.error("构建目录结构缓存时出错:", error);
   }

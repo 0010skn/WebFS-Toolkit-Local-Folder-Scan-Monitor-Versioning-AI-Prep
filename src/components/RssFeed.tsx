@@ -72,6 +72,14 @@ export default function RssFeed() {
       url: "https://www.geekpark.net/rss",
       title: "GeekPark",
     },
+    {
+      url: "https://www.woshipm.com/feed",
+      title: "人人都是产品经理",
+    },
+    {
+      url: "https://rsshub.app/aibase/topic/AI",
+      title: "AIBase",
+    },
   ];
 
   const englishRssSources = [
@@ -109,7 +117,9 @@ export default function RssFeed() {
 
       const rssToJsonUrl = "https://api.rss2json.com/v1/api.json?rss_url=";
       const response = await fetch(
-        `${rssToJsonUrl}${encodeURIComponent(selectedSource.url)}`,
+        `${rssToJsonUrl}${encodeURIComponent(selectedSource.url)}` +
+          "&seed=" +
+          Math.random(),
         {
           cache: "no-store",
         }

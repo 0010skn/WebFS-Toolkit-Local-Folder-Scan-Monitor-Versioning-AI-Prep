@@ -17,11 +17,17 @@ export interface ScanResult {
   timestamp: number; // 扫描时间戳
   codeStructure?: {
     functions: FunctionInfo[]; // 函数和方法信息
+    modules: ModuleInfo[]; // 模块导入信息
+    variables: VariableInfo[]; // 变量信息
+    comments: CommentInfo[]; // 注释信息
     totalFiles?: number; // 总文件数
     totalFunctions?: number; // 总函数数
     totalMethods?: number; // 总方法数
     totalClasses?: number; // 总类数
     totalLines?: number; // 总代码行数
+    totalModules?: number; // 总模块导入数
+    totalVariables?: number; // 总变量数
+    totalComments?: number; // 总注释行数
   };
 }
 
@@ -60,6 +66,35 @@ export interface FunctionInfo {
   lines: [number, number]; // 开始行和结束行
   filePath: string;
   calls: string[]; // 调用的其他函数名称
+}
+
+// 模块导入信息
+export interface ModuleInfo {
+  name: string; // 模块名称
+  path?: string; // 导入路径
+  isExternal: boolean; // 是否为外部模块
+  importedItems?: string[]; // 导入的项目（如具名导入）
+  filePath: string; // 在哪个文件中导入
+  line: number; // 在文件中的行号
+}
+
+// 变量信息
+export interface VariableInfo {
+  name: string; // 变量名称
+  type?: string; // 变量类型（如果可以推断）
+  value?: string; // 初始值（如果有）
+  isConst: boolean; // 是否为常量
+  filePath: string; // 在哪个文件中定义
+  line: number; // 在文件中的行号
+}
+
+// 注释信息
+export interface CommentInfo {
+  content: string; // 注释内容
+  type: "单行" | "多行" | "文档"; // 注释类型
+  filePath: string; // 在哪个文件中
+  line: number; // 在文件中的行号
+  isImportant: boolean; // 是否包含重要标记（如TODO, FIXME, NOTE等）
 }
 
 // 变动报告类型

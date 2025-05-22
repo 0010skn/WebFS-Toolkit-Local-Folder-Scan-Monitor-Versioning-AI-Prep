@@ -317,7 +317,7 @@
     "close": "Close",
     "noResult": "No results yet, please submit a question first",
     "error": "Processing error, please try again",
-    "enableContentMatching": "Enable precise Mode (may increase processing time)",
+    "enableContentMatching": "Enable precise Mode (may increase processing time) @Deprecated",
     "copyPrompt": "Copy Prompt",
     "resultCopied": "Vectorization result copied to clipboard!",
     "resultPreview": "Result Preview",

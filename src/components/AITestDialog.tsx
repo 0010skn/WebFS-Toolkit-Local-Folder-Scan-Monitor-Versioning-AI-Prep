@@ -1282,7 +1282,8 @@ ${fileContents}`);
       const jsonResult = await findRelevantFiles(
         initialPrompt,
         paths,
-        fileContents
+        fileContents,
+        currentScan?.codeStructure // 添加代码结构信息
       );
       const parsedResult = parseFilePathsResult(jsonResult);
       const responseIndexedFiles = parsedResult.relevant_paths;
@@ -1959,16 +1960,26 @@ ${fileContents}`);
       return `__CODE_BLOCK_${codeBlocks.length - 1}__`;
     });
 
+    // 转义HTML标签，防止它们被直接渲染
+    processed = processed.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
     // 然后处理单行反引号，使其可点击并显示气泡提示
     let keywordCounter = 0;
     processed = processed.replace(/`([^`]+)`/g, (match, keyword) => {
       const id = `keyword-${keywordCounter++}`;
-      return `<span id="${id}" class="font-bold text-blue-600 dark:text-blue-400 underline cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900/30 px-0.5 rounded transition-colors" data-keyword="${keyword}" data-tooltip-id="${id}-tooltip" data-tooltip-content="加载中...">${keyword}</span><div id="${id}-tooltip" class="keyword-tooltip" style="display:none;"></div>`;
+      // 确保关键词内部的HTML标签不会被错误解析
+      const escapedKeyword = keyword
+        .replace(/&lt;/g, "&amp;lt;")
+        .replace(/&gt;/g, "&amp;gt;");
+      return `<span id="${id}" class="font-bold text-blue-600 dark:text-blue-400 underline cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900/30 px-0.5 rounded transition-colors" data-keyword="${escapedKeyword}" data-tooltip-id="${id}-tooltip" data-tooltip-content="加载中...">${escapedKeyword}</span><div id="${id}-tooltip" class="keyword-tooltip" style="display:none;"></div>`;
     });
 
-    // 最后，恢复代码块
+    // 最后，恢复代码块（但确保代码块内的内容正确转义）
     codeBlocks.forEach((block, index) => {
-      processed = processed.replace(`__CODE_BLOCK_${index}__`, block);
+      processed = processed.replace(
+        `__CODE_BLOCK_${index}__`,
+        block.replace(/&lt;/g, "<").replace(/&gt;/g, ">")
+      );
     });
 
     return processed;

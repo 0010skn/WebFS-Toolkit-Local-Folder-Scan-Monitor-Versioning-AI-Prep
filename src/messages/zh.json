@@ -316,7 +316,7 @@
     "close": "关闭",
     "noResult": "暂无结果，请先提交问题",
     "error": "处理出错，请重试",
-    "enableContentMatching": "启用精准模式（可能会增加处理时间）",
+    "enableContentMatching": "启用精准模式（可能会增加处理时间） @Deprecated",
     "copyPrompt": "复制Prompt",
     "resultCopied": "向量化结果已复制到剪贴板！",
     "resultPreview": "结果预览",

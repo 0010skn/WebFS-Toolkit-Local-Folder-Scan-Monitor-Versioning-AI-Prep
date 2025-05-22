@@ -4,6 +4,9 @@ import {
   FileDiff,
   ChangeReport,
   FunctionInfo,
+  ModuleInfo,
+  VariableInfo,
+  CommentInfo,
 } from "../types";
 import ignore from "ignore";
 import * as diff from "diff";
@@ -1255,6 +1258,12 @@ export function collectCodeStructureInfo(
 ): ChangeReport["codeStructure"] {
   // 函数和方法信息数组
   const functions: FunctionInfo[] = [];
+  // 模块导入信息数组
+  const modules: ModuleInfo[] = [];
+  // 变量信息数组
+  const variables: VariableInfo[] = [];
+  // 注释信息数组
+  const comments: CommentInfo[] = [];
 
   // 创建文件中的函数和方法映射
   const fileFunctionsMap = new Map<
@@ -1268,12 +1277,25 @@ export function collectCodeStructureInfo(
   // 处理每个文件条目，提取函数和方法信息
   entries.forEach((entry) => {
     if (entry.type === "file" && entry.content) {
+      // 提取函数和方法
       extractFunctionsAndMethods(
         entry.path,
         entry.content,
         fileFunctionsMap,
         functionCallsMap
       );
+
+      // 提取模块导入
+      const entryModules = extractModuleImports(entry.path, entry.content);
+      modules.push(...entryModules);
+
+      // 提取变量
+      const entryVariables = extractVariables(entry.path, entry.content);
+      variables.push(...entryVariables);
+
+      // 提取注释
+      const entryComments = extractComments(entry.path, entry.content);
+      comments.push(...entryComments);
     }
   });
 
@@ -1300,6 +1322,9 @@ export function collectCodeStructureInfo(
     totalMethods: 0,
     totalClasses: 0,
     totalLines: 0,
+    totalModules: modules.length,
+    totalVariables: variables.length,
+    totalComments: comments.length,
   };
 
   // 计算总行数
@@ -1327,6 +1352,9 @@ export function collectCodeStructureInfo(
 
   return {
     functions,
+    modules,
+    variables,
+    comments,
     ...stats,
   };
 }
@@ -1348,7 +1376,10 @@ export function generateTextReport(report: ChangeReport): string {
     result += `- 总函数数: ${stats.totalFunctions}\n`;
     result += `- 总方法数: ${stats.totalMethods}\n`;
     result += `- 总类数: ${stats.totalClasses}\n`;
-    result += `- 总代码行数: ${stats.totalLines}\n\n`;
+    result += `- 总代码行数: ${stats.totalLines}\n`;
+    result += `- 总模块导入数: ${stats.totalModules}\n`;
+    result += `- 总变量数: ${stats.totalVariables}\n`;
+    result += `- 总注释行数: ${stats.totalComments}\n\n`;
 
     // 添加函数调用关系图表示
     if (stats.functions.length > 0) {
@@ -1381,6 +1412,151 @@ export function generateTextReport(report: ChangeReport): string {
 
         result += "\n";
       });
+    }
+
+    // 添加模块导入信息
+    if (stats.modules && stats.modules.length > 0) {
+      result += "## 模块使用情况\n\n";
+
+      // 按文件分组显示模块导入
+      const moduleFileGroups = new Map<string, ModuleInfo[]>();
+      stats.modules.forEach((mod) => {
+        if (!moduleFileGroups.has(mod.filePath)) {
+          moduleFileGroups.set(mod.filePath, []);
+        }
+        moduleFileGroups.get(mod.filePath)!.push(mod);
+      });
+
+      moduleFileGroups.forEach((modules, filePath) => {
+        result += `### 文件: ${filePath}\n\n`;
+
+        // 分为外部模块和内部模块
+        const externalModules = modules.filter((m) => m.isExternal);
+        const internalModules = modules.filter((m) => !m.isExternal);
+
+        if (externalModules.length > 0) {
+          result += "#### 外部模块:\n\n";
+          externalModules.forEach((mod) => {
+            result += `- ${mod.name}`;
+            if (mod.importedItems && mod.importedItems.length > 0) {
+              result += ` (导入: ${mod.importedItems.join(", ")})`;
+            }
+            result += `\n`;
+          });
+          result += "\n";
+        }
+
+        if (internalModules.length > 0) {
+          result += "#### 内部模块:\n\n";
+          internalModules.forEach((mod) => {
+            result += `- ${mod.path}`;
+            if (mod.importedItems && mod.importedItems.length > 0) {
+              result += ` (导入: ${mod.importedItems.join(", ")})`;
+            }
+            result += `\n`;
+          });
+          result += "\n";
+        }
+      });
+    }
+
+    // 添加变量信息
+    if (stats.variables && stats.variables.length > 0) {
+      result += "## 变量定义\n\n";
+
+      // 按文件分组显示变量
+      const varFileGroups = new Map<string, VariableInfo[]>();
+      stats.variables.forEach((v) => {
+        if (!varFileGroups.has(v.filePath)) {
+          varFileGroups.set(v.filePath, []);
+        }
+        varFileGroups.get(v.filePath)!.push(v);
+      });
+
+      varFileGroups.forEach((variables, filePath) => {
+        result += `### 文件: ${filePath}\n\n`;
+
+        // 分为常量和变量
+        const constants = variables.filter((v) => v.isConst);
+        const vars = variables.filter((v) => !v.isConst);
+
+        if (constants.length > 0) {
+          result += "#### 常量:\n\n";
+          constants.forEach((v) => {
+            result += `- ${v.name}`;
+            if (v.type) {
+              result += `: ${v.type}`;
+            }
+            if (v.value) {
+              result += ` = ${v.value}`;
+            }
+            result += ` [行 ${v.line}]\n`;
+          });
+          result += "\n";
+        }
+
+        if (vars.length > 0) {
+          result += "#### 变量:\n\n";
+          vars.forEach((v) => {
+            result += `- ${v.name}`;
+            if (v.type) {
+              result += `: ${v.type}`;
+            }
+            if (v.value) {
+              result += ` = ${v.value}`;
+            }
+            result += ` [行 ${v.line}]\n`;
+          });
+          result += "\n";
+        }
+      });
+    }
+
+    // 添加重要注释信息
+    if (stats.comments && stats.comments.length > 0) {
+      const importantComments = stats.comments.filter((c) => c.isImportant);
+
+      if (importantComments.length > 0) {
+        result += "## 重要注释\n\n";
+
+        // 按文件分组显示重要注释
+        const commentFileGroups = new Map<string, CommentInfo[]>();
+        importantComments.forEach((c) => {
+          if (!commentFileGroups.has(c.filePath)) {
+            commentFileGroups.set(c.filePath, []);
+          }
+          commentFileGroups.get(c.filePath)!.push(c);
+        });
+
+        commentFileGroups.forEach((comments, filePath) => {
+          result += `### 文件: ${filePath}\n\n`;
+
+          comments.forEach((c) => {
+            result += `- [行 ${c.line}] ${c.type}注释: ${c.content.substring(
+              0,
+              100
+            )}${c.content.length > 100 ? "..." : ""}\n`;
+          });
+
+          result += "\n";
+        });
+      }
+
+      // 添加注释统计
+      result += "## 注释统计\n\n";
+      const singleLineComments = stats.comments.filter(
+        (c) => c.type === "单行"
+      ).length;
+      const multiLineComments = stats.comments.filter(
+        (c) => c.type === "多行"
+      ).length;
+      const docComments = stats.comments.filter(
+        (c) => c.type === "文档"
+      ).length;
+
+      result += `- 单行注释: ${singleLineComments}\n`;
+      result += `- 多行注释: ${multiLineComments}\n`;
+      result += `- 文档注释: ${docComments}\n\n`;
     }
   }
 
@@ -1449,4 +1625,409 @@ export function generateTextReport(report: ChangeReport): string {
   }
 
   return result;
+}
+
+// 从文件内容中提取模块导入信息
+function extractModuleImports(filePath: string, content: string): ModuleInfo[] {
+  const moduleImports: ModuleInfo[] = [];
+  const lines = content.split("\n");
+  const fileExtension = filePath
+    .substring(filePath.lastIndexOf("."))
+    .toLowerCase();
+
+  // 根据文件类型选择合适的正则表达式
+  let importRegex;
+
+  // JavaScript/TypeScript/React
+  if ([".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs"].includes(fileExtension)) {
+    // ES6 import 语法
+    const es6ImportRegex =
+      /import\s+(?:{([^}]+)}|(\*\s+as\s+\w+)|([^{}\s;]+))?\s*(?:from\s+)?['"]([^'"]+)['"]/g;
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      let match;
+
+      // 创建一个新的正则表达式实例以重置lastIndex
+      const regex = new RegExp(es6ImportRegex);
+
+      while ((match = regex.exec(line)) !== null) {
+        const namedImports = match[1]
+          ? match[1].split(",").map((s) => s.trim())
+          : [];
+        const namespaceImport = match[2] ? match[2].trim() : null;
+        const defaultImport = match[3] ? match[3].trim() : null;
+        const path = match[4];
+
+        // 确定模块名称
+        let name = "";
+        if (path.startsWith(".")) {
+          // 相对路径导入，使用路径的最后一部分作为名称
+          const parts = path.split("/");
+          name = parts[parts.length - 1];
+        } else {
+          // 外部模块导入，使用路径作为名称
+          name = path;
+        }
+
+        moduleImports.push({
+          name,
+          path,
+          isExternal: !path.startsWith("."),
+          importedItems: [
+            ...namedImports,
+            namespaceImport,
+            defaultImport,
+          ].filter(Boolean) as string[],
+          filePath,
+          line: i + 1,
+        });
+      }
+
+      // 检查 require 语法
+      const requireRegex =
+        /(?:const|let|var)\s+(?:{([^}]+)}|(\w+))\s*=\s*require\(['"]([^'"]+)['"]\)/g;
+      const requireRegexInstance = new RegExp(requireRegex);
+
+      while ((match = requireRegexInstance.exec(line)) !== null) {
+        const destructuredImports = match[1]
+          ? match[1].split(",").map((s) => s.trim())
+          : [];
+        const defaultImport = match[2];
+        const path = match[3];
+
+        // 确定模块名称
+        let name = "";
+        if (path.startsWith(".")) {
+          // 相对路径导入
+          const parts = path.split("/");
+          name = parts[parts.length - 1];
+        } else {
+          // 外部模块导入
+          name = path;
+        }
+
+        moduleImports.push({
+          name,
+          path,
+          isExternal: !path.startsWith("."),
+          importedItems: [...destructuredImports, defaultImport].filter(
+            Boolean
+          ) as string[],
+          filePath,
+          line: i + 1,
+        });
+      }
+    }
+  }
+  // Python
+  else if ([".py"].includes(fileExtension)) {
+    // 导入语法
+    const importRegex =
+      /(?:from\s+([.\w]+)\s+import\s+([^#\n]+)|import\s+([^#\n]+))/g;
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      let match;
+
+      // 创建一个新的正则表达式实例以重置lastIndex
+      const regex = new RegExp(importRegex);
+
+      while ((match = regex.exec(line)) !== null) {
+        if (match[1] && match[2]) {
+          // from X import Y
+          const path = match[1];
+          const importedItems = match[2].split(",").map((s) => s.trim());
+
+          moduleImports.push({
+            name: path,
+            path,
+            isExternal: !path.startsWith("."),
+            importedItems,
+            filePath,
+            line: i + 1,
+          });
+        } else if (match[3]) {
+          // import X
+          const imports = match[3].split(",").map((s) => s.trim());
+
+          for (const importItem of imports) {
+            const parts = importItem.split(" as ");
+            const name = parts[0].trim();
+
+            moduleImports.push({
+              name,
+              path: name,
+              isExternal: !name.startsWith("."),
+              filePath,
+              line: i + 1,
+            });
+          }
+        }
+      }
+    }
+  }
+  // Java
+  else if ([".java"].includes(fileExtension)) {
+    // 导入语法
+    const importRegex = /import\s+(?:static\s+)?([^;]+);/g;
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      let match;
+
+      // 创建一个新的正则表达式实例以重置lastIndex
+      const regex = new RegExp(importRegex);
+
+      while ((match = regex.exec(line)) !== null) {
+        const path = match[1].trim();
+        const parts = path.split(".");
+        const name = parts[parts.length - 1];
+
+        moduleImports.push({
+          name,
+          path,
+          isExternal: true, // Java中所有导入都视为外部
+          filePath,
+          line: i + 1,
+        });
+      }
+    }
+  }
+
+  return moduleImports;
+}
+
+// 从文件内容中提取变量信息
+function extractVariables(filePath: string, content: string): VariableInfo[] {
+  const variables: VariableInfo[] = [];
+  const lines = content.split("\n");
+  const fileExtension = filePath
+    .substring(filePath.lastIndexOf("."))
+    .toLowerCase();
+
+  // 根据文件类型选择合适的正则表达式
+  let varRegex;
+
+  // JavaScript/TypeScript/React
+  if ([".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs"].includes(fileExtension)) {
+    // 变量声明正则表达式
+    const jsVarRegex =
+      /(?:const|let|var)\s+(\w+)(?::\s*([^=]+))?\s*=\s*([^;]+)/g;
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+
+      // 跳过注释行
+      if (line.trim().startsWith("//") || line.trim().startsWith("/*")) {
+        continue;
+      }
+
+      let match;
+      // 创建一个新的正则表达式实例以重置lastIndex
+      const regex = new RegExp(jsVarRegex);
+
+      while ((match = regex.exec(line)) !== null) {
+        const name = match[1];
+        const type = match[2] ? match[2].trim() : undefined;
+        const value = match[3] ? match[3].trim() : undefined;
+        const isConst = line.trim().startsWith("const");
+
+        variables.push({
+          name,
+          type,
+          value,
+          isConst,
+          filePath,
+          line: i + 1,
+        });
+      }
+
+      // TypeScript 接口和类型定义
+      if (fileExtension === ".ts" || fileExtension === ".tsx") {
+        const tsTypeRegex = /(?:interface|type)\s+(\w+)(?:<[^>]+>)?\s*=/g;
+        const tsTypeRegexInstance = new RegExp(tsTypeRegex);
+
+        while ((match = tsTypeRegexInstance.exec(line)) !== null) {
+          const name = match[1];
+
+          variables.push({
+            name,
+            type: "type",
+            isConst: true,
+            filePath,
+            line: i + 1,
+          });
+        }
+      }
+    }
+  }
+  // Python
+  else if ([".py"].includes(fileExtension)) {
+    // 变量赋值
+    const pyVarRegex = /(\w+)\s*(?::\s*([^=]+))?\s*=\s*([^\n#]+)/g;
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+
+      // 跳过注释行
+      if (line.trim().startsWith("#")) {
+        continue;
+      }
+
+      let match;
+      // 创建一个新的正则表达式实例以重置lastIndex
+      const regex = new RegExp(pyVarRegex);
+
+      while ((match = regex.exec(line)) !== null) {
+        const name = match[1];
+        const type = match[2] ? match[2].trim() : undefined;
+        const value = match[3] ? match[3].trim() : undefined;
+
+        // 排除函数调用和控制结构
+        if (!["if", "for", "while", "def", "class"].includes(name)) {
+          variables.push({
+            name,
+            type,
+            value,
+            isConst: false, // Python没有const关键字
+            filePath,
+            line: i + 1,
+          });
+        }
+      }
+    }
+  }
+
+  return variables;
+}
+
+// 从文件内容中提取注释信息
+function extractComments(filePath: string, content: string): CommentInfo[] {
+  const comments: CommentInfo[] = [];
+  const lines = content.split("\n");
+  const fileExtension = filePath
+    .substring(filePath.lastIndexOf("."))
+    .toLowerCase();
+
+  // 重要标记正则表达式
+  const importantMarkers = /TODO|FIXME|NOTE|HACK|BUG|XXX|OPTIMIZE|REVIEW/i;
+
+  // 单行注释
+  let singleLineCommentStart = "//";
+  // 多行注释
+  let multiLineCommentStart = "/*";
+  let multiLineCommentEnd = "*/";
+  // 文档注释
+  let docCommentStart = "/**";
+
+  // 根据文件类型设置注释标记
+  if ([".py"].includes(fileExtension)) {
+    singleLineCommentStart = "#";
+    multiLineCommentStart = '"""';
+    multiLineCommentEnd = '"""';
+    docCommentStart = '"""';
+  } else if ([".rb"].includes(fileExtension)) {
+    singleLineCommentStart = "#";
+    multiLineCommentStart = "=begin";
+    multiLineCommentEnd = "=end";
+  }
+
+  // 处理单行注释
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+
+    // 单行注释
+    if (line.startsWith(singleLineCommentStart)) {
+      const content = line.substring(singleLineCommentStart.length).trim();
+      const isImportant = importantMarkers.test(content);
+
+      comments.push({
+        content,
+        type: "单行",
+        filePath,
+        line: i + 1,
+        isImportant,
+      });
+    }
+  }
+
+  // 处理多行注释
+  let inMultiLineComment = false;
+  let inDocComment = false;
+  let commentStart = 0;
+  let commentContent = "";
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+
+    // 文档注释开始
+    if (
+      line.trim().startsWith(docCommentStart) &&
+      !inMultiLineComment &&
+      !inDocComment
+    ) {
+      inDocComment = true;
+      commentStart = i;
+      commentContent = line.trim().substring(docCommentStart.length);
+      continue;
+    }
+
+    // 多行注释开始
+    if (
+      line.trim().startsWith(multiLineCommentStart) &&
+      !inMultiLineComment &&
+      !inDocComment
+    ) {
+      inMultiLineComment = true;
+      commentStart = i;
+      commentContent = line.trim().substring(multiLineCommentStart.length);
+      continue;
+    }
+
+    // 注释内容
+    if (inMultiLineComment || inDocComment) {
+      commentContent += "\n" + line.trim();
+    }
+
+    // 文档注释结束
+    if (inDocComment && line.trim().endsWith(multiLineCommentEnd)) {
+      inDocComment = false;
+      commentContent = commentContent
+        .substring(0, commentContent.length - multiLineCommentEnd.length)
+        .trim();
+      const isImportant = importantMarkers.test(commentContent);
+
+      comments.push({
+        content: commentContent,
+        type: "文档",
+        filePath,
+        line: commentStart + 1,
+        isImportant,
+      });
+
+      commentContent = "";
+    }
+
+    // 多行注释结束
+    if (inMultiLineComment && line.trim().endsWith(multiLineCommentEnd)) {
+      inMultiLineComment = false;
+      commentContent = commentContent
+        .substring(0, commentContent.length - multiLineCommentEnd.length)
+        .trim();
+      const isImportant = importantMarkers.test(commentContent);
+
+      comments.push({
+        content: commentContent,
+        type: "多行",
+        filePath,
+        line: commentStart + 1,
+        isImportant,
+      });
+
+      commentContent = "";
+    }
+  }
+
+  return comments;
 }

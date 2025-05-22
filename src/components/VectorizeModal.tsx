@@ -226,7 +226,8 @@ export default function VectorizeModal({ onClose }: VectorizeModalProps) {
       const jsonResult = await findRelevantFiles(
         query,
         filePaths,
-        enableContentMatching ? fileContentMap : undefined
+        enableContentMatching ? fileContentMap : undefined,
+        currentScan?.codeStructure
       );
       console.log("API返回结果:", jsonResult);
 

@@ -398,7 +398,8 @@ Your responses should be helpful, professional, and demonstrate proactivity and 
 export async function findRelevantFiles(
   query: string,
   filePaths: string[],
-  fileContents?: { [path: string]: string }
+  fileContents?: { [path: string]: string },
+  codeStructure?: any
 ): Promise<string> {
   try {
     // 添加调试日志
@@ -427,6 +428,7 @@ export async function findRelevantFiles(
 请基于文件路径、文件名以及知识库条目标题的语义相关性，找出最相关的资源。
 如果提供了文件内容，也请考虑内容的相关性。
 你还可以基于文件中的函数和方法名称进行匹配，某些文件路径中包含了函数信息，格式为: "文件路径 (函数类型:函数名[行号], ...)"。
+此外，你还应该考虑模块导入、变量定义和重要注释等额外信息。
 
 用户查询: "${query}"
 
@@ -435,6 +437,7 @@ export async function findRelevantFiles(
 Please identify the most relevant resources based on the semantic relevance of file paths, file names, and knowledge base entry titles.
 If file contents are provided, please also consider the relevance of the content.
 You can also match based on function and method names within files. Some file paths include function information in the format: "file_path (function_type:function_name[line_numbers], ...)".
+Additionally, you should consider module imports, variable definitions, and important comments as extra information.
 
 User query: "${query}"
 
@@ -468,6 +471,90 @@ Available file paths:`
         `\n\n没有可用的知识库条目\n`,
         `\n\nNo available knowledge base entries\n`
       );
+    }
+
+    // 添加代码结构信息（如果提供）
+    if (codeStructure) {
+      // 添加模块导入信息
+      if (codeStructure.modules && codeStructure.modules.length > 0) {
+        prompt += getLocalizedPrompt(
+          `\n\n项目中的模块导入信息:\n`,
+          `\n\nModule imports in the project:\n`
+        );
+
+        // 仅添加前20个模块导入，避免提示过长
+        const modulesToShow = codeStructure.modules.slice(0, 20);
+        modulesToShow.forEach((mod: any) => {
+          prompt += `- ${mod.filePath}: 导入 ${mod.name}${
+            mod.isExternal ? " (外部模块)" : " (内部模块)"
+          }\n`;
+        });
+
+        if (codeStructure.modules.length > 20) {
+          prompt += getLocalizedPrompt(
+            `... 以及其他 ${codeStructure.modules.length - 20} 个模块导入\n`,
+            `... and ${codeStructure.modules.length - 20} more module imports\n`
+          );
+        }
+      }
+
+      // 添加变量信息
+      if (codeStructure.variables && codeStructure.variables.length > 0) {
+        prompt += getLocalizedPrompt(
+          `\n\n项目中的重要变量定义:\n`,
+          `\n\nImportant variable definitions in the project:\n`
+        );
+
+        // 仅添加前20个常量变量，避免提示过长
+        const constantsToShow = codeStructure.variables
+          .filter((v: any) => v.isConst)
+          .slice(0, 20);
+
+        constantsToShow.forEach((v: any) => {
+          prompt += `- ${v.filePath}: ${v.name}${
+            v.type ? ": " + v.type : ""
+          }\n`;
+        });
+
+        if (constantsToShow.length > 20) {
+          prompt += getLocalizedPrompt(
+            `... 以及其他常量\n`,
+            `... and other constants\n`
+          );
+        }
+      }
+
+      // 添加重要注释信息
+      if (codeStructure.comments && codeStructure.comments.length > 0) {
+        const importantComments = codeStructure.comments.filter(
+          (c: any) => c.isImportant
+        );
+
+        if (importantComments.length > 0) {
+          prompt += getLocalizedPrompt(
+            `\n\n项目中的重要注释:\n`,
+            `\n\nImportant comments in the project:\n`
+          );
+
+          // 仅添加前10个重要注释，避免提示过长
+          const commentsToShow = importantComments.slice(0, 10);
+          commentsToShow.forEach((c: any) => {
+            prompt += `- ${c.filePath} [行 ${c.line}]: ${c.content.substring(
+              0,
+              50
+            )}${c.content.length > 50 ? "..." : ""}\n`;
+          });
+
+          if (importantComments.length > 10) {
+            prompt += getLocalizedPrompt(
+              `... 以及其他 ${importantComments.length - 10} 个重要注释\n`,
+              `... and ${
+                importantComments.length - 10
+              } more important comments\n`
+            );
+          }
+        }
+      }
     }
 
     // 如果提供了文件内容，添加到提示中以提高搜索质量
