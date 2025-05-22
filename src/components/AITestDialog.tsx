@@ -170,8 +170,7 @@ const CodeBlock = ({
   className?: string;
   children: string;
 }) => {
-  const { resolvedTheme } = useTheme();
-  const isDark = resolvedTheme === "dark";
+  const isDark = true;
   // 改进语言检测：从className中提取语言信息
   let language = className ? className.replace(/language-/, "") : "";
 
@@ -193,35 +192,6 @@ const CodeBlock = ({
     navigator.clipboard.writeText(children || "");
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
-  };
-
-  // 强制注入代码高亮样式 - 直接修改atomOneLight主题
-  const customAtomOneLight = {
-    ...atomOneLight,
-    hljs: {
-      ...atomOneLight.hljs,
-      color: "#383a42",
-    },
-    "hljs-keyword": {
-      ...atomOneLight["hljs-keyword"],
-      color: "#a626a4",
-    },
-    "hljs-string": {
-      ...atomOneLight["hljs-string"],
-      color: "#50a14f",
-    },
-    "hljs-title": {
-      ...atomOneLight["hljs-title"],
-      color: "#4078f2",
-    },
-    "hljs-built_in": {
-      ...atomOneLight["hljs-built_in"],
-      color: "#c18401",
-    },
-    "hljs-comment": {
-      ...atomOneLight["hljs-comment"],
-      color: "#a0a1a7",
-    },
   };
 
   // 使用修改后的高亮样式
@@ -1725,19 +1695,15 @@ ${fileContents}`);
                 )
                 .replace(/\n/g, "<br>")
                 .replace(/(\d+\|)/g, '<span class="text-gray-500">$1</span>');
-
-              // 更新气泡提示内容
               tooltipElement.innerHTML = `
-                <div class="keyword-tooltip-content bg-transparent">
-                  <div class="text-sm whitespace-pre-wrap text-left font-mono">${formattedExplanation}</div>
-                  ${
-                    position !== "center"
-                      ? `<div class="keyword-tooltip-arrow ${
-                          position === "bottom" ? "top-arrow" : "bottom-arrow"
-                        }"></div>`
-                      : ""
-                  }
-                </div>
+                <div class="text-sm whitespace-pre-wrap text-left font-mono">${formattedExplanation}</div>
+                ${
+                  position !== "center"
+                    ? `<div class="keyword-tooltip-arrow ${
+                        position === "bottom" ? "top-arrow" : "bottom-arrow"
+                      }"></div>`
+                    : ""
+                }
               `;
             } catch (error) {
               console.error("获取关键字信息出错:", error);
