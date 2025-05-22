@@ -1934,6 +1934,138 @@ ${fileContents}`);
       '<span class="break-all">$1</span>'
     );
 
+    // 自动检测代码语言
+    const detectLanguage = (code: string): string => {
+      // 检查代码中的特征来判断语言
+      if (/\bimport\s+React|\bfrom\s+['"]react['"]/i.test(code)) {
+        return code.includes("tsx") || code.includes(":") ? "tsx" : "jsx";
+      }
+      if (
+        /\bimport\s+|\bexport\s+|\bconst\s+\w+\s*=\s*|let\s+\w+\s*=\s*/i.test(
+          code
+        )
+      ) {
+        return code.includes(":") ||
+          code.includes("interface") ||
+          code.includes("type ")
+          ? "typescript"
+          : "javascript";
+      }
+      if (/^(<!DOCTYPE|<html|<head|<body)/i.test(code)) {
+        return "html";
+      }
+      if (/class=".*?"|className=".*?"|<div|<span|<p>/i.test(code)) {
+        return "jsx";
+      }
+      if (/^\s*\.[\w-]+\s*{|@media|@keyframes/i.test(code)) {
+        return "css";
+      }
+      if (/SELECT|INSERT|UPDATE|DELETE|CREATE TABLE/i.test(code)) {
+        return "sql";
+      }
+      if (/def\s+\w+\s*\(|import\s+\w+|from\s+\w+\s+import/i.test(code)) {
+        return "python";
+      }
+      if (/public\s+(static\s+)?(void|class|int|boolean)/i.test(code)) {
+        return "java";
+      }
+      if (/^\s*package\s+\w+|func\s+\w+\s*\(/i.test(code)) {
+        return "go";
+      }
+      if (/^#include\s+<|std::|int\s+main\s*\(\s*\)/i.test(code)) {
+        return "cpp";
+      }
+      if (
+        /\$\w+\s*=|\$\w+\s*->|function\s+\w+\s*\(/i.test(code) &&
+        code.includes("<?php")
+      ) {
+        return "php";
+      }
+      if (/^\s*{\s*["']\w+["']\s*:/i.test(code)) {
+        return "json";
+      }
+      if (/npm|yarn|apt-get|sudo|bash|sh\s+/i.test(code)) {
+        return "bash";
+      }
+      if (/^#!\/bin\/bash|^#!\/bin\/sh/i.test(code)) {
+        return "bash";
+      }
+      if (/^\s*#\s+|^##\s+|^\*\*\s+/i.test(code)) {
+        return "markdown";
+      }
+
+      // 检查文件扩展名引用
+      const extMatch = code.match(/\.([a-zA-Z0-9]+)(\s|$|['")\]}]|:|,)/);
+      if (extMatch) {
+        const ext = extMatch[1].toLowerCase();
+        switch (ext) {
+          case "js":
+            return "javascript";
+          case "jsx":
+            return "jsx";
+          case "ts":
+            return "typescript";
+          case "tsx":
+            return "tsx";
+          case "py":
+            return "python";
+          case "rb":
+            return "ruby";
+          case "java":
+            return "java";
+          case "php":
+            return "php";
+          case "go":
+            return "go";
+          case "cs":
+            return "csharp";
+          case "html":
+            return "html";
+          case "css":
+            return "css";
+          case "scss":
+            return "scss";
+          case "less":
+            return "less";
+          case "json":
+            return "json";
+          case "md":
+            return "markdown";
+          case "xml":
+            return "xml";
+          case "yml":
+          case "yaml":
+            return "yaml";
+          case "sh":
+            return "bash";
+          case "sql":
+            return "sql";
+        }
+      }
+
+      return "";
+    };
+
+    // 处理代码块，自动检测语言
+    processed = processed.replace(
+      /```(?:(\w+)\n)?([\s\S]*?)```/g,
+      (match, lang, code) => {
+        // 如果已有语言标识，使用它
+        if (lang && lang !== "text" && lang !== "plaintext") {
+          return match;
+        }
+
+        // 自动检测语言
+        const detectedLang = detectLanguage(code);
+        if (detectedLang) {
+          return `\`\`\`${detectedLang}\n${code}\`\`\``;
+        }
+
+        // 如果无法检测到语言，使用text
+        return `\`\`\`text\n${code}\`\`\``;
+      }
+    );
+
     // 防止文件名和函数关键字被错误地渲染为代码块
     // 1. 修复文件名格式: 将 ```filename.ext``` 替换为 `filename.ext`
     processed = processed.replace(
