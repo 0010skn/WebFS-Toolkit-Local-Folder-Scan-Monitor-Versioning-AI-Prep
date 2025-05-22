@@ -17,6 +17,7 @@
     "crypto-js": "^4.2.0",
     "diff": "^8.0.1",
     "framer-motion": "^12.11.3",
+    "highlight.js": "^11.11.1",
     "ignore": "^7.0.4",
     "jotai": "^2.12.4",
     "js-yaml": "^4.1.0",

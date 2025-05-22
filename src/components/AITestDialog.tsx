@@ -12,17 +12,141 @@ import {
   getLocalizedPrompt,
 } from "../lib/vectorizeService";
 import Markdown from "markdown-to-jsx";
+// 引入SyntaxHighlighter的两种版本
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
+import { Light as LightSyntaxHighlighter } from "react-syntax-highlighter";
+
+// 导入Prism的样式
 import {
   vscDarkPlus,
-  vs,
+  materialDark,
+  materialLight,
+  okaidia,
+  solarizedlight,
+  prism,
 } from "react-syntax-highlighter/dist/cjs/styles/prism";
+
+// 导入highlight.js的样式
+import {
+  atomOneDark,
+  atomOneLight,
+  vs2015,
+  github,
+  monokai,
+  vs,
+  xcode,
+  docco,
+} from "react-syntax-highlighter/dist/cjs/styles/hljs";
+
+// 导入语言支持
+import javascript from "react-syntax-highlighter/dist/cjs/languages/hljs/javascript";
+import typescript from "react-syntax-highlighter/dist/cjs/languages/hljs/typescript";
+import python from "react-syntax-highlighter/dist/cjs/languages/hljs/python";
+import java from "react-syntax-highlighter/dist/cjs/languages/hljs/java";
+import jsx from "react-syntax-highlighter/dist/cjs/languages/hljs/xml";
+import css from "react-syntax-highlighter/dist/cjs/languages/hljs/css";
+import bash from "react-syntax-highlighter/dist/cjs/languages/hljs/bash";
+import json from "react-syntax-highlighter/dist/cjs/languages/hljs/json";
+import markdown from "react-syntax-highlighter/dist/cjs/languages/hljs/markdown";
+import sql from "react-syntax-highlighter/dist/cjs/languages/hljs/sql";
+import yaml from "react-syntax-highlighter/dist/cjs/languages/hljs/yaml";
+import xml from "react-syntax-highlighter/dist/cjs/languages/hljs/xml";
+import rust from "react-syntax-highlighter/dist/cjs/languages/hljs/rust";
+import go from "react-syntax-highlighter/dist/cjs/languages/hljs/go";
+import cpp from "react-syntax-highlighter/dist/cjs/languages/hljs/cpp";
+import plaintext from "react-syntax-highlighter/dist/cjs/languages/hljs/plaintext";
+
+// 注册语言
+LightSyntaxHighlighter.registerLanguage("javascript", javascript);
+LightSyntaxHighlighter.registerLanguage("typescript", typescript);
+LightSyntaxHighlighter.registerLanguage("python", python);
+LightSyntaxHighlighter.registerLanguage("java", java);
+LightSyntaxHighlighter.registerLanguage("jsx", jsx);
+LightSyntaxHighlighter.registerLanguage("tsx", typescript);
+LightSyntaxHighlighter.registerLanguage("css", css);
+LightSyntaxHighlighter.registerLanguage("bash", bash);
+LightSyntaxHighlighter.registerLanguage("json", json);
+LightSyntaxHighlighter.registerLanguage("markdown", markdown);
+LightSyntaxHighlighter.registerLanguage("sql", sql);
+LightSyntaxHighlighter.registerLanguage("yaml", yaml);
+LightSyntaxHighlighter.registerLanguage("xml", xml);
+LightSyntaxHighlighter.registerLanguage("rust", rust);
+LightSyntaxHighlighter.registerLanguage("go", go);
+LightSyntaxHighlighter.registerLanguage("cpp", cpp);
+LightSyntaxHighlighter.registerLanguage("text", plaintext);
+LightSyntaxHighlighter.registerLanguage("plaintext", plaintext);
+
 import { useTheme } from "next-themes";
 import { useAtom } from "jotai";
 import { currentScanAtom } from "../lib/store";
 import { KnowledgeEntry } from "../lib/knowledgeService";
 import { FileSystemEntry } from "../types";
 import RequirementGeneratorModal from "@/components/RequirementGeneratorModal";
+
+// 创建一个增强版的Atom One Light主题
+const createEnhancedAtomOneLight = () => {
+  // 深拷贝atomOneLight主题
+  const enhancedTheme = JSON.parse(JSON.stringify(atomOneLight));
+
+  // 设置基本文本颜色
+  if (enhancedTheme.hljs) {
+    enhancedTheme.hljs.color = "#383a42";
+  }
+
+  // 设置各种语法元素的颜色
+  const colorMapping = {
+    "hljs-comment": "#a0a1a7",
+    "hljs-quote": "#a0a1a7",
+    "hljs-doctag": "#a626a4",
+    "hljs-keyword": "#a626a4",
+    "hljs-formula": "#a626a4",
+    "hljs-section": "#e45649",
+    "hljs-name": "#e45649",
+    "hljs-selector-tag": "#e45649",
+    "hljs-deletion": "#e45649",
+    "hljs-subst": "#e45649",
+    "hljs-literal": "#0184bb",
+    "hljs-string": "#50a14f",
+    "hljs-regexp": "#50a14f",
+    "hljs-addition": "#50a14f",
+    "hljs-attribute": "#50a14f",
+    "hljs-meta-string": "#50a14f",
+    "hljs-built_in": "#c18401",
+    "hljs-class .hljs-title": "#c18401",
+    "hljs-attr": "#986801",
+    "hljs-variable": "#e45649",
+    "hljs-template-variable": "#e45649",
+    "hljs-type": "#986801",
+    "hljs-selector-class": "#986801",
+    "hljs-selector-attr": "#986801",
+    "hljs-selector-pseudo": "#986801",
+    "hljs-number": "#986801",
+    "hljs-symbol": "#4078f2",
+    "hljs-bullet": "#4078f2",
+    "hljs-link": "#4078f2",
+    "hljs-meta": "#4078f2",
+    "hljs-selector-id": "#4078f2",
+    "hljs-title": "#4078f2",
+    "hljs-emphasis": { fontStyle: "italic" },
+    "hljs-strong": { fontWeight: "bold" },
+  };
+
+  // 应用颜色映射到主题
+  Object.entries(colorMapping).forEach(([key, color]) => {
+    if (typeof color === "string") {
+      if (!enhancedTheme[key]) enhancedTheme[key] = {};
+      enhancedTheme[key].color = color;
+    } else if (typeof color === "object") {
+      if (!enhancedTheme[key]) enhancedTheme[key] = {};
+      Object.assign(enhancedTheme[key], color);
+    }
+  });
+
+  return enhancedTheme;
+};
+
+// 创建增强版Atom One Light主题
+const enhancedAtomOneLight = createEnhancedAtomOneLight();
 
 interface AITestDialogProps {
   onClose: () => void;
@@ -46,7 +170,14 @@ const CodeBlock = ({
 }) => {
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === "dark";
-  const language = className ? className.replace(/language-/, "") : "";
+  // 改进语言检测：从className中提取语言信息
+  let language = className ? className.replace(/language-/, "") : "";
+
+  // 如果语言是text或未指定，尝试自动检测语言
+  if (!language || language === "text" || language === "plaintext") {
+    language = detectCodeLanguage(children);
+  }
+
   const [copied, setCopied] = useState(false);
 
   // 如果是单行代码，不做特殊处理，保留原始的 ` 格式，让 processMarkdown 函数处理
@@ -62,14 +193,63 @@ const CodeBlock = ({
     setTimeout(() => setCopied(false), 1500);
   };
 
+  // 强制注入代码高亮样式 - 直接修改atomOneLight主题
+  const customAtomOneLight = {
+    ...atomOneLight,
+    hljs: {
+      ...atomOneLight.hljs,
+      color: "#383a42",
+    },
+    "hljs-keyword": {
+      ...atomOneLight["hljs-keyword"],
+      color: "#a626a4",
+    },
+    "hljs-string": {
+      ...atomOneLight["hljs-string"],
+      color: "#50a14f",
+    },
+    "hljs-title": {
+      ...atomOneLight["hljs-title"],
+      color: "#4078f2",
+    },
+    "hljs-built_in": {
+      ...atomOneLight["hljs-built_in"],
+      color: "#c18401",
+    },
+    "hljs-comment": {
+      ...atomOneLight["hljs-comment"],
+      color: "#a0a1a7",
+    },
+  };
+
+  // 使用修改后的高亮样式
+  const highlightStyle = isDark ? atomOneDark : enhancedAtomOneLight;
+
+  // 根据语言确定使用哪种高亮器
+  // 对于某些需要特殊处理的语言使用Prism
+  const needsPrism = ["jsx", "tsx", "regex"].includes(language);
+  const HighlighterComponent = needsPrism
+    ? SyntaxHighlighter
+    : LightSyntaxHighlighter;
+  const styleToUse = needsPrism
+    ? isDark
+      ? vscDarkPlus
+      : prism
+    : highlightStyle;
+
+  // 为不同的高亮器设置不同的类名
+  const highlighterClassName = `hljs-custom-container ${
+    needsPrism ? "prism-syntax-highlighter" : "light-syntax-highlighter"
+  } ${isDark ? "dark-theme" : "light-theme"}`;
+
   return (
     <motion.div
-      className="bg-gray-100 dark:bg-gray-700 rounded-md overflow-hidden my-2 max-w-full"
+      className="bg-gray-100 dark:bg-gray-700 rounded-md overflow-hidden my-2 w-full max-w-full syntax-highlighter-container"
       initial={{ opacity: 0.9, y: 5 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.2 }}
     >
-      <div className="bg-gray-200 dark:bg-gray-600 px-4 py-1 text-xs font-medium text-gray-700 dark:text-gray-300 flex items-center justify-between">
+      <div className="bg-gray-200 dark:bg-gray-600 px-4 py-1 text-xs font-medium text-gray-700 dark:text-gray-300 flex items-center justify-between sticky top-0 z-10">
         <span className="flex items-center">
           {language && (
             <span
@@ -125,39 +305,205 @@ const CodeBlock = ({
           )}
         </motion.button>
       </div>
-      <motion.div
-        className="overflow-x-auto"
-        initial={{ opacity: 0.8 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.3, delay: 0.1 }}
-      >
-        <SyntaxHighlighter
-          language={language || "text"}
-          style={isDark ? vscDarkPlus : vs}
-          customStyle={{
-            margin: 0,
-            padding: "1rem",
-            fontSize: "0.875rem",
-            backgroundColor: isDark ? "rgb(30, 30, 30)" : "rgb(250, 250, 250)",
-          }}
-          wrapLines={true}
-          wrapLongLines={true}
-          showLineNumbers={language !== "text" && language !== ""}
-          lineNumberStyle={{
-            minWidth: "2.5em",
-            paddingRight: "1em",
-            color: isDark ? "rgba(255, 255, 255, 0.3)" : "rgba(0, 0, 0, 0.3)",
-            borderRight: isDark
-              ? "1px solid rgba(255, 255, 255, 0.1)"
-              : "1px solid rgba(0, 0, 0, 0.1)",
-            marginRight: "1em",
-          }}
+      <div className="relative overflow-hidden w-full">
+        <div
+          className="overflow-x-auto w-full code-scroll-container"
+          style={{ WebkitOverflowScrolling: "touch", maxWidth: "100%" }}
         >
-          {children}
-        </SyntaxHighlighter>
-      </motion.div>
+          <HighlighterComponent
+            language={language || "text"}
+            style={styleToUse}
+            customStyle={{
+              margin: 0,
+              padding: "1rem",
+              fontSize: "0.875rem",
+              background: isDark ? "#282c34" : "#fafafa", // Atom One Dark背景色
+              color: isDark ? "#abb2bf" : "#383a42", // 默认文本颜色
+              maxWidth: "none", // 允许内容控制宽度
+              borderRadius: 0,
+              overflowX: "auto",
+              width: "max-content",
+              minWidth: "100%", // 确保填满容器
+            }}
+            codeTagProps={{
+              style: {
+                fontSize: "0.875rem",
+                fontFamily:
+                  "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+                lineHeight: 1.5,
+                color: isDark ? "#abb2bf" : "#383a42", // 确保代码内容有正确的文本颜色
+              },
+            }}
+            wrapLines={true}
+            wrapLongLines={false} // 在移动设备上不强制换行
+            showLineNumbers={
+              language !== "text" &&
+              language !== "" &&
+              children.split("\n").length > 1
+            }
+            lineNumberStyle={{
+              minWidth: "2.5em",
+              paddingRight: "1em",
+              color: isDark ? "rgba(255, 255, 255, 0.3)" : "rgba(0, 0, 0, 0.3)",
+              borderRight: isDark
+                ? "1px solid rgba(255, 255, 255, 0.1)"
+                : "1px solid rgba(0, 0, 0, 0.1)",
+              marginRight: "1em",
+              userSelect: "none",
+              textAlign: "right",
+              fontSize: "0.8em",
+            }}
+            className={highlighterClassName}
+            PreTag={({ children, ...props }) => (
+              <pre
+                {...props}
+                style={{
+                  margin: 0,
+                  padding: 0,
+                  backgroundColor: "transparent",
+                  color: isDark ? "#abb2bf" : "#383a42", // 确保pre标签也有正确的颜色
+                }}
+              >
+                {children}
+              </pre>
+            )}
+            CodeTag={({ children, ...props }) => (
+              <code
+                {...props}
+                style={{
+                  fontFamily:
+                    "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+                  color: isDark ? "#abb2bf" : "#383a42", // 确保code标签也有正确的颜色
+                }}
+              >
+                {children}
+              </code>
+            )}
+          >
+            {children}
+          </HighlighterComponent>
+        </div>
+
+        {/* 添加水平滚动指示器 - 只在桌面设备显示 */}
+        <div className="absolute right-0 top-0 bottom-0 w-6 bg-gradient-to-l from-gray-100 dark:from-gray-700 to-transparent pointer-events-none sm:block hidden"></div>
+
+        {/* 移动设备上的滚动提示 */}
+        <div className="sm:hidden text-xs text-center text-gray-500 dark:text-gray-400 py-1 border-t border-gray-200 dark:border-gray-600">
+          ← 左右滑动查看完整代码 →
+        </div>
+      </div>
     </motion.div>
   );
+};
+
+// 自动检测代码语言的函数
+const detectCodeLanguage = (code: string): string => {
+  // 检查代码中的特征来判断语言
+  if (/\bimport\s+React|\bfrom\s+['"]react['"]/i.test(code)) {
+    return code.includes("tsx") || code.includes(":") ? "tsx" : "jsx";
+  }
+  if (
+    /\bimport\s+|\bexport\s+|\bconst\s+\w+\s*=\s*|let\s+\w+\s*=\s*/i.test(code)
+  ) {
+    return code.includes(":") ||
+      code.includes("interface") ||
+      code.includes("type ")
+      ? "typescript"
+      : "javascript";
+  }
+  if (/^(<!DOCTYPE|<html|<head|<body)/i.test(code)) {
+    return "html";
+  }
+  if (/class=".*?"|className=".*?"|<div|<span|<p>/i.test(code)) {
+    return "jsx";
+  }
+  if (/^\s*\.[\w-]+\s*{|@media|@keyframes/i.test(code)) {
+    return "css";
+  }
+  if (/SELECT|INSERT|UPDATE|DELETE|CREATE TABLE/i.test(code)) {
+    return "sql";
+  }
+  if (/def\s+\w+\s*\(|import\s+\w+|from\s+\w+\s+import/i.test(code)) {
+    return "python";
+  }
+  if (/public\s+(static\s+)?(void|class|int|boolean)/i.test(code)) {
+    return "java";
+  }
+  if (/^\s*package\s+\w+|func\s+\w+\s*\(/i.test(code)) {
+    return "go";
+  }
+  if (/^#include\s+<|std::|int\s+main\s*\(\s*\)/i.test(code)) {
+    return "cpp";
+  }
+  if (
+    /\$\w+\s*=|\$\w+\s*->|function\s+\w+\s*\(/i.test(code) &&
+    code.includes("<?php")
+  ) {
+    return "php";
+  }
+  if (/^\s*{\s*["']\w+["']\s*:/i.test(code)) {
+    return "json";
+  }
+  if (/npm|yarn|apt-get|sudo|bash|sh\s+/i.test(code)) {
+    return "bash";
+  }
+  if (/^#!\/bin\/bash|^#!\/bin\/sh/i.test(code)) {
+    return "bash";
+  }
+  if (/^\s*#\s+|^##\s+|^\*\*\s+/i.test(code)) {
+    return "markdown";
+  }
+
+  // 检查文件扩展名引用
+  const extMatch = code.match(/\.([a-zA-Z0-9]+)(\s|$|['")\]}]|:|,)/);
+  if (extMatch) {
+    const ext = extMatch[1].toLowerCase();
+    switch (ext) {
+      case "js":
+        return "javascript";
+      case "jsx":
+        return "jsx";
+      case "ts":
+        return "typescript";
+      case "tsx":
+        return "tsx";
+      case "py":
+        return "python";
+      case "rb":
+        return "ruby";
+      case "java":
+        return "java";
+      case "php":
+        return "php";
+      case "go":
+        return "go";
+      case "cs":
+        return "csharp";
+      case "html":
+        return "html";
+      case "css":
+        return "css";
+      case "scss":
+        return "scss";
+      case "less":
+        return "less";
+      case "json":
+        return "json";
+      case "md":
+        return "markdown";
+      case "xml":
+        return "xml";
+      case "yml":
+      case "yaml":
+        return "yaml";
+      case "sh":
+        return "bash";
+      case "sql":
+        return "sql";
+    }
+  }
+
+  return "text";
 };
 
 // 获取编程语言的颜色
@@ -475,6 +821,180 @@ const tooltipStyles = `
 .dark .bottom-arrow {
   border-top-color: #374151;
 }
+
+/* 优化语法高亮CSS */
+
+.hljs-tag,
+.hljs-name,
+.hljs-attribute {
+  color: #e06c75 !important;
+}
+
+.hljs-built_in {
+  color: #e6c07b !important;
+}
+
+.hljs-string {
+  color: #98c379 !important;
+}
+
+.hljs-number {
+  color: #d19a66 !important;
+}
+
+.hljs-comment {
+  color: #7f848e !important;
+  font-style: italic;
+}
+
+.hljs-keyword {
+  color: #c678dd !important;
+}
+
+.hljs-selector-tag {
+  color: #e06c75 !important;
+}
+
+.hljs-literal {
+  color: #56b6c2 !important;
+}
+
+.hljs-title {
+  color: #61afef !important;
+}
+
+.hljs-section {
+  color: #e06c75 !important;
+}
+
+.hljs-doctag {
+  color: #c678dd !important;
+}
+
+.hljs-type {
+  color: #e6c07b !important;
+}
+
+.hljs-attr {
+  color: #d19a66 !important;
+}
+
+.hljs-symbol {
+  color: #56b6c2 !important;
+}
+
+.hljs-bullet {
+  color: #56b6c2 !important;
+}
+
+.hljs-link {
+  color: #c678dd !important;
+  text-decoration: underline;
+}
+
+.hljs-emphasis {
+  font-style: italic;
+}
+
+.hljs-strong {
+  font-weight: bold;
+}
+
+/* 修复浅色模式下文本颜色 */
+.hljs-custom-container {
+  color: #383a42 !important; /* 浅色模式下默认文本颜色 */
+}
+
+.dark .hljs-custom-container {
+  color: #abb2bf !important; /* 深色模式下默认文本颜色 */
+}
+
+/* 确保所有默认文本在浅色模式下显示为深色 */
+.syntax-highlighter-container code,
+.syntax-highlighter-container pre {
+  color: #383a42 !important;
+}
+
+.dark .syntax-highlighter-container code,
+.dark .syntax-highlighter-container pre {
+  color: #abb2bf !important;
+}
+
+/* 修复所有内联元素的默认颜色 */
+.syntax-highlighter-container span:not([class]) {
+  color: #383a42 !important;
+}
+
+.dark .syntax-highlighter-container span:not([class]) {
+  color: #abb2bf !important;
+}
+
+/* 添加样式修复atomOneLight主题的问题 */
+.hljs.atomOneLight {
+  color: #383a42 !important;
+}
+
+.hljs.atomOneLight .hljs-subst,
+.hljs.atomOneLight .hljs-variable,
+.hljs.atomOneLight .hljs-template-variable,
+.hljs.atomOneLight .hljs-tag,
+.hljs.atomOneLight .hljs-name,
+.hljs.atomOneLight .hljs-selector-id,
+.hljs.atomOneLight .hljs-selector-class,
+.hljs.atomOneLight .hljs-regexp,
+.hljs.atomOneLight .hljs-deletion {
+  color: #383a42 !important;
+}
+
+/* 对Light组件的特殊处理 */
+.light-syntax-highlighter span {
+  color: #383a42 !important;
+}
+
+.code-scroll-container {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(156, 163, 175, 0.5) transparent;
+}
+
+.code-scroll-container::-webkit-scrollbar {
+  height: 6px;
+  width: 6px;
+}
+
+.code-scroll-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.code-scroll-container::-webkit-scrollbar-thumb {
+  background-color: rgba(156, 163, 175, 0.5);
+  border-radius: 3px;
+}
+
+.dark .code-scroll-container::-webkit-scrollbar-thumb {
+  background-color: rgba(75, 85, 99, 0.5);
+}
+
+.hljs-custom-container {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+}
+
+.hljs-custom-container span {
+  background: transparent !important;
+}
+
+/* 移动设备优化 */
+@media (max-width: 640px) {
+  .syntax-highlighter-container {
+    width: calc(100% + 2rem) !important;
+    margin-left: -1rem !important;
+    margin-right: -1rem !important;
+    border-radius: 0 !important;
+  }
+  
+  .code-scroll-container pre {
+    max-width: 100% !important;
+  }
+}
 `;
 
 export default function AITestDialog({
@@ -489,9 +1009,70 @@ export default function AITestDialog({
     styleEl.textContent = tooltipStyles;
     document.head.appendChild(styleEl);
 
+    // 添加直接修复浅色模式代码高亮的样式 - 使用更强的选择器
+    const fixLightModeStyle = document.createElement("style");
+    fixLightModeStyle.textContent = `
+      /* 直接重写浅色模式下的代码高亮样式 - 超高优先级 */
+      body:not(.dark) .light-syntax-highlighter pre code,
+      body:not(.dark) pre code, 
+      html:not(.dark) .light-syntax-highlighter pre code,
+      html:not(.dark) pre code {
+        color: #383a42 !important;
+      }
+
+      /* 最高优先级选择器 */
+      html:not(.dark) pre code span.token,
+      html:not(.dark) pre code span[class*="hljs-"],
+      html:not(.dark) code span[class*="hljs-"] {
+        color: inherit !important;
+      }
+
+      /* 每个高亮元素单独设置 */
+      html:not(.dark) code span.hljs-keyword, 
+      html:not(.dark) pre code span.hljs-keyword { color: #a626a4 !important; }
+      
+      html:not(.dark) code span.hljs-built_in, 
+      html:not(.dark) pre code span.hljs-built_in { color: #c18401 !important; }
+      
+      html:not(.dark) code span.hljs-string, 
+      html:not(.dark) pre code span.hljs-string { color: #50a14f !important; }
+      
+      html:not(.dark) code span.hljs-number, 
+      html:not(.dark) pre code span.hljs-number { color: #986801 !important; }
+      
+      html:not(.dark) code span.hljs-comment, 
+      html:not(.dark) pre code span.hljs-comment { color: #a0a1a7 !important; font-style: italic !important; }
+      
+      html:not(.dark) code span.hljs-title, 
+      html:not(.dark) pre code span.hljs-title { color: #4078f2 !important; }
+      
+      html:not(.dark) code span.hljs-attr, 
+      html:not(.dark) pre code span.hljs-attr { color: #986801 !important; }
+      
+      html:not(.dark) code span.hljs-tag, 
+      html:not(.dark) pre code span.hljs-tag { color: #e45649 !important; }
+      
+      html:not(.dark) code span.hljs-name, 
+      html:not(.dark) pre code span.hljs-name { color: #e45649 !important; }
+      
+      html:not(.dark) code span.hljs-type, 
+      html:not(.dark) pre code span.hljs-type { color: #986801 !important; }
+      
+      html:not(.dark) code span.hljs-variable, 
+      html:not(.dark) pre code span.hljs-variable { color: #e45649 !important; }
+
+      /* 直接给code元素添加样式，确保默认文本颜色正确 */
+      .light-theme code, 
+      .light-theme pre {
+        color: #383a42 !important;
+      }
+    `;
+    document.head.appendChild(fixLightModeStyle);
+
     // 清理函数
     return () => {
       document.head.removeChild(styleEl);
+      document.head.removeChild(fixLightModeStyle);
     };
   }, []);
   const { t } = useTranslations();
@@ -1934,137 +2515,22 @@ ${fileContents}`);
       '<span class="break-all">$1</span>'
     );
 
-    // 自动检测代码语言
-    const detectLanguage = (code: string): string => {
-      // 检查代码中的特征来判断语言
-      if (/\bimport\s+React|\bfrom\s+['"]react['"]/i.test(code)) {
-        return code.includes("tsx") || code.includes(":") ? "tsx" : "jsx";
-      }
-      if (
-        /\bimport\s+|\bexport\s+|\bconst\s+\w+\s*=\s*|let\s+\w+\s*=\s*/i.test(
-          code
-        )
-      ) {
-        return code.includes(":") ||
-          code.includes("interface") ||
-          code.includes("type ")
-          ? "typescript"
-          : "javascript";
-      }
-      if (/^(<!DOCTYPE|<html|<head|<body)/i.test(code)) {
-        return "html";
-      }
-      if (/class=".*?"|className=".*?"|<div|<span|<p>/i.test(code)) {
-        return "jsx";
-      }
-      if (/^\s*\.[\w-]+\s*{|@media|@keyframes/i.test(code)) {
-        return "css";
-      }
-      if (/SELECT|INSERT|UPDATE|DELETE|CREATE TABLE/i.test(code)) {
-        return "sql";
-      }
-      if (/def\s+\w+\s*\(|import\s+\w+|from\s+\w+\s+import/i.test(code)) {
-        return "python";
-      }
-      if (/public\s+(static\s+)?(void|class|int|boolean)/i.test(code)) {
-        return "java";
-      }
-      if (/^\s*package\s+\w+|func\s+\w+\s*\(/i.test(code)) {
-        return "go";
-      }
-      if (/^#include\s+<|std::|int\s+main\s*\(\s*\)/i.test(code)) {
-        return "cpp";
-      }
-      if (
-        /\$\w+\s*=|\$\w+\s*->|function\s+\w+\s*\(/i.test(code) &&
-        code.includes("<?php")
-      ) {
-        return "php";
-      }
-      if (/^\s*{\s*["']\w+["']\s*:/i.test(code)) {
-        return "json";
-      }
-      if (/npm|yarn|apt-get|sudo|bash|sh\s+/i.test(code)) {
-        return "bash";
-      }
-      if (/^#!\/bin\/bash|^#!\/bin\/sh/i.test(code)) {
-        return "bash";
-      }
-      if (/^\s*#\s+|^##\s+|^\*\*\s+/i.test(code)) {
-        return "markdown";
-      }
-
-      // 检查文件扩展名引用
-      const extMatch = code.match(/\.([a-zA-Z0-9]+)(\s|$|['")\]}]|:|,)/);
-      if (extMatch) {
-        const ext = extMatch[1].toLowerCase();
-        switch (ext) {
-          case "js":
-            return "javascript";
-          case "jsx":
-            return "jsx";
-          case "ts":
-            return "typescript";
-          case "tsx":
-            return "tsx";
-          case "py":
-            return "python";
-          case "rb":
-            return "ruby";
-          case "java":
-            return "java";
-          case "php":
-            return "php";
-          case "go":
-            return "go";
-          case "cs":
-            return "csharp";
-          case "html":
-            return "html";
-          case "css":
-            return "css";
-          case "scss":
-            return "scss";
-          case "less":
-            return "less";
-          case "json":
-            return "json";
-          case "md":
-            return "markdown";
-          case "xml":
-            return "xml";
-          case "yml":
-          case "yaml":
-            return "yaml";
-          case "sh":
-            return "bash";
-          case "sql":
-            return "sql";
-        }
-      }
-
-      return "";
-    };
-
-    // 处理代码块，自动检测语言
+    // 处理代码块和语言标记
+    // 先标准化代码块的语言标记
+    // 1. 处理有语言标记的代码块
     processed = processed.replace(
-      /```(?:(\w+)\n)?([\s\S]*?)```/g,
+      /```(\w+)\n([\s\S]*?)```/g,
       (match, lang, code) => {
-        // 如果已有语言标识，使用它
-        if (lang && lang !== "text" && lang !== "plaintext") {
-          return match;
-        }
-
-        // 自动检测语言
-        const detectedLang = detectLanguage(code);
-        if (detectedLang) {
-          return `\`\`\`${detectedLang}\n${code}\`\`\``;
-        }
-
-        // 如果无法检测到语言，使用text
-        return `\`\`\`text\n${code}\`\`\``;
+        // 保留语言标记
+        return `\`\`\`${lang}\n${code}\`\`\``;
       }
     );
+
+    // 2. 处理没有语言标记的代码块，自动检测语言
+    processed = processed.replace(/```\s*\n([\s\S]*?)```/g, (match, code) => {
+      const detectedLang = detectCodeLanguage(code);
+      return `\`\`\`${detectedLang}\n${code}\`\`\``;
+    });
 
     // 防止文件名和函数关键字被错误地渲染为代码块
     // 1. 修复文件名格式: 将 ```filename.ext``` 替换为 `filename.ext`
@@ -2108,6 +2574,7 @@ ${fileContents}`);
 
     // 最后，恢复代码块（但确保代码块内的内容正确转义）
     codeBlocks.forEach((block, index) => {
+      // 还原代码块，解除HTML转义
       processed = processed.replace(
         `__CODE_BLOCK_${index}__`,
         block.replace(/&lt;/g, "<").replace(/&gt;/g, ">")
