@@ -341,9 +341,9 @@ export async function scanDirectory(
                 if (
                   file.size < maxContentSize &&
                   isTextFile(file) &&
-                  file.size < 100 * 1024
+                  file.size < 1 * 1024 * 1024
                 ) {
-                  // 只读取小于100KB的文本文件
+                  // 只读取小于1MB的文本文件
                   try {
                     entry.content = await file.text();
                   } catch (contentError) {
