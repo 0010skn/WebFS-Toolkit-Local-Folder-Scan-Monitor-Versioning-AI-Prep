@@ -185,6 +185,398 @@
     "show_context": "Show Context",
     "hide_context": "Hide Context"
   },
+  "presetPrompts": {
+    "title": "Preset Prompts",
+    "description": "Select a prompt category and choose a prompt to quickly understand the project",
+    "button": "Prompts",
+    "close": "Close",
+    "categories": {
+      "coreProcesses": {
+        "name": "Core Processes",
+        "prompts": {
+          "mainFlow": "Please describe the typical processing steps and key function call sequence from frontend to backend when a user performs a main operation."
+        }
+      },
+      "components": {
+        "name": "Components & Responsibilities",
+        "prompts": {
+          "overview": "What are the main modules or components that make up this project? Please briefly describe the main function of each part and how they collaborate."
+        }
+      },
+      "dataFlow": {
+        "name": "Data Flow Paths",
+        "prompts": {
+          "tracking": "Track a key piece of data (such as user input or a business entity) and explain how it is generated, which functions process/transform it, and where it ultimately flows."
+        }
+      },
+      "implementation": {
+        "name": "Clever Implementations",
+        "prompts": {
+          "clever": "What clever implementations does the project have?"
+        }
+      },
+      "startup": {
+        "name": "Startup & Initialization",
+        "prompts": {
+          "process": "How is the system started and initialized? Please point out the key scripts or functions that are executed first and what preparation work they mainly complete."
+        }
+      },
+      "errorHandling": {
+        "name": "Error Handling",
+        "prompts": {
+          "mechanisms": "When errors or exceptions occur, how does the system typically capture and handle them? Please describe the general error handling process or key error handling functions."
+        }
+      },
+      "specificFeature": {
+        "name": "Specific Feature Deep Dive",
+        "prompts": {
+          "deepDive": "For a specific feature in the project [e.g.: user authentication/order processing/data analysis], explain the key logic of its implementation and the main function call chain."
+        }
+      },
+      "configuration": {
+        "name": "Configuration & Environment",
+        "prompts": {
+          "loading": "How is the project's configuration information loaded and used? Which key parameters affect its runtime behavior?"
+        }
+      },
+      "codeStructure": {
+        "name": "Code Structure & Navigation",
+        "prompts": {
+          "overview": "Describe the main code directory structure of this project, and where to typically find implementations of core business logic or specific features."
+        }
+      },
+      "configManagement": {
+        "name": "Configuration Management",
+        "prompts": {
+          "keyConfig": "How are the project's key configuration information (such as database connections, API keys, etc.) managed? Where can they be found and modified?"
+        }
+      },
+      "async": {
+        "name": "Async & Concurrency",
+        "prompts": {
+          "handling": "If there are asynchronous operations or concurrent requests in the project, how are they implemented? What are the key patterns or technical points?"
+        }
+      },
+      "dataModels": {
+        "name": "Core Data Models",
+        "prompts": {
+          "main": "What are the most important data entities or models in the project? What are the key relationships between them?"
+        }
+      },
+      "dependencies": {
+        "name": "External Dependencies",
+        "prompts": {
+          "overview": "What important third-party libraries, frameworks, or external services does this project depend on? What roles do they each play in the project?"
+        }
+      },
+      "logging": {
+        "name": "Logging & Monitoring",
+        "prompts": {
+          "entry": "When troubleshooting problems, which log files or monitoring metrics should I focus on? How does the system record key events?"
+        }
+      },
+      "moduleDeepDive": {
+        "name": "Specific Module Deep Dive",
+        "prompts": {
+          "clever": "Select a module in the project that you think is cleverly designed or has complex logic, and briefly describe its design approach and main workflow."
+        }
+      },
+      "security": {
+        "name": "Security Considerations",
+        "prompts": {
+          "measures": "At the code level, what common security measures has the project taken to prevent potential risks (such as input validation, permission control, etc.)?"
+        }
+      },
+      "abstractions": {
+        "name": "Key Abstractions & Patterns",
+        "prompts": {
+          "patterns": "Are there any core abstract designs or repeatedly used design patterns in the project? How do they help organize the code?"
+        }
+      },
+      "stateManagement": {
+        "name": "State Management",
+        "prompts": {
+          "mechanisms": "How does the system manage and synchronize state? What are the key storage or update mechanisms?"
+        }
+      },
+      "entryPoints": {
+        "name": "Main Entry Points",
+        "prompts": {
+          "analysis": "Besides user interface operations, what other execution entry points does the system have (such as scheduled tasks, API calls, message queue consumers, etc.)? How are they triggered and processed?"
+        }
+      },
+      "testing": {
+        "name": "Testing Strategy",
+        "prompts": {
+          "coverage": "How is the project tested? Which modules are the main types of tests (unit, integration, etc.) concentrated on?"
+        }
+      },
+      "performance": {
+        "name": "Performance Critical Paths",
+        "prompts": {
+          "bottlenecks": "In typical operations, which code paths or computational links may have the greatest impact on performance? Does the project have targeted optimizations?"
+        }
+      },
+      "codeReuse": {
+        "name": "Code Reuse & Sharing",
+        "prompts": {
+          "common": "What common utility functions, shared libraries, or services are reused across multiple modules in the project? What common capabilities do they provide?"
+        }
+      },
+      "domainSpecific": {
+        "name": "Domain-Specific Language",
+        "prompts": {
+          "terms": "Are there any project-specific terms, naming conventions, or internal 'jargon' in the code that need to be understood in order to better understand the code?"
+        }
+      },
+      "deployment": {
+        "name": "Deployment & Build Overview",
+        "prompts": {
+          "process": "Briefly describe how the project is built and deployed to the runtime environment. What are the key steps or scripts?"
+        }
+      },
+      "userScenarios": {
+        "name": "User Scenario Mapping",
+        "prompts": {
+          "codeMapping": "How are the main user scenarios or use cases reflected in the code? Which core modules do they usually involve?"
+        }
+      },
+      "scalability": {
+        "name": "Scalability Design",
+        "prompts": {
+          "considerations": "What considerations in the code design are to support future scalability or higher loads?"
+        }
+      },
+      "internalAPIs": {
+        "name": "Internal API Communication",
+        "prompts": {
+          "patterns": "How do internal modules within the project communicate via APIs or interfaces? What characteristics do these interface designs have?"
+        }
+      },
+      "database": {
+        "name": "Database Interaction",
+        "prompts": {
+          "patterns": "When interacting with databases, what patterns does the project mainly use (such as ORM, direct SQL queries)? How is transaction management handled?"
+        }
+      },
+      "backgroundTasks": {
+        "name": "Background Tasks",
+        "prompts": {
+          "scheduling": "If the project has background tasks or scheduled jobs, how are they scheduled and executed? What main logic do they handle?"
+        }
+      },
+      "frontendSeparation": {
+        "name": "Frontend Logic Separation",
+        "prompts": {
+          "patterns": "How does the frontend code separate presentation logic and business logic? What are the key boundaries or patterns?"
+        }
+      },
+      "resourceManagement": {
+        "name": "Key Resource Management",
+        "prompts": {
+          "handling": "How are key resources (such as database connections, file handles) managed and released to avoid leaks?"
+        }
+      },
+      "pluginArchitecture": {
+        "name": "Plugin Architecture",
+        "prompts": {
+          "extensionPoints": "How is the project designed to support future feature extension or plugin integration? What are the reserved extension points?"
+        }
+      },
+      "codeReadability": {
+        "name": "Code Readability",
+        "prompts": {
+          "factors": "To what extent do the code's comments, naming conventions, and overall structure help understand its functionality?"
+        }
+      },
+      "designDecisions": {
+        "name": "Design Decision Origins",
+        "prompts": {
+          "reasons": "Do the code or comments in certain key modules or algorithms reveal the reasons for their design decisions?"
+        }
+      },
+      "securityEnhancement": {
+        "name": "Security Enhancement",
+        "prompts": {
+          "specific": "In addition to general security measures, in which specific aspects (such as user input processing, API authorization) has the project strengthened security?"
+        }
+      },
+      "externalIntegration": {
+        "name": "External Integration Details",
+        "prompts": {
+          "errorHandling": "When integrating with external APIs or services, what are the common error handling and retry mechanisms?"
+        }
+      },
+      "bottleneckAnalysis": {
+        "name": "Potential Bottleneck Analysis",
+        "prompts": {
+          "identification": "Based on the code structure, which parts do you think are most likely to become potential performance bottlenecks or maintenance difficulties?"
+        }
+      },
+      "dataValidation": {
+        "name": "Data Validation & Cleaning",
+        "prompts": {
+          "processes": "How is data validated and cleaned when entering the system or being passed between modules?"
+        }
+      },
+      "concurrencyControl": {
+        "name": "Concurrency Control",
+        "prompts": {
+          "strategies": "When handling shared resources or concurrent operations, what locking mechanisms or concurrency control strategies does the project employ?"
+        }
+      },
+      "loggingLevels": {
+        "name": "Logging Levels & Usage",
+        "prompts": {
+          "details": "How detailed is the logging? Can it be filtered and analyzed by different levels (debug, info, error)?"
+        }
+      },
+      "configHardcoding": {
+        "name": "Configuration vs Hardcoding",
+        "prompts": {
+          "balance": "Which behaviors are controlled through configuration files, and which are hardcoded in the code? What is the basis for this division?"
+        }
+      },
+      "eventDriven": {
+        "name": "Event-Driven Mechanisms",
+        "prompts": {
+          "implementation": "Are there event-driven mechanisms in the project? How are events published, subscribed to, and handled?"
+        }
+      },
+      "codeStyle": {
+        "name": "Code Style & Consistency",
+        "prompts": {
+          "consistency": "Is the overall code style of the project consistent? Are there unified coding standards being followed?"
+        }
+      },
+      "dependencyInjection": {
+        "name": "Dependency Injection & IoC",
+        "prompts": {
+          "usage": "If the project uses dependency injection (DI) or inversion of control (IoC), how is it implemented? What benefits does it bring?"
+        }
+      },
+      "configFiles": {
+        "name": "Configuration File Locations",
+        "prompts": {
+          "formats": "Where are the project's main configuration files typically located? What formats do they use (e.g., JSON, YAML, .env, TOML)?"
+        }
+      },
+      "configLoading": {
+        "name": "Configuration Loading",
+        "prompts": {
+          "mechanisms": "How does the application load and parse its configuration at startup or runtime?"
+        }
+      },
+      "configUsage": {
+        "name": "Configuration Usage in Code",
+        "prompts": {
+          "access": "How are configuration values typically accessed and used in the codebase?"
+        }
+      },
+      "multiEnvConfig": {
+        "name": "Multi-Environment Configuration",
+        "prompts": {
+          "strategy": "How does the project manage configuration differences between different environments (such as development, testing, production)?"
+        }
+      },
+      "sensitiveInfo": {
+        "name": "Sensitive Information Management",
+        "prompts": {
+          "handling": "How is sensitive configuration information like API keys or database credentials securely managed?"
+        }
+      },
+      "configOverride": {
+        "name": "Configuration Override Logic",
+        "prompts": {
+          "mechanism": "Is there a configuration override mechanism, such as local settings overriding default settings or specific environment files overriding common settings?"
+        }
+      },
+      "manifestConfig": {
+        "name": "Project Manifest Configuration",
+        "prompts": {
+          "role": "What role do the project's manifest files (such as package.json, pyproject.toml, Cargo.toml, pubspec.yaml) play in configuration or build settings?"
+        }
+      },
+      "containerConfig": {
+        "name": "Container Configuration",
+        "prompts": {
+          "key": "For containerized deployment (e.g., Docker), what are the key configuration points in Dockerfile or compose files?"
+        }
+      },
+      "configValidation": {
+        "name": "Configuration Validation",
+        "prompts": {
+          "handling": "Are configuration values validated when loaded? What happens if required configuration is missing or invalid?"
+        }
+      },
+      "dynamicConfigUpdate": {
+        "name": "Dynamic Configuration Updates",
+        "prompts": {
+          "capability": "Can some configurations be dynamically updated without restarting the application?"
+        }
+      },
+      "buildRuntime": {
+        "name": "Build vs Runtime Configuration",
+        "prompts": {
+          "distinction": "How does the project distinguish between build-time configuration and runtime configuration?"
+        }
+      },
+      "configNaming": {
+        "name": "Configuration Naming Conventions",
+        "prompts": {
+          "patterns": "What are the common naming conventions for configuration variables or keys in this project?"
+        }
+      },
+      "cliEnvOverride": {
+        "name": "CLI/Environment Variable Overrides",
+        "prompts": {
+          "mechanism": "Is there a mechanism to directly override file configuration through command line arguments or environment variables?"
+        }
+      },
+      "frameworkConfig": {
+        "name": "Framework Configuration Impact",
+        "prompts": {
+          "influence": "If the project uses a specific framework, how does that framework influence or manage the project's configuration approach?"
+        }
+      },
+      "defaultConfig": {
+        "name": "Default Configuration Values",
+        "prompts": {
+          "sources": "If not explicitly set, how are the project's default configuration values established?"
+        }
+      },
+      "addingConfig": {
+        "name": "Adding New Configuration Parameters",
+        "prompts": {
+          "process": "What steps are typically needed to add a new configurable parameter to the system?"
+        }
+      },
+      "configTools": {
+        "name": "Configuration Management Tools",
+        "prompts": {
+          "usage": "Are there specific tools or scripts used to manage or generate configuration files?"
+        }
+      },
+      "i18nConfig": {
+        "name": "Internationalization & Configuration",
+        "prompts": {
+          "support": "If applicable, how does the project's configuration scheme support internationalization (i18n) or localization (l10n)?"
+        }
+      },
+      "microserviceConfig": {
+        "name": "Microservice Configuration",
+        "prompts": {
+          "management": "In a microservice architecture, how are shared configuration or service discovery details managed?"
+        }
+      },
+      "productionConfigUpdates": {
+        "name": "Production Configuration Updates",
+        "prompts": {
+          "process": "What is the typical process for updating configuration in deployed environments?"
+        }
+      }
+    }
+  },
   "codeStructure": {
     "noStructuresFound": "No code structures found. Please ensure your project contains supported code files.",
     "totalStructures": "Total Structures",
@@ -197,10 +589,7 @@
     "avgPerStructure": "Avg per Structure",
     "structureComposition": "Structure Composition",
     "visualization": "Code Structure Visualization",
-    "visualizationHelp": "Drag nodes to adjust positions. Shows relationships between code structures.",
-    "show": "Show Code Structure",
-    "hide": "Hide Code Structure",
-    "count": "{count} code structures"
+    "visualizationHelp": "Drag nodes to adjust positions. Shows relationships between code structures."
   },
   "projectConfig": {
     "title": "Project Architecture Diagram",

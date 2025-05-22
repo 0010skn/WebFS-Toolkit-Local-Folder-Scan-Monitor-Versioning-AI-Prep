@@ -217,55 +217,445 @@
   },
   "statistics": {
     "title": "项目统计",
-    "rescan": "重新统计",
-    "scanning": "统计中...",
-    "showComments": "统计注释",
+    "rescan": "重新扫描",
+    "scanning": "扫描中...",
+    "showComments": "显示注释",
     "hideComments": "隐藏注释",
-    "overallStatistics": "总体统计",
+    "overallStatistics": "整体统计",
     "fileStatistics": "文件",
     "codeFiles": "代码文件",
-    "totalFiles": "总文件",
-    "lineStatistics": "代码行",
+    "totalFiles": "总文件数",
+    "lineStatistics": "行数",
     "codeLines": "代码行",
     "totalLines": "总行数",
     "commentStatistics": "注释行",
-    "commentPercentage": "注释占比",
-    "fileTypeStatistics": "按文件类型统计",
+    "commentPercentage": "注释比例",
+    "fileTypeStatistics": "文件类型统计",
     "extension": "扩展名",
-    "fileCount": "文件数",
+    "fileCount": "文件数量",
     "totalLineCount": "总行数",
-    "codeLineCount": "代码行",
-    "commentLineCount": "注释行",
-    "blankLineCount": "空白行",
+    "codeLineCount": "代码行数",
+    "commentLineCount": "注释行数",
+    "blankLineCount": "空行数",
     "commentRatio": "注释比例",
     "projectComments": "项目注释",
-    "commentsHelp": "显示项目中的所有注释，可以帮助你了解代码的文档情况",
-    "noComments": "项目中没有找到注释",
+    "commentsHelp": "显示项目中的所有注释，帮助您理解代码文档",
+    "noComments": "项目中未找到注释",
     "blockComment": "块注释",
     "lineComment": "行注释",
     "noFolder": "请先选择一个项目文件夹",
-    "startScan": "点击\"重新统计\"按钮开始分析项目",
-    "search_comments": "搜索注释...",
-    "no_comments_found": "未找到匹配的注释",
+    "startScan": "点击\"重新扫描\"按钮开始分析项目",
+    "search_comments": "搜索注释",
+    "search_code": "搜索代码",
+    "no_results": "未找到结果",
     "show_context": "显示上下文",
     "hide_context": "隐藏上下文"
   },
+  "presetPrompts": {
+    "title": "预设提示",
+    "description": "选择一个提示类别和提示，快速了解项目",
+    "button": "提示",
+    "close": "关闭",
+    "categories": {
+      "coreProcesses": {
+        "name": "核心流程",
+        "prompts": {
+          "mainFlow": "请描述当用户执行主要操作时，从前端到后端的典型处理步骤和关键函数调用顺序。"
+        }
+      },
+      "components": {
+        "name": "组件与职责",
+        "prompts": {
+          "overview": "构成这个项目的主要模块或组件有哪些？请简要描述每个部分的主要功能以及它们如何协作。"
+        }
+      },
+      "dataFlow": {
+        "name": "数据流路径",
+        "prompts": {
+          "tracking": "追踪一个关键数据片段（如用户输入或业务实体）并解释它是如何生成的，哪些函数处理/转换它，以及它最终流向何处。"
+        }
+      },
+      "implementation": {
+        "name": "巧妙实现",
+        "prompts": {
+          "clever": "项目中有哪些巧妙的实现？"
+        }
+      },
+      "startup": {
+        "name": "启动与初始化",
+        "prompts": {
+          "process": "系统是如何启动和初始化的？请指出首先执行的关键脚本或函数，以及它们主要完成哪些准备工作。"
+        }
+      },
+      "errorHandling": {
+        "name": "错误处理机制",
+        "prompts": {
+          "mechanisms": "当发生错误或异常情况时，系统通常是如何捕获和处理的？请描述通用的错误处理流程或关键的错误处理函数。"
+        }
+      },
+      "specificFeature": {
+        "name": "特定功能深挖",
+        "prompts": {
+          "deepDive": "针对项目中一个[例如：用户认证/订单处理/数据分析]功能，解释其实现的关键逻辑和主要的函数调用链。"
+        }
+      },
+      "configuration": {
+        "name": "配置与环境",
+        "prompts": {
+          "loading": "项目的配置信息是如何加载和使用的？哪些关键参数会影响其运行行为？"
+        }
+      },
+      "codeStructure": {
+        "name": "代码结构与导航",
+        "prompts": {
+          "overview": "描述一下这个项目的主要代码目录结构，以及通常在哪里能找到核心业务逻辑或特定功能的实现？"
+        }
+      },
+      "configManagement": {
+        "name": "配置管理",
+        "prompts": {
+          "keyConfig": "项目的关键配置信息（如数据库连接、API密钥等）是如何管理的？在哪里可以找到并修改它们？"
+        }
+      },
+      "async": {
+        "name": "异步与并发",
+        "prompts": {
+          "handling": "如果项目中存在异步操作或并发请求，它们是如何实现的？有哪些关键模式或技术要点？"
+        }
+      },
+      "dataModels": {
+        "name": "核心数据模型",
+        "prompts": {
+          "main": "项目中最重要的数据实体或模型有哪些？它们之间有什么关键关系？"
+        }
+      },
+      "dependencies": {
+        "name": "外部依赖",
+        "prompts": {
+          "overview": "这个项目依赖哪些重要的第三方库、框架或外部服务？它们各自在项目中扮演什么角色？"
+        }
+      },
+      "logging": {
+        "name": "日志与监控",
+        "prompts": {
+          "entry": "在排查问题时，我应该关注哪些日志文件或监控指标？系统如何记录关键事件？"
+        }
+      },
+      "moduleDeepDive": {
+        "name": "特定模块深度分析",
+        "prompts": {
+          "clever": "选择项目中一个你认为设计巧妙或逻辑复杂的模块，简要描述其设计思路和主要工作流程。"
+        }
+      },
+      "security": {
+        "name": "安全考量",
+        "prompts": {
+          "measures": "在代码层面，项目采取了哪些常见的安全措施来防范潜在风险（如输入验证、权限控制等）？"
+        }
+      },
+      "abstractions": {
+        "name": "关键抽象与模式",
+        "prompts": {
+          "patterns": "项目中是否有核心抽象设计或重复使用的设计模式？它们如何帮助组织代码？"
+        }
+      },
+      "stateManagement": {
+        "name": "状态管理",
+        "prompts": {
+          "mechanisms": "系统如何管理和同步状态？有哪些关键的存储或更新机制？"
+        }
+      },
+      "entryPoints": {
+        "name": "主要入口点",
+        "prompts": {
+          "analysis": "除了用户界面操作外，系统还有哪些其他执行入口点（如定时任务、API调用、消息队列消费者等）？它们是如何被触发和处理的？"
+        }
+      },
+      "testing": {
+        "name": "测试策略",
+        "prompts": {
+          "coverage": "项目是如何测试的？主要类型的测试（单元、集成等）集中在哪些模块上？"
+        }
+      },
+      "performance": {
+        "name": "性能关键路径",
+        "prompts": {
+          "bottlenecks": "在典型操作中，哪些代码路径或计算环节可能对性能影响最大？项目是否有针对性的优化？"
+        }
+      },
+      "codeReuse": {
+        "name": "代码复用与共享",
+        "prompts": {
+          "common": "项目中跨多个模块重用的通用工具函数、共享库或服务有哪些？它们提供了哪些通用能力？"
+        }
+      },
+      "domainSpecific": {
+        "name": "领域特定语言",
+        "prompts": {
+          "terms": "代码中是否有项目特定的术语、命名约定或内部'行话'，需要理解才能更好地理解代码？"
+        }
+      },
+      "deployment": {
+        "name": "部署与构建概述",
+        "prompts": {
+          "process": "简要描述项目是如何构建和部署到运行环境的。有哪些关键步骤或脚本？"
+        }
+      },
+      "userScenarios": {
+        "name": "用户场景映射",
+        "prompts": {
+          "codeMapping": "主要用户场景或用例如何反映在代码中？它们通常涉及哪些核心模块？"
+        }
+      },
+      "scalability": {
+        "name": "可扩展性设计",
+        "prompts": {
+          "considerations": "代码设计中有哪些考虑是为了支持未来的可扩展性或更高负载？"
+        }
+      },
+      "internalAPIs": {
+        "name": "内部API通信",
+        "prompts": {
+          "patterns": "项目内部模块之间如何通过API或接口进行通信？这些接口设计有什么特点？"
+        }
+      },
+      "database": {
+        "name": "数据库交互",
+        "prompts": {
+          "patterns": "与数据库交互时，项目主要使用哪些模式（如ORM、直接SQL查询）？如何处理事务管理？"
+        }
+      },
+      "backgroundTasks": {
+        "name": "后台任务",
+        "prompts": {
+          "scheduling": "如果项目有后台任务或定时作业，它们是如何调度和执行的？处理了哪些主要逻辑？"
+        }
+      },
+      "frontendSeparation": {
+        "name": "前端逻辑分离",
+        "prompts": {
+          "patterns": "前端代码如何分离表现逻辑和业务逻辑？有哪些关键边界或模式？"
+        }
+      },
+      "resourceManagement": {
+        "name": "关键资源管理",
+        "prompts": {
+          "handling": "关键资源（如数据库连接、文件句柄）是如何管理和释放的，以避免泄漏？"
+        }
+      },
+      "pluginArchitecture": {
+        "name": "插件架构",
+        "prompts": {
+          "extensionPoints": "项目是如何设计以支持未来的功能扩展或插件集成的？有哪些预留的扩展点？"
+        }
+      },
+      "codeReadability": {
+        "name": "代码可读性",
+        "prompts": {
+          "factors": "代码的注释、命名约定和整体结构在多大程度上帮助理解其功能？"
+        }
+      },
+      "designDecisions": {
+        "name": "设计决策起源",
+        "prompts": {
+          "reasons": "某些关键模块或算法的代码或注释是否揭示了它们的设计决策原因？"
+        }
+      },
+      "securityEnhancement": {
+        "name": "安全增强",
+        "prompts": {
+          "specific": "除了一般的安全措施外，项目在哪些特定方面（如用户输入处理、API授权）加强了安全性？"
+        }
+      },
+      "externalIntegration": {
+        "name": "外部集成详情",
+        "prompts": {
+          "errorHandling": "在与外部API或服务集成时，有哪些常见的错误处理和重试机制？"
+        }
+      },
+      "bottleneckAnalysis": {
+        "name": "潜在瓶颈分析",
+        "prompts": {
+          "identification": "基于代码结构，你认为哪些部分最有可能成为潜在的性能瓶颈或维护难点？"
+        }
+      },
+      "dataValidation": {
+        "name": "数据验证与清洗",
+        "prompts": {
+          "processes": "数据在进入系统或在模块之间传递时如何进行验证和清洗？"
+        }
+      },
+      "concurrencyControl": {
+        "name": "并发控制",
+        "prompts": {
+          "strategies": "在处理共享资源或并发操作时，项目采用了哪些锁定机制或并发控制策略？"
+        }
+      },
+      "loggingLevels": {
+        "name": "日志级别与使用",
+        "prompts": {
+          "details": "日志记录的详细程度如何？是否可以按不同级别（调试、信息、错误）进行过滤和分析？"
+        }
+      },
+      "configHardcoding": {
+        "name": "配置与硬编码",
+        "prompts": {
+          "balance": "哪些行为通过配置文件控制，哪些在代码中硬编码？这种划分的依据是什么？"
+        }
+      },
+      "eventDriven": {
+        "name": "事件驱动机制",
+        "prompts": {
+          "implementation": "项目中是否有事件驱动机制？事件是如何发布、订阅和处理的？"
+        }
+      },
+      "codeStyle": {
+        "name": "代码风格与一致性",
+        "prompts": {
+          "consistency": "项目的整体代码风格是否一致？是否遵循统一的编码标准？"
+        }
+      },
+      "dependencyInjection": {
+        "name": "依赖注入与IoC",
+        "prompts": {
+          "usage": "如果项目使用依赖注入(DI)或控制反转(IoC)，它是如何实现的？带来了哪些好处？"
+        }
+      },
+      "configFiles": {
+        "name": "配置文件位置",
+        "prompts": {
+          "formats": "项目的主要配置文件通常位于何处？它们使用什么格式（例如，JSON、YAML、.env、TOML）？"
+        }
+      },
+      "configLoading": {
+        "name": "配置加载",
+        "prompts": {
+          "mechanisms": "应用程序如何在启动或运行时加载和解析其配置？"
+        }
+      },
+      "configUsage": {
+        "name": "配置在代码中的使用",
+        "prompts": {
+          "access": "在代码库中通常如何访问和使用配置值？"
+        }
+      },
+      "multiEnvConfig": {
+        "name": "多环境配置",
+        "prompts": {
+          "strategy": "项目如何管理不同环境（如开发、测试、生产）之间的配置差异？"
+        }
+      },
+      "sensitiveInfo": {
+        "name": "敏感信息管理",
+        "prompts": {
+          "handling": "如何安全地管理API密钥或数据库凭证等敏感配置信息？"
+        }
+      },
+      "configOverride": {
+        "name": "配置覆盖逻辑",
+        "prompts": {
+          "mechanism": "是否存在配置覆盖机制，例如本地设置覆盖默认设置或特定环境文件覆盖通用设置？"
+        }
+      },
+      "manifestConfig": {
+        "name": "项目清单配置",
+        "prompts": {
+          "role": "项目的清单文件（如package.json、pyproject.toml、Cargo.toml、pubspec.yaml）在配置或构建设置中扮演什么角色？"
+        }
+      },
+      "containerConfig": {
+        "name": "容器配置",
+        "prompts": {
+          "key": "对于容器化部署（例如Docker），Dockerfile或compose文件中的关键配置点是什么？"
+        }
+      },
+      "configValidation": {
+        "name": "配置验证",
+        "prompts": {
+          "handling": "配置值在加载时是否进行验证？如果缺少或无效所需配置会发生什么？"
+        }
+      },
+      "dynamicConfigUpdate": {
+        "name": "动态配置更新",
+        "prompts": {
+          "capability": "某些配置是否可以在不重启应用程序的情况下动态更新？"
+        }
+      },
+      "buildRuntime": {
+        "name": "构建与运行时配置",
+        "prompts": {
+          "distinction": "项目如何区分构建时配置和运行时配置？"
+        }
+      },
+      "configNaming": {
+        "name": "配置命名约定",
+        "prompts": {
+          "patterns": "这个项目中配置变量或键的常见命名约定是什么？"
+        }
+      },
+      "cliEnvOverride": {
+        "name": "命令行/环境变量覆盖",
+        "prompts": {
+          "mechanism": "是否有通过命令行参数或环境变量直接覆盖文件配置的机制？"
+        }
+      },
+      "frameworkConfig": {
+        "name": "框架配置影响",
+        "prompts": {
+          "influence": "如果项目使用特定框架，该框架如何影响或管理项目的配置方法？"
+        }
+      },
+      "defaultConfig": {
+        "name": "默认配置值",
+        "prompts": {
+          "sources": "如果未明确设置，项目的默认配置值是如何确立的？"
+        }
+      },
+      "addingConfig": {
+        "name": "添加新配置参数",
+        "prompts": {
+          "process": "向系统添加新的可配置参数通常需要哪些步骤？"
+        }
+      },
+      "configTools": {
+        "name": "配置管理工具",
+        "prompts": {
+          "usage": "是否有用于管理或生成配置文件的特定工具或脚本？"
+        }
+      },
+      "i18nConfig": {
+        "name": "国际化与配置",
+        "prompts": {
+          "support": "如果适用，项目的配置方案如何支持国际化(i18n)或本地化(l10n)？"
+        }
+      },
+      "microserviceConfig": {
+        "name": "微服务配置",
+        "prompts": {
+          "management": "在微服务架构中，如何管理共享配置或服务发现详情？"
+        }
+      },
+      "productionConfigUpdates": {
+        "name": "生产环境配置更新",
+        "prompts": {
+          "process": "在已部署环境中更新配置的典型流程是什么？"
+        }
+      }
+    }
+  },
   "codeStructure": {
-    "noStructuresFound": "未找到代码结构，请确保项目中包含支持的代码文件",
-    "totalStructures": "代码结构总数",
+    "noStructuresFound": "未找到代码结构。请确保您的项目包含受支持的代码文件。",
+    "totalStructures": "总结构数",
     "classes": "类",
     "interfaces": "接口",
     "structs": "结构体",
     "enums": "枚举",
-    "members": "属性",
+    "members": "成员变量",
     "methods": "方法",
-    "avgPerStructure": "平均每个结构",
+    "avgPerStructure": "每个结构平均",
     "structureComposition": "结构组成",
     "visualization": "代码结构可视化",
-    "visualizationHelp": "拖拽节点可调整位置，展示代码结构之间的关系",
-    "show": "显示代码结构",
-    "hide": "隐藏代码结构",
-    "count": "{count} 个代码结构"
+    "visualizationHelp": "拖动节点调整位置。显示代码结构之间的关系。"
   },
   "projectConfig": {
     "title": "项目架构图表",

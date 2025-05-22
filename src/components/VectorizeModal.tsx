@@ -11,6 +11,7 @@ import {
   getKnowledgeContent,
 } from "../lib/vectorizeService";
 import AITestDialog from "./AITestDialog";
+import PresetPromptModal from "./PresetPromptModal";
 
 interface VectorizeModalProps {
   onClose: () => void;
@@ -133,6 +134,7 @@ export default function VectorizeModal({ onClose }: VectorizeModalProps) {
   const [showSuccessToast, setShowSuccessToast] = useState(false);
   const [showAITestDialog, setShowAITestDialog] = useState(false);
   const [filePaths, setFilePaths] = useState<string[]>([]);
+  const [showPresetPrompts, setShowPresetPrompts] = useState(false);
 
   // 计算预估节省的tokens
   useEffect(() => {
@@ -530,157 +532,131 @@ ${functions
     );
   };
 
+  // 处理选择预设提示
+  const handleSelectPresetPrompt = (prompt: string) => {
+    setQuestion(prompt);
+    // 自动聚焦到输入框
+    const inputElement = document.getElementById(
+      "query-input"
+    ) as HTMLInputElement;
+    if (inputElement) {
+      inputElement.focus();
+    }
+  };
+
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden max-w-2xl w-full mx-4 max-h-[90vh] flex flex-col relative border border-gray-200 dark:border-gray-700">
-      {/* AI测试对话框 */}
-      {showAITestDialog && (
-        <AITestDialog
-          onClose={() => setShowAITestDialog(false)}
-          initialPrompt={result}
-          projectFilePaths={filePaths}
-        />
-      )}
+    <>
+      {/* 预设提示模态框 */}
+      <PresetPromptModal
+        isOpen={showPresetPrompts}
+        onClose={() => setShowPresetPrompts(false)}
+        onSelectPrompt={handleSelectPresetPrompt}
+      />
 
-      {/* 成功提示 */}
-      <AnimatePresence>
-        {showSuccessToast && (
-          <motion.div
-            initial={{ opacity: 0, y: -50 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -50 }}
-            className="absolute top-4 left-1/2 transform -translate-x-1/2 z-50 bg-emerald-500 text-white px-4 py-2 rounded-md shadow-sm flex items-center text-sm"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-4 w-4 mr-1.5"
-              viewBox="0 0 20 20"
-              fill="currentColor"
-            >
-              <path
-                fillRule="evenodd"
-                d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                clipRule="evenodd"
-              />
-            </svg>
-            {t("vectorReport.resultCopied")}
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* 模态窗口标题栏 - ChatGPT风格 */}
-      <div className="px-6 py-4 flex justify-between items-center border-b border-gray-200 dark:border-gray-700">
-        <h2 className="text-lg font-medium text-gray-800 dark:text-gray-200 flex items-center">
-          <div className="p-1.5 bg-emerald-100 dark:bg-emerald-900/30 rounded-md mr-3">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-5 w-5 text-emerald-600 dark:text-emerald-400"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-              />
-            </svg>
-          </div>
-          {t("vectorReport.title")}
-        </h2>
-        <button
-          onClick={onClose}
-          className="p-1 rounded-md text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none transition-colors"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-5 w-5"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M6 18L18 6M6 6l12 12"
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[40]">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden max-w-2xl w-full mx-4 max-h-[90vh] flex flex-col relative border border-gray-200 dark:border-gray-700">
+          {/* AI测试对话框 */}
+          {showAITestDialog && (
+            <AITestDialog
+              onClose={() => setShowAITestDialog(false)}
+              initialPrompt={result}
+              projectFilePaths={filePaths}
             />
-          </svg>
-        </button>
-      </div>
+          )}
 
-      <div className="p-6 flex-1 overflow-y-auto">
-        <p className="text-sm text-gray-600 dark:text-gray-300 mb-5">
-          {t("vectorReport.description")}
-        </p>
+          {/* 成功提示 */}
+          <AnimatePresence>
+            {showSuccessToast && (
+              <motion.div
+                initial={{ opacity: 0, y: -50 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -50 }}
+                className="absolute top-4 left-1/2 transform -translate-x-1/2 z-[50] bg-emerald-500 text-white px-4 py-2 rounded-md shadow-sm flex items-center text-sm"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-4 w-4 mr-1.5"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+                {t("vectorReport.resultCopied")}
+              </motion.div>
+            )}
+          </AnimatePresence>
 
-        <form onSubmit={handleSubmit} className="mb-6">
-          <div className="mb-4">
-            <textarea
-              value={question}
-              onChange={(e) => setQuestion(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 min-h-[120px] resize-y text-sm"
-              placeholder={t("vectorReport.placeholder")}
-              disabled={isProcessing}
-            />
-          </div>
-
-          <div className="mb-5 flex items-center">
-            <input
-              type="checkbox"
-              id="enableContentMatching"
-              checked={enableContentMatching}
-              onChange={(e) => setEnableContentMatching(e.target.checked)}
-              className="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-gray-300 rounded"
-              disabled={isProcessing}
-            />
-            <label
-              htmlFor="enableContentMatching"
-              className="ml-2 block text-sm text-gray-700 dark:text-gray-300"
-            >
-              {t("vectorReport.enableContentMatching")}
-            </label>
-          </div>
-
-          <div className="flex justify-end">
+          {/* 模态窗口标题栏 - ChatGPT风格 */}
+          <div className="px-6 py-4 flex justify-between items-center border-b border-gray-200 dark:border-gray-700">
+            <h2 className="text-lg font-medium text-gray-800 dark:text-gray-200 flex items-center">
+              <div className="p-1.5 bg-emerald-100 dark:bg-emerald-900/30 rounded-md mr-3">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5 text-emerald-600 dark:text-emerald-400"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                  />
+                </svg>
+              </div>
+              {t("vectorReport.title")}
+            </h2>
             <button
-              type="submit"
-              disabled={isProcessing || !question.trim()}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                isProcessing || !question.trim()
-                  ? "bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed"
-                  : "bg-emerald-600 hover:bg-emerald-700 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
-              }`}
+              onClick={onClose}
+              className="p-1 rounded-md text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none transition-colors"
             >
-              {isProcessing ? (
-                <span className="flex items-center">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+          </div>
+
+          <div className="p-6 flex-1 overflow-y-auto">
+            <p className="text-sm text-gray-600 dark:text-gray-300 mb-5">
+              {t("vectorReport.description")}
+            </p>
+
+            <form onSubmit={handleSubmit} className="mb-6">
+              <div className="mb-4 relative">
+                <textarea
+                  id="query-input"
+                  value={question}
+                  onChange={(e) => setQuestion(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 min-h-[120px] resize-y text-sm pr-10"
+                  placeholder={t("vectorReport.placeholder")}
+                  disabled={isProcessing}
+                />
+                {/* 添加预设提示按钮 */}
+                <button
+                  type="button"
+                  onClick={() => setShowPresetPrompts(true)}
+                  className="absolute right-3 top-3 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 focus:outline-none p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
+                  title={t("presetPrompts.button")}
+                >
                   <svg
-                    className="animate-spin mr-2 h-4 w-4 text-current"
                     xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    ></circle>
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    ></path>
-                  </svg>
-                  {t("vectorReport.processing")}
-                </span>
-              ) : (
-                <span className="flex items-center">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-4 w-4 mr-1.5"
+                    className="h-5 w-5"
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
@@ -689,62 +665,68 @@ ${functions
                       strokeLinecap="round"
                       strokeLinejoin="round"
                       strokeWidth={2}
-                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                      d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
                     />
                   </svg>
-                  {t("vectorReport.submit")}
-                </span>
-              )}
-            </button>
-          </div>
-          {renderProcessingPhase()}
-        </form>
+                </button>
+              </div>
 
-        <div className="mt-6">
-          <h3 className="text-base font-medium text-gray-900 dark:text-gray-100 mb-3 flex items-center">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-5 w-5 mr-2 text-emerald-600 dark:text-emerald-400"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-              />
-            </svg>
-            {t("vectorReport.result")}
-          </h3>
+              <div className="mb-5 flex items-center">
+                <input
+                  type="checkbox"
+                  id="enableContentMatching"
+                  checked={enableContentMatching}
+                  onChange={(e) => setEnableContentMatching(e.target.checked)}
+                  className="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-gray-300 rounded"
+                  disabled={isProcessing}
+                />
+                <label
+                  htmlFor="enableContentMatching"
+                  className="ml-2 block text-sm text-gray-700 dark:text-gray-300"
+                >
+                  {t("vectorReport.enableContentMatching")}
+                </label>
+              </div>
 
-          <AnimatePresence mode="wait">
-            {error ? (
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                className="bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-300 p-4 rounded-lg border border-red-200 dark:border-red-800/50 text-sm"
-              >
-                {error}
-              </motion.div>
-            ) : result ? (
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                className="flex flex-col"
-              >
-                {renderFileList()}
-                {renderKnowledgeList()}
-
-                <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-gray-700 dark:text-gray-300 font-medium text-sm flex items-center">
+              <div className="flex justify-end">
+                <button
+                  type="submit"
+                  disabled={isProcessing || !question.trim()}
+                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                    isProcessing || !question.trim()
+                      ? "bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed"
+                      : "bg-emerald-600 hover:bg-emerald-700 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
+                  }`}
+                >
+                  {isProcessing ? (
+                    <span className="flex items-center">
+                      <svg
+                        className="animate-spin mr-2 h-4 w-4 text-current"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        ></circle>
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        ></path>
+                      </svg>
+                      {t("vectorReport.processing")}
+                    </span>
+                  ) : (
+                    <span className="flex items-center">
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
-                        className="h-4 w-4 mr-1.5 text-gray-500 dark:text-gray-400"
+                        className="h-4 w-4 mr-1.5"
                         fill="none"
                         viewBox="0 0 24 24"
                         stroke="currentColor"
@@ -753,20 +735,201 @@ ${functions
                           strokeLinecap="round"
                           strokeLinejoin="round"
                           strokeWidth={2}
-                          d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"
+                          d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
                         />
                       </svg>
-                      {t("vectorReport.result")} (
-                      {(result.length / 1024).toFixed(1)} KB)
+                      {t("vectorReport.submit")}
                     </span>
-                    <div className="flex justify-end space-x-2">
-                      <button
-                        onClick={copyResultToClipboard}
-                        className="px-3 py-1.5 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-md transition-colors flex items-center text-xs border border-gray-200 dark:border-gray-600"
-                      >
+                  )}
+                </button>
+              </div>
+              {renderProcessingPhase()}
+            </form>
+
+            <div className="mt-6">
+              <h3 className="text-base font-medium text-gray-900 dark:text-gray-100 mb-3 flex items-center">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5 mr-2 text-emerald-600 dark:text-emerald-400"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                  />
+                </svg>
+                {t("vectorReport.result")}
+              </h3>
+
+              <AnimatePresence mode="wait">
+                {error ? (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className="bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-300 p-4 rounded-lg border border-red-200 dark:border-red-800/50 text-sm"
+                  >
+                    {error}
+                  </motion.div>
+                ) : result ? (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className="flex flex-col"
+                  >
+                    {renderFileList()}
+                    {renderKnowledgeList()}
+
+                    <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="text-gray-700 dark:text-gray-300 font-medium text-sm flex items-center">
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="h-4 w-4 mr-1.5 text-gray-500 dark:text-gray-400"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"
+                            />
+                          </svg>
+                          {t("vectorReport.result")} (
+                          {(result.length / 1024).toFixed(1)} KB)
+                        </span>
+                        <div className="flex justify-end space-x-2">
+                          <button
+                            onClick={copyResultToClipboard}
+                            className="px-3 py-1.5 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-md transition-colors flex items-center text-xs border border-gray-200 dark:border-gray-600"
+                          >
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              className="h-3.5 w-3.5 mr-1 text-emerald-600 dark:text-emerald-400"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                              />
+                            </svg>
+                            {t("vectorReport.copyPrompt")}
+                          </button>
+                          <button
+                            onClick={handleTestWithAI}
+                            className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md transition-colors flex items-center text-xs"
+                          >
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              className="h-3.5 w-3.5 mr-1"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M13 10V3L4 14h7v7l9-11h-7z"
+                              />
+                            </svg>
+                            {t("vectorReport.testPrompt")}
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* 优化提示 - ChatGPT风格 */}
+                      <div className="mb-4 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800/50 rounded-lg p-3 flex items-start">
+                        <div className="flex-shrink-0 text-emerald-600 dark:text-emerald-400 mr-3">
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="h-5 w-5"
+                            viewBox="0 0 20 20"
+                            fill="currentColor"
+                          >
+                            <path
+                              fillRule="evenodd"
+                              d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2h-1V9a1 1 0 00-1-1z"
+                              clipRule="evenodd"
+                            />
+                          </svg>
+                        </div>
+                        <div>
+                          <h4 className="text-sm font-medium text-emerald-800 dark:text-emerald-300">
+                            {t("vectorReport.optimization.title")}
+                          </h4>
+                          <p className="text-xs text-emerald-700 dark:text-emerald-400 mt-1">
+                            {t("vectorReport.optimization.description", {
+                              totalCount: String(
+                                currentScan?.entries.filter(
+                                  (entry) => entry.type === "file"
+                                ).length || 0
+                              ),
+                              relevantCount: String(relevantFiles.length),
+                              tokenCount: tokensSaved.toLocaleString(),
+                              efficiencyFactor: String(
+                                Math.round(tokensSaved / 1000)
+                              ),
+                            })}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* 结果预览区域 - ChatGPT风格 */}
+                      <div className="mb-4">
+                        <div className="flex items-center justify-between mb-2">
+                          <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center">
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              className="h-4 w-4 mr-1.5 text-gray-500 dark:text-gray-400"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                              />
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                              />
+                            </svg>
+                            {t("vectorReport.resultPreview")}
+                          </h4>
+                          <span className="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded">
+                            {t("vectorReport.markdownFormat")}
+                          </span>
+                        </div>
+                        <div className="bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-700 rounded-lg p-3 max-h-[200px] overflow-y-auto">
+                          <pre className="text-xs text-gray-700 dark:text-gray-300 whitespace-pre-wrap font-mono">
+                            {result.length > 500
+                              ? result.substring(0, 500) +
+                                "...\n\n[内容已截断，完整内容请复制后查看]"
+                              : result}
+                          </pre>
+                        </div>
+                      </div>
+
+                      <div className="bg-gray-50 dark:bg-gray-700/30 border border-gray-200 dark:border-gray-700 rounded-lg p-3 text-xs text-gray-600 dark:text-gray-400 flex items-start">
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
-                          className="h-3.5 w-3.5 mr-1 text-emerald-600 dark:text-emerald-400"
+                          className="h-4 w-4 mr-2 text-gray-500 dark:text-gray-400 flex-shrink-0 mt-0.5"
                           fill="none"
                           viewBox="0 0 24 24"
                           stroke="currentColor"
@@ -775,178 +938,63 @@ ${functions
                             strokeLinecap="round"
                             strokeLinejoin="round"
                             strokeWidth={2}
-                            d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                            d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                           />
                         </svg>
-                        {t("vectorReport.copyPrompt")}
-                      </button>
-                      <button
-                        onClick={handleTestWithAI}
-                        className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md transition-colors flex items-center text-xs"
-                      >
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="h-3.5 w-3.5 mr-1"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M13 10V3L4 14h7v7l9-11h-7z"
-                          />
-                        </svg>
-                        {t("vectorReport.testPrompt")}
-                      </button>
+                        <div>
+                          {t("vectorReport.resultDescription")}
+                          <br />
+                          {t("vectorReport.copyInstructions")}
+                        </div>
+                      </div>
                     </div>
-                  </div>
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className="text-gray-500 dark:text-gray-400 italic"
+                  >
+                    {t("vectorReport.noResult")}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
 
-                  {/* 优化提示 - ChatGPT风格 */}
-                  <div className="mb-4 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800/50 rounded-lg p-3 flex items-start">
-                    <div className="flex-shrink-0 text-emerald-600 dark:text-emerald-400 mr-3">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-5 w-5"
-                        viewBox="0 0 20 20"
-                        fill="currentColor"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2h-1V9a1 1 0 00-1-1z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-medium text-emerald-800 dark:text-emerald-300">
-                        {t("vectorReport.optimization.title")}
-                      </h4>
-                      <p className="text-xs text-emerald-700 dark:text-emerald-400 mt-1">
-                        {t("vectorReport.optimization.description", {
-                          totalCount: String(
-                            currentScan?.entries.filter(
-                              (entry) => entry.type === "file"
-                            ).length || 0
-                          ),
-                          relevantCount: String(relevantFiles.length),
-                          tokenCount: tokensSaved.toLocaleString(),
-                          efficiencyFactor: String(
-                            Math.round(tokensSaved / 1000)
-                          ),
-                        })}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* 结果预览区域 - ChatGPT风格 */}
-                  <div className="mb-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center">
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="h-4 w-4 mr-1.5 text-gray-500 dark:text-gray-400"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                          />
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                          />
-                        </svg>
-                        {t("vectorReport.resultPreview")}
-                      </h4>
-                      <span className="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded">
-                        {t("vectorReport.markdownFormat")}
-                      </span>
-                    </div>
-                    <div className="bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-700 rounded-lg p-3 max-h-[200px] overflow-y-auto">
-                      <pre className="text-xs text-gray-700 dark:text-gray-300 whitespace-pre-wrap font-mono">
-                        {result.length > 500
-                          ? result.substring(0, 500) +
-                            "...\n\n[内容已截断，完整内容请复制后查看]"
-                          : result}
-                      </pre>
-                    </div>
-                  </div>
-
-                  <div className="bg-gray-50 dark:bg-gray-700/30 border border-gray-200 dark:border-gray-700 rounded-lg p-3 text-xs text-gray-600 dark:text-gray-400 flex items-start">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-4 w-4 mr-2 text-gray-500 dark:text-gray-400 flex-shrink-0 mt-0.5"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                      />
-                    </svg>
-                    <div>
-                      {t("vectorReport.resultDescription")}
-                      <br />
-                      {t("vectorReport.copyInstructions")}
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            ) : (
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                className="text-gray-500 dark:text-gray-400 italic"
+            {/* 承诺声明 - ChatGPT风格 */}
+            <div className="bg-gray-50 dark:bg-gray-700/30 border border-gray-200 dark:border-gray-700 p-3 mb-4 rounded-lg text-sm flex items-start">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-4 w-4 mr-2 text-gray-500 dark:text-gray-400 flex-shrink-0 mt-0.5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
               >
-                {t("vectorReport.noResult")}
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+              <p className="text-gray-700 dark:text-gray-300 text-xs">
+                {t("knowledgeModal.dataSecurityPromise")}
+              </p>
+            </div>
+          </div>
 
-        {/* 承诺声明 - ChatGPT风格 */}
-        <div className="bg-gray-50 dark:bg-gray-700/30 border border-gray-200 dark:border-gray-700 p-3 mb-4 rounded-lg text-sm flex items-start">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-4 w-4 mr-2 text-gray-500 dark:text-gray-400 flex-shrink-0 mt-0.5"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
-          </svg>
-          <p className="text-gray-700 dark:text-gray-300 text-xs">
-            {t("knowledgeModal.dataSecurityPromise")}
-          </p>
+          {/* 模态窗口底部 - ChatGPT风格 */}
+          <div className="bg-gray-50 dark:bg-gray-800 px-6 py-4 flex justify-end border-t border-gray-200 dark:border-gray-700">
+            <button
+              onClick={onClose}
+              className="px-4 py-2 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-md hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors border border-gray-300 dark:border-gray-600 text-sm font-medium"
+            >
+              {t("vectorReport.close")}
+            </button>
+          </div>
         </div>
       </div>
-
-      {/* 模态窗口底部 - ChatGPT风格 */}
-      <div className="bg-gray-50 dark:bg-gray-800 px-6 py-4 flex justify-end border-t border-gray-200 dark:border-gray-700">
-        <button
-          onClick={onClose}
-          className="px-4 py-2 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-md hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors border border-gray-300 dark:border-gray-600 text-sm font-medium"
-        >
-          {t("vectorReport.close")}
-        </button>
-      </div>
-    </div>
+    </>
   );
 }

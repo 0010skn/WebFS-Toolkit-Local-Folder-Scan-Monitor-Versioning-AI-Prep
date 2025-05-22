@@ -15,6 +15,8 @@ import Markdown from "markdown-to-jsx";
 // 引入SyntaxHighlighter的两种版本
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { Light as LightSyntaxHighlighter } from "react-syntax-highlighter";
+// 导入预设提示弹窗组件
+import PresetPromptModal from "./PresetPromptModal";
 
 // 导入Prism的样式
 import {
@@ -1128,6 +1130,9 @@ export default function AITestDialog({
   const [showRequirementGenerator, setShowRequirementGenerator] =
     useState(false);
   const [requirementContext, setRequirementContext] = useState("");
+
+  // 添加预设提示弹窗状态
+  const [showPresetPrompts, setShowPresetPrompts] = useState(false);
 
   // 自动滚动到当前AI回复的开头位置
   const scrollToCurrentResponse = useCallback(() => {
@@ -2698,6 +2703,11 @@ ${aiResponse}
     }
   };
 
+  // 处理选择预设提示
+  const handleSelectPrompt = (prompt: string) => {
+    setCustomInput(prompt);
+  };
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white dark:bg-gray-800 w-full h-full flex flex-col">
@@ -2839,7 +2849,6 @@ ${aiResponse}
           )}
         </div>
 
-        {/* 底部输入区域 - ChatGPT风格 */}
         <div className="p-3 sm:p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
           <div className="max-w-3xl mx-auto">
             <form onSubmit={handleCustomInputSubmit} className="relative">
@@ -2873,29 +2882,53 @@ ${aiResponse}
 
               <div className="absolute right-2 bottom-2 sm:bottom-2.5 flex space-x-1">
                 {!isTesting && !isComplete && (
-                  <button
-                    type="button"
-                    onClick={() => setShowOptions(!showOptions)}
-                    className="p-1.5 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 rounded-md hover:bg-gray-100 dark:hover:bg-gray-600"
-                    title={
-                      t("vectorReport.aiDialog.optionsTitle") || "显示建议问题"
-                    }
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-5 w-5"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setShowPresetPrompts(true)}
+                      className="p-1.5 text-blue-600 hover:text-blue-700 dark:text-blue-500 dark:hover:text-blue-400 rounded-md hover:bg-gray-100 dark:hover:bg-gray-600"
+                      title={t("presetPrompts.button") || "提示"}
                     >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M8 12h.01M12 12h.01M16 12h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                      />
-                    </svg>
-                  </button>
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-5 w-5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                        />
+                      </svg>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowOptions(!showOptions)}
+                      className="p-1.5 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 rounded-md hover:bg-gray-100 dark:hover:bg-gray-600"
+                      title={
+                        t("vectorReport.aiDialog.optionsTitle") ||
+                        "显示建议问题"
+                      }
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-5 w-5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M8 12h.01M12 12h.01M16 12h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
+                      </svg>
+                    </button>
+                  </>
                 )}
 
                 <button
@@ -2998,6 +3031,13 @@ ${aiResponse}
           />
         )}
       </div>
+
+      {/* 添加预设提示弹窗 */}
+      <PresetPromptModal
+        isOpen={showPresetPrompts}
+        onClose={() => setShowPresetPrompts(false)}
+        onSelectPrompt={handleSelectPrompt}
+      />
     </div>
   );
 }

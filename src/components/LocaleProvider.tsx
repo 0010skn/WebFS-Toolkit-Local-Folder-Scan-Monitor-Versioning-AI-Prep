@@ -20,6 +20,7 @@ const preloadedTranslationsPromise: Record<Locale, Promise<any>> = {
 // 创建翻译上下文
 type TranslationsContextType = {
   t: (key: string, params?: Record<string, string>) => string;
+  tObject: (key: string) => any;
   locale: Locale;
   setLocale: (locale: Locale) => void;
 };
@@ -49,6 +50,22 @@ function getNestedTranslation(obj: any, path: string): string {
   }
 
   return typeof result === "string" ? result : path;
+}
+
+// 获取对象类型的翻译
+function getNestedObject(obj: any, path: string): any {
+  const keys = path.split(".");
+  let result = obj;
+
+  for (const key of keys) {
+    if (result && typeof result === "object" && key in result) {
+      result = result[key];
+    } else {
+      return null; // 如果找不到翻译对象，返回null
+    }
+  }
+
+  return result;
 }
 
 // 替换参数
@@ -117,13 +134,19 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
     return replaceParams(translation, params);
   };
 
+  // 对象翻译函数
+  const tObject = (key: string): any => {
+    if (!translations) return null;
+    return getNestedObject(translations, key);
+  };
+
   // 如果是第一次加载且没有翻译数据，显示一个最小的加载状态
   if (!initialLoadComplete && loading) {
     return null; // 或者返回一个简单的加载指示器
   }
 
   return (
-    <TranslationsContext.Provider value={{ t, locale, setLocale }}>
+    <TranslationsContext.Provider value={{ t, tObject, locale, setLocale }}>
       {children}
     </TranslationsContext.Provider>
   );
