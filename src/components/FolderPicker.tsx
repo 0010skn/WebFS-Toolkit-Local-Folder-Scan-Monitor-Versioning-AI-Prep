@@ -111,7 +111,7 @@ export default function FolderPicker() {
                   d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
                 />
               </svg>
-              .gitignore 规则
+              {t("folderPicker.gitignoreRules")}
             </h3>
             <button
               onClick={handleCloseModal}
@@ -137,7 +137,7 @@ export default function FolderPicker() {
               <div className="space-y-4">
                 <div>
                   <h4 className="text-lg font-medium mb-2 text-gray-700 dark:text-gray-300">
-                    忽略规则
+                    {t("folderPicker.ignoreRules")}
                   </h4>
                   <ul className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg divide-y dark:divide-gray-600 font-mono text-sm">
                     {rules.map((rule, index) => (
@@ -147,12 +147,12 @@ export default function FolderPicker() {
                         </span>
                         <span className="ml-3 text-sm text-gray-600 dark:text-gray-400">
                           {rule.includes("*")
-                            ? "通配符规则"
+                            ? t("folderPicker.wildcardRule")
                             : rule.startsWith("!")
-                            ? "排除规则"
+                            ? t("folderPicker.excludeRule")
                             : rule.endsWith("/")
-                            ? "文件夹规则"
-                            : "文件规则"}
+                            ? t("folderPicker.directoryRule")
+                            : t("folderPicker.fileRule")}
                         </span>
                       </li>
                     ))}
@@ -162,7 +162,7 @@ export default function FolderPicker() {
                 {comments.length > 0 && (
                   <div>
                     <h4 className="text-lg font-medium mb-2 text-gray-700 dark:text-gray-300">
-                      注释
+                      {t("folderPicker.comments")}
                     </h4>
                     <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg text-sm text-gray-600 dark:text-gray-400">
                       {comments.map((comment, index) => (
@@ -177,8 +177,8 @@ export default function FolderPicker() {
             ) : (
               <p className="text-gray-600 dark:text-gray-400 text-center py-10">
                 {gitignoreContent === ""
-                  ? ".gitignore 文件为空"
-                  : "无法读取 .gitignore 规则"}
+                  ? t("folderPicker.gitignoreEmpty")
+                  : t("folderPicker.gitignoreUnreadable")}
               </p>
             )}
           </div>

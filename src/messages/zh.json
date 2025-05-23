@@ -73,7 +73,16 @@
     "selectedFolder": "已选择的文件夹",
     "ready": "就绪",
     "errorTitle": "出错了",
-    "dismiss": "关闭"
+    "dismiss": "关闭",
+    "gitignoreRules": ".gitignore 规则",
+    "ignoreRules": "忽略规则",
+    "wildcardRule": "通配符规则",
+    "excludeRule": "排除规则",
+    "directoryRule": "文件夹规则",
+    "fileRule": "文件规则",
+    "comments": "注释",
+    "gitignoreEmpty": ".gitignore 文件为空",
+    "gitignoreUnreadable": "无法读取 .gitignore 规则"
   },
   "homePage": {
     "quickStart": "快速启动",

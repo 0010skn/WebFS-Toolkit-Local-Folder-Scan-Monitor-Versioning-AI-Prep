@@ -6,6 +6,7 @@ import { useTranslations } from "./LocaleProvider";
 import { parseStringPromise } from "xml2js";
 import { IoMdRefresh } from "react-icons/io";
 import { IoChevronDown, IoChevronUp } from "react-icons/io5";
+import { FiClock, FiUser, FiTag, FiExternalLink } from "react-icons/fi";
 
 interface RssItem {
   title: string;
@@ -17,22 +18,17 @@ interface RssItem {
   thumbnail?: string;
 }
 
-// 添加骨架屏组件
-const SkeletonCard = () => (
-  <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-    <div className="p-4">
-      <div className="flex justify-between items-start mb-3">
-        <div className="h-6 w-20 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
-        <div className="h-4 w-16 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
-      </div>
-      <div className="w-full h-40 bg-gray-200 dark:bg-gray-700 rounded mb-3 animate-pulse"></div>
-      <div className="h-6 w-full bg-gray-200 dark:bg-gray-700 rounded mb-2 animate-pulse"></div>
-      <div className="h-6 w-3/4 bg-gray-200 dark:bg-gray-700 rounded mb-3 animate-pulse"></div>
-      <div className="h-4 w-full bg-gray-200 dark:bg-gray-700 rounded mb-2 animate-pulse"></div>
-      <div className="h-4 w-3/4 bg-gray-200 dark:bg-gray-700 rounded mb-3 animate-pulse"></div>
-      <div className="flex justify-between items-center">
-        <div className="h-4 w-1/3 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
-        <div className="h-4 w-1/4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+// 现代化的骨架屏组件
+const SkeletonItem = () => (
+  <div className="flex flex-col md:flex-row gap-4 p-4 border-b border-gray-100 dark:border-gray-800 animate-pulse">
+    <div className="w-full md:w-1/4 h-32 md:h-24 bg-gray-200 dark:bg-gray-700 rounded"></div>
+    <div className="flex-1">
+      <div className="h-5 w-3/4 bg-gray-200 dark:bg-gray-700 rounded mb-2"></div>
+      <div className="h-4 w-full bg-gray-200 dark:bg-gray-700 rounded mb-2"></div>
+      <div className="h-4 w-5/6 bg-gray-200 dark:bg-gray-700 rounded mb-3"></div>
+      <div className="flex gap-3">
+        <div className="h-4 w-20 bg-gray-200 dark:bg-gray-700 rounded"></div>
+        <div className="h-4 w-24 bg-gray-200 dark:bg-gray-700 rounded"></div>
       </div>
     </div>
   </div>
@@ -235,16 +231,16 @@ export default function RssFeed() {
     event.currentTarget.style.display = "none";
   };
 
-  // 标题栏 - 始终显示
+  // 现代化标题栏
   const renderHeader = () => (
     <div
-      className="flex items-center justify-between p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors"
+      className="flex items-center justify-between p-4 bg-white dark:bg-gray-800 border-b-2 border-red-500 dark:border-red-600 rounded-t-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors shadow-sm"
       onClick={toggleExpand}
     >
-      <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200 flex items-center">
+      <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100 flex items-center">
         <svg
           xmlns="http://www.w3.org/2000/svg"
-          className="h-5 w-5 mr-2 text-red-600"
+          className="h-6 w-6 mr-2 text-red-600 dark:text-red-500"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -256,7 +252,14 @@ export default function RssFeed() {
             d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"
           />
         </svg>
-        {t("rssFeed.title")} {currentFeedTitle ? `- ${currentFeedTitle}` : ""}
+        <span className="relative">
+          {t("rssFeed.title")}
+          {currentFeedTitle && (
+            <span className="ml-1 text-red-600 dark:text-red-500 font-normal">
+              {currentFeedTitle}
+            </span>
+          )}
+        </span>
       </h2>
       <div className="flex items-center">
         {isExpanded && (
@@ -266,7 +269,7 @@ export default function RssFeed() {
               handleRefresh();
             }}
             disabled={refreshing || loading}
-            className="p-2 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors mr-2"
+            className="p-2 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors mr-2 hover:text-red-600 dark:hover:text-red-400"
             aria-label="刷新"
           >
             <IoMdRefresh
@@ -277,9 +280,9 @@ export default function RssFeed() {
           </button>
         )}
         {isExpanded ? (
-          <IoChevronUp className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+          <IoChevronUp className="h-5 w-5 text-gray-600 dark:text-gray-300" />
         ) : (
-          <IoChevronDown className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+          <IoChevronDown className="h-5 w-5 text-gray-600 dark:text-gray-300" />
         )}
       </div>
     </div>
@@ -296,103 +299,114 @@ export default function RssFeed() {
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.3 }}
-            className="overflow-hidden"
+            className="overflow-hidden bg-white dark:bg-gray-800 rounded-b-lg shadow-sm border border-t-0 border-gray-200 dark:border-gray-700"
           >
             {loading && (
-              <div className="pt-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                  {Array(4)
-                    .fill(0)
-                    .map((_, index) => (
-                      <SkeletonCard key={index} />
-                    ))}
-                </div>
+              <div className="divide-y divide-gray-100 dark:divide-gray-800">
+                {Array(4)
+                  .fill(0)
+                  .map((_, index) => (
+                    <SkeletonItem key={index} />
+                  ))}
               </div>
             )}
 
             {error && !loading && (
-              <div className="mt-4">
-                <div className="bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800/30 rounded-lg p-4">
-                  <p className="text-red-600 dark:text-red-400">{error}</p>
+              <div className="p-4">
+                <div className="bg-red-50 dark:bg-red-900/20 border-l-4 border-red-500 dark:border-red-600 p-4 rounded">
+                  <p className="text-red-600 dark:text-red-400 flex items-center">
+                    <svg
+                      className="w-5 h-5 mr-2"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                        clipRule="evenodd"
+                      ></path>
+                    </svg>
+                    {error}
+                  </p>
                 </div>
               </div>
             )}
 
             {!loading && !error && items.length > 0 && (
-              <div className="pt-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                  {items.map((item, index) => (
-                    <motion.div
-                      key={index}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.1 }}
-                      className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-md transition-shadow duration-200"
+              <div className="divide-y divide-gray-100 dark:divide-gray-800">
+                {items.map((item, index) => (
+                  <motion.div
+                    key={index}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                    className="group hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors duration-200"
+                  >
+                    <a
+                      href={item.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block p-4 md:p-5"
                     >
-                      <div className="p-4">
-                        <div className="flex justify-between items-start mb-3">
-                          <span className="inline-block px-2 py-1 text-xs font-medium bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-300 rounded">
-                            {item.category || t("rssFeed.uncategorized")}
-                          </span>
-                          <span className="text-xs text-gray-500 dark:text-gray-400">
-                            {formatDate(item.pubDate)}
-                          </span>
-                        </div>
-
-                        {item.thumbnail && (
-                          <div className="mb-3 overflow-hidden rounded">
+                      <div className="flex flex-col md:flex-row gap-4">
+                        {/* 图片区域 */}
+                        {(item.thumbnail ||
+                          extractImageFromDescription(item.description)) && (
+                          <div className="w-full md:w-1/4 h-48 md:h-32 overflow-hidden rounded-lg">
                             <img
-                              src={item.thumbnail}
-                              alt={item.title}
+                              src={
+                                item.thumbnail ||
+                                extractImageFromDescription(item.description)!
+                              }
+                              alt={extractCdata(item.title)}
                               onError={handleImageError}
-                              className="w-full h-48 object-cover transform hover:scale-105 transition-transform duration-300"
+                              className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-300"
                             />
                           </div>
                         )}
 
-                        {!item.thumbnail &&
-                          extractImageFromDescription(item.description) && (
-                            <div className="mb-3 overflow-hidden rounded">
-                              <img
-                                src={
-                                  extractImageFromDescription(item.description)!
-                                }
-                                alt={item.title}
-                                onError={handleImageError}
-                                className="w-full h-48 object-cover transform hover:scale-105 transition-transform duration-300"
-                              />
+                        {/* 内容区域 */}
+                        <div className="flex-1">
+                          <div className="mb-1">
+                            <span className="inline-block px-2 py-1 text-xs font-medium bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-300 rounded">
+                              {item.category || t("rssFeed.uncategorized")}
+                            </span>
+                          </div>
+
+                          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2 line-clamp-2 group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors">
+                            {extractCdata(item.title)}
+                          </h3>
+
+                          <p className="text-sm text-gray-600 dark:text-gray-400 mb-3 line-clamp-2">
+                            {extractFirstParagraph(item.description)}
+                          </p>
+
+                          <div className="flex flex-wrap gap-x-4 gap-y-2 text-xs text-gray-500 dark:text-gray-400">
+                            <div className="flex items-center">
+                              <FiClock className="mr-1" />
+                              <span>{formatDate(item.pubDate)}</span>
                             </div>
-                          )}
 
-                        <h3 className="text-base font-medium text-gray-900 dark:text-white mb-2 line-clamp-2">
-                          {extractCdata(item.title)}
-                        </h3>
+                            {item.creator && (
+                              <div className="flex items-center">
+                                <FiUser className="mr-1" />
+                                <span className="truncate max-w-[150px]">
+                                  {extractCdata(item.creator)}
+                                </span>
+                              </div>
+                            )}
 
-                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-3 line-clamp-3">
-                          {extractFirstParagraph(item.description)}
-                        </p>
-
-                        <div className="flex justify-between items-center">
-                          <span className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-[50%]">
-                            {item.creator
-                              ? `${t("rssFeed.author")}: ${extractCdata(
-                                  item.creator
-                                )}`
-                              : ""}
-                          </span>
-                          <a
-                            href={item.link}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-sm font-medium text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300"
-                          >
-                            {t("rssFeed.readMore")} →
-                          </a>
+                            <div className="flex items-center ml-auto text-red-600 dark:text-red-400 group-hover:underline">
+                              <span>{t("rssFeed.readMore")}</span>
+                              <FiExternalLink className="ml-1" />
+                            </div>
+                          </div>
                         </div>
                       </div>
-                    </motion.div>
-                  ))}
-                </div>
+                    </a>
+                  </motion.div>
+                ))}
               </div>
             )}
           </motion.div>

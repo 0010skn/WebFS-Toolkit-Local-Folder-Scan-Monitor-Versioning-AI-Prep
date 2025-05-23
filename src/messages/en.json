@@ -73,7 +73,16 @@
     "selectedFolder": "Selected folder",
     "ready": "Ready",
     "errorTitle": "Error",
-    "dismiss": "Dismiss"
+    "dismiss": "Dismiss",
+    "gitignoreRules": ".gitignore Rules",
+    "ignoreRules": "Ignore Rules",
+    "wildcardRule": "Wildcard Rule",
+    "excludeRule": "Exclude Rule",
+    "directoryRule": "Directory Rule",
+    "fileRule": "File Rule",
+    "comments": "Comments",
+    "gitignoreEmpty": ".gitignore file is empty",
+    "gitignoreUnreadable": "Unable to read .gitignore rules"
   },
   "homePage": {
     "quickStart": "Quick Start",
