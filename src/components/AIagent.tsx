@@ -383,6 +383,9 @@ export default function AIagent({
   );
   const [processingOperation, setProcessingOperation] = useState(false);
 
+  // 自动模式状态 - 默认启用
+  const [autoMode, setAutoMode] = useState(true);
+
   // 初始化对话
   useEffect(() => {
     if (initialPrompt && !dialogRounds.length && !isTesting) {
