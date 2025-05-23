@@ -962,7 +962,7 @@ const tooltipStyles = `
     margin-right: -1rem !important;
     border-radius: 0 !important;
   }
-  
+
   .code-scroll-container pre {
     max-width: 100% !important;
   }
@@ -986,7 +986,7 @@ export default function AITestDialog({
     fixLightModeStyle.textContent = `
       /* 直接重写浅色模式下的代码高亮样式 - 超高优先级 */
       body:not(.dark) .light-syntax-highlighter pre code,
-      body:not(.dark) pre code, 
+      body:not(.dark) pre code,
       html:not(.dark) .light-syntax-highlighter pre code,
       html:not(.dark) pre code {
         color: #383a42 !important;
@@ -1000,41 +1000,41 @@ export default function AITestDialog({
       }
 
       /* 每个高亮元素单独设置 */
-      html:not(.dark) code span.hljs-keyword, 
+      html:not(.dark) code span.hljs-keyword,
       html:not(.dark) pre code span.hljs-keyword { color: #a626a4 !important; }
-      
-      html:not(.dark) code span.hljs-built_in, 
+
+      html:not(.dark) code span.hljs-built_in,
       html:not(.dark) pre code span.hljs-built_in { color: #c18401 !important; }
-      
-      html:not(.dark) code span.hljs-string, 
+
+      html:not(.dark) code span.hljs-string,
       html:not(.dark) pre code span.hljs-string { color: #50a14f !important; }
-      
-      html:not(.dark) code span.hljs-number, 
+
+      html:not(.dark) code span.hljs-number,
       html:not(.dark) pre code span.hljs-number { color: #986801 !important; }
-      
-      html:not(.dark) code span.hljs-comment, 
+
+      html:not(.dark) code span.hljs-comment,
       html:not(.dark) pre code span.hljs-comment { color: #a0a1a7 !important; font-style: italic !important; }
-      
-      html:not(.dark) code span.hljs-title, 
+
+      html:not(.dark) code span.hljs-title,
       html:not(.dark) pre code span.hljs-title { color: #4078f2 !important; }
-      
-      html:not(.dark) code span.hljs-attr, 
+
+      html:not(.dark) code span.hljs-attr,
       html:not(.dark) pre code span.hljs-attr { color: #986801 !important; }
-      
-      html:not(.dark) code span.hljs-tag, 
+
+      html:not(.dark) code span.hljs-tag,
       html:not(.dark) pre code span.hljs-tag { color: #e45649 !important; }
-      
-      html:not(.dark) code span.hljs-name, 
+
+      html:not(.dark) code span.hljs-name,
       html:not(.dark) pre code span.hljs-name { color: #e45649 !important; }
-      
-      html:not(.dark) code span.hljs-type, 
+
+      html:not(.dark) code span.hljs-type,
       html:not(.dark) pre code span.hljs-type { color: #986801 !important; }
-      
-      html:not(.dark) code span.hljs-variable, 
+
+      html:not(.dark) code span.hljs-variable,
       html:not(.dark) pre code span.hljs-variable { color: #e45649 !important; }
 
       /* 直接给code元素添加样式，确保默认文本颜色正确 */
-      .light-theme code, 
+      .light-theme code,
       .light-theme pre {
         color: #383a42 !important;
       }
@@ -1104,8 +1104,11 @@ export default function AITestDialog({
   // 添加预设提示弹窗状态
   const [showPresetPrompts, setShowPresetPrompts] = useState(false);
 
-  // 自动滚动到当前AI回复的开头位置
+  // 自动滚动到当前AI回复的开头位置（已禁用）
   const scrollToCurrentResponse = useCallback(() => {
+    // 已禁用自动滚动功能，用户可以手动滚动查看内容
+    // 原代码保留作为参考
+    /*
     if (currentRoundRef.current) {
       currentRoundRef.current.scrollIntoView({
         behavior: "smooth",
@@ -1115,14 +1118,18 @@ export default function AITestDialog({
       // 如果找不到当前轮次的引用，则滚动到底部
       contentRef.current.scrollTop = contentRef.current.scrollHeight;
     }
+    */
   }, [currentRoundRef]);
 
-  // 监听AI回复完成，自动滚动到当前轮次开头
+  // 监听AI回复完成，不再自动滚动（已禁用）
   useEffect(() => {
+    // 已禁用自动滚动功能，用户可以手动滚动查看内容
+    /*
     if (!isTesting && dialogRounds.length > 0 && currentRound > 0) {
       // AI回复完成时滚动到当前回复开头
       scrollToCurrentResponse();
     }
+    */
   }, [isTesting, dialogRounds.length, currentRound, scrollToCurrentResponse]);
 
   // 处理关键字点击事件，获取关键字的上下文信息
@@ -1784,11 +1791,14 @@ ${fileContents}`);
     };
   }, []);
 
-  // 自动滚动到底部 - 保留原有的滚动逻辑，但不在上面的效果触发时执行
+  // 自动滚动到底部功能（已禁用）
   useEffect(() => {
+    // 已禁用自动滚动功能，用户可以手动滚动查看内容
+    /*
     if (contentRef.current && isTesting) {
       contentRef.current.scrollTop = contentRef.current.scrollHeight;
     }
+    */
   }, [dialogRounds, currentResponse, isTesting]);
 
   // 开始测试

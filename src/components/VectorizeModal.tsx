@@ -4,7 +4,11 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslations } from "./LocaleProvider";
 import { useAtom } from "jotai";
-import { currentScanAtom, readmeContentAtom } from "../lib/store";
+import {
+  currentScanAtom,
+  readmeContentAtom,
+  scanStatusAtom,
+} from "../lib/store";
 import {
   findRelevantFiles,
   parseFilePathsResult,
@@ -122,6 +126,7 @@ export default function VectorizeModal({ onClose }: VectorizeModalProps) {
   const [result, setResult] = useState("");
   const [error, setError] = useState("");
   const [currentScan] = useAtom(currentScanAtom);
+  const [scanStatus] = useAtom(scanStatusAtom);
   const [readmeContent] = useAtom(readmeContentAtom);
   const [relevantFiles, setRelevantFiles] = useState<string[]>([]);
   const [relevantKnowledge, setRelevantKnowledge] = useState<string[]>([]);
@@ -156,6 +161,15 @@ export default function VectorizeModal({ onClose }: VectorizeModalProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // 检查扫描状态，如果正在扫描中，则显示提示信息
+    if (scanStatus === "scanning") {
+      setError(
+        t("vectorReport.scanningInProgress") || "请等待扫描完成后再进行向量化"
+      );
+      return;
+    }
+
     if (!question.trim() || !currentScan) return;
 
     setIsProcessing(true);
@@ -691,9 +705,15 @@ ${functions
               <div className="flex justify-end">
                 <button
                   type="submit"
-                  disabled={isProcessing || !question.trim()}
+                  disabled={
+                    isProcessing ||
+                    !question.trim() ||
+                    scanStatus === "scanning"
+                  }
                   className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                    isProcessing || !question.trim()
+                    isProcessing ||
+                    !question.trim() ||
+                    scanStatus === "scanning"
                       ? "bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed"
                       : "bg-emerald-600 hover:bg-emerald-700 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
                   }`}
@@ -722,6 +742,24 @@ ${functions
                       </svg>
                       {t("vectorReport.processing")}
                     </span>
+                  ) : scanStatus === "scanning" ? (
+                    <span className="flex items-center">
+                      <svg
+                        className="mr-2 h-4 w-4 text-current"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
+                      </svg>
+                      {t("vectorReport.waitForScan") || "等待扫描完成"}
+                    </span>
                   ) : (
                     <span className="flex items-center">
                       <svg
@@ -743,6 +781,28 @@ ${functions
                   )}
                 </button>
               </div>
+
+              {/* 扫描中提示信息 */}
+              {scanStatus === "scanning" && (
+                <div className="mt-2 text-xs text-amber-600 dark:text-amber-400 flex items-center">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-4 w-4 mr-1.5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                  {t("vectorReport.scanningTip") ||
+                    "您可以先输入提示词，但需要等待扫描完成后才能进行向量化"}
+                </div>
+              )}
               {renderProcessingPhase()}
             </form>
 
