@@ -154,12 +154,15 @@ export default function VectorizeModal({ onClose }: VectorizeModalProps) {
       const estimatedTokens = savedFiles * 200;
       setTokensSaved(estimatedTokens);
 
-      // 显示成功提示，3秒后自动消失
-      setShowSuccessToast(true);
-      const timer = setTimeout(() => setShowSuccessToast(false), 5000);
-      return () => clearTimeout(timer);
+      // 只有当提示文本不为空时才显示提示
+      if (t("vectorReport.resultCopied")) {
+        // 显示成功提示，3秒后自动消失
+        setShowSuccessToast(true);
+        const timer = setTimeout(() => setShowSuccessToast(false), 5000);
+        return () => clearTimeout(timer);
+      }
     }
-  }, [result, relevantFiles, currentScan]);
+  }, [result, relevantFiles, currentScan, t]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -465,8 +468,11 @@ ${functions
     navigator.clipboard
       .writeText(result)
       .then(() => {
-        setShowSuccessToast(true);
-        setTimeout(() => setShowSuccessToast(false), 3000);
+        // 只有当提示文本不为空时才显示提示
+        if (t("vectorReport.resultCopied")) {
+          setShowSuccessToast(true);
+          setTimeout(() => setShowSuccessToast(false), 3000);
+        }
       })
       .catch((err) => {
         console.error("复制失败:", err);
@@ -629,9 +635,9 @@ ${functions
             />
           )}
 
-          {/* 成功提示 */}
+          {/* 成功提示 - 只有当提示文本不为空时才显示 */}
           <AnimatePresence>
-            {showSuccessToast && (
+            {showSuccessToast && t("vectorReport.resultCopied") && (
               <motion.div
                 initial={{ opacity: 0, y: -50 }}
                 animate={{ opacity: 1, y: 0 }}

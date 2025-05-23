@@ -79,6 +79,7 @@ interface DialogRound {
   elementRef?: React.RefObject<HTMLDivElement>;
   knowledgeEntries?: string[];
   fileOperations?: FileOperation[];
+  hideUserInput?: boolean; // 是否隐藏用户输入气泡
 }
 
 // 自定义代码块组件
@@ -416,6 +417,7 @@ export default function AIagent({
         userInput: initialPrompt,
         aiResponse: "",
         files: relevantFiles,
+        hideUserInput: true, // 隐藏第一轮用户输入气泡
       };
 
       setDialogRounds([newRound]);
@@ -1473,31 +1475,33 @@ false
       <div className="flex flex-col space-y-4 mb-4">
         {dialogRounds.map((round, index) => (
           <div key={index} className="flex flex-col space-y-2">
-            {/* 用户输入 */}
-            <div className="bg-blue-50 dark:bg-blue-900/30 p-3 rounded-lg">
-              <div className="flex items-center mb-2">
-                <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white mr-2">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
+            {/* 用户输入 - 只有当hideUserInput为false或未定义时才显示 */}
+            {!round.hideUserInput && (
+              <div className="bg-blue-50 dark:bg-blue-900/30 p-3 rounded-lg">
+                <div className="flex items-center mb-2">
+                  <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white mr-2">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-5 w-5"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  </div>
+                  <div className="font-medium text-blue-700 dark:text-blue-300">
+                    {t("aiagent.user")}
+                  </div>
                 </div>
-                <div className="font-medium text-blue-700 dark:text-blue-300">
-                  {t("aiagent.user")}
+                <div className="text-gray-700 dark:text-gray-200 ml-10">
+                  {round.userInput}
                 </div>
               </div>
-              <div className="text-gray-700 dark:text-gray-200 ml-10">
-                {round.userInput}
-              </div>
-            </div>
+            )}
 
             {/* AI响应 */}
             <div
@@ -1659,23 +1663,45 @@ false
         <p className="text-gray-600 dark:text-gray-300 text-center mb-6">
           {t("aiagent.permissionDescription")}
         </p>
-        <div className="bg-yellow-50 dark:bg-yellow-900/30 p-3 rounded-lg mb-6 w-full">
-          <div className="flex items-start">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-5 w-5 text-yellow-500 mt-0.5 mr-2 flex-shrink-0"
-              viewBox="0 0 20 20"
-              fill="currentColor"
-            >
-              <path
-                fillRule="evenodd"
-                d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
-                clipRule="evenodd"
-              />
-            </svg>
-            <p className="text-sm text-yellow-700 dark:text-yellow-200">
-              {t("aiagent.permissionWarning")}
-            </p>
+        <div className="space-y-3 mb-6 w-full">
+          <div className="bg-yellow-50 dark:bg-yellow-900/30 p-3 rounded-lg">
+            <div className="flex items-start">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5 text-yellow-500 mt-0.5 mr-2 flex-shrink-0"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                  clipRule="evenodd"
+                />
+              </svg>
+              <p className="text-sm text-yellow-700 dark:text-yellow-200">
+                {t("aiagent.permissionWarning")}
+              </p>
+            </div>
+          </div>
+
+          <div className="bg-blue-50 dark:bg-blue-900/30 p-3 rounded-lg">
+            <div className="flex items-start">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5 text-blue-500 mt-0.5 mr-2 flex-shrink-0"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                  clipRule="evenodd"
+                />
+              </svg>
+              <p className="text-sm text-blue-700 dark:text-blue-200">
+                {t("aiagent.indexingReminder")}
+              </p>
+            </div>
           </div>
         </div>
         <div className="flex space-x-4">
