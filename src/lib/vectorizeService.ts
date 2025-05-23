@@ -48,6 +48,7 @@ export async function chatCompletion(
   };
 
   try {
+    console.log("messages ", messages);
     const response = await fetch(API_URL, {
       method: "POST",
       headers: {
@@ -1219,11 +1220,13 @@ export function shouldContinueDialog(response: string): boolean {
   const continueRegex = /```continue\s+(true|false)\s*```/;
   const match = response.match(continueRegex);
 
-  if (match && match[1] === "true") {
-    return true;
+  // 如果明确指示false，则返回false
+  if (match && match[1] === "false") {
+    return false;
   }
 
-  return false;
+  // 默认返回true，除非明确指示不继续
+  return true;
 }
 
 export async function searchGpt(

@@ -425,7 +425,12 @@ export default function AIagent({
       const systemPrompt = getLocalizedPrompt(
         `你是一个强大的AI代码智能体，能够帮助用户修改、删除和创建文件。你可以直接操作用户的代码库，并具有高级编程理解能力。
 
-请注意：用户可能会使用简短回复（如"是的"、"好的"、"确认"等）来回应你的问题或建议。请将这些简短回复理解为对你之前提出的问题或建议的直接回应，并基于完整的对话历史继续对话。
+请特别注意：
+1. 请记住完整的对话历史，理解用户的问题可能是对之前对话的延续。
+2. 如果用户提供简短回复（如"是的"、"好的"、"明天呢"），应理解为对之前对话的回应或延续。
+3. 只有当用户明确提出新问题或改变话题时，才切换到新话题。
+4. 当用户提出非代码相关的问题，请自然地回答，不要强行引导回代码话题。
+5. 避免在每次回复中都询问是否需要帮助编写代码。
 
 ## 编程能力增强指南
 1. **代码理解与分析**：
@@ -507,7 +512,12 @@ false
 \`\`\``,
         `You are a powerful AI code agent that can help users modify, delete, and create files. You can directly operate on the user's codebase with advanced programming understanding.
 
-Please note: Users may use short replies (such as "yes", "ok", "confirm", etc.) to respond to your questions or suggestions. Please understand these short replies as direct responses to your previous questions or suggestions, and continue the conversation based on the complete dialogue history.
+Please pay special attention:
+1. Remember the complete conversation history and understand that the user's question may be a continuation of the previous conversation.
+2. If the user provides a short reply (such as "yes", "okay", "tomorrow?"), interpret it as a response to or continuation of the previous conversation.
+3. Only switch to a new topic when the user clearly asks a new question or changes the topic.
+4. When users ask non-code related questions, answer naturally without forcing the conversation back to code topics.
+5. Avoid asking in every reply whether the user needs help writing code.
 
 ## Enhanced Programming Capabilities
 1. **Code Understanding & Analysis**:
@@ -695,8 +705,18 @@ ${functions
 
       // 解析文件操作
       const fileOperations = parseFileOperations(response);
-      // 解析是否需要继续对话（目前未使用，由用户手动继续）
-      // const shouldContinue = parseContinueFlag(response);
+
+      // 解析是否需要继续对话
+      const shouldContinue = shouldContinueDialog(response);
+
+      // 根据shouldContinueDialog的结果设置完成状态
+      // 只有当明确指示不需要继续对话时，才设置为完成
+      if (!shouldContinue) {
+        setIsComplete(true);
+      } else {
+        // 确保完成状态被重置，允许继续对话
+        setIsComplete(false);
+      }
 
       // 更新对话轮次
       setDialogRounds((prev) => {
@@ -714,71 +734,200 @@ ${functions
         setPendingOperations(fileOperations);
       }
 
-      // 添加到对话历史
-      setConversationHistory((prev) => [
-        ...prev,
-        { role: "assistant", content: response },
-      ]);
+      // 添加到对话历史，确保不重复添加
+      setConversationHistory((prev) => {
+        // 检查最后一条消息是否已经是AI响应
+        const lastMessage = prev[prev.length - 1];
+        const isLastMessageFromAI =
+          lastMessage && lastMessage.role === "assistant";
+
+        // 如果最后一条消息不是AI响应，或者内容与当前响应不同，则添加新的AI响应
+        if (!isLastMessageFromAI || lastMessage.content !== response) {
+          console.log("添加新的AI响应到初始对话历史");
+          return [...prev, { role: "assistant", content: response }];
+        } else {
+          console.log("AI响应已存在于初始对话历史中，不重复添加");
+          return prev;
+        }
+      });
 
       // 如果需要继续对话，显示输入框让用户继续
       // 不再自动准备下一轮
+      console.log(
+        "初始对话处理完成 - 是否继续:",
+        shouldContinue,
+        "是否完成:",
+        !shouldContinue
+      );
     } catch (error) {
       console.error("对话初始化错误:", error);
+      // 发生错误时也要重置状态
+      setIsComplete(false);
     } finally {
+      // 确保处理完成后重置测试状态，允许用户继续输入
       setIsTesting(false);
+      console.log("初始对话状态已重置 - 可以继续输入");
     }
   };
 
-  // 准备下一轮对话 - 此函数在UI中通过按钮调用，虽然IDE显示未使用
-  /* @ts-ignore */
-  const prepareNextRound = async () => {
-    if (currentRound >= maxRounds) {
-      setIsComplete(true);
+  // 解析文件操作
+  const parseFileOperations = (text: string): FileOperation[] => {
+    const operations: FileOperation[] = [];
+    const regex = /```file-operation\s+([\s\S]*?)```/g;
+    let match: RegExpExecArray | null;
+
+    while ((match = regex.exec(text)) !== null) {
+      const content = match[1];
+
+      // 解析操作类型
+      const typeMatch = content.match(/type:\s*(\w+)/);
+      if (!typeMatch) continue;
+
+      const type = typeMatch[1].toLowerCase();
+
+      // 解析文件路径
+      const pathMatch = content.match(/path:\s*([^\n]+)/);
+      if (!pathMatch) continue;
+
+      const path = pathMatch[1].trim();
+
+      if (type === "modify") {
+        // 解析修改操作
+        const startLineMatch = content.match(/startLine:\s*(\d+)/);
+        const endLineMatch = content.match(/endLine:\s*(\d+)/);
+        const contentMatch = content.match(/content:\s*\n([\s\S]*?)$/);
+
+        if (!startLineMatch || !endLineMatch || !contentMatch) continue;
+
+        operations.push({
+          type: FileOperationType.MODIFY,
+          path,
+          startLine: parseInt(startLineMatch[1]),
+          endLine: parseInt(endLineMatch[1]),
+          newContent: contentMatch[1].trim(),
+        });
+      } else if (type === "delete") {
+        // 解析删除操作
+        operations.push({
+          type: FileOperationType.DELETE,
+          path,
+        });
+      } else if (type === "create") {
+        // 解析创建操作
+        const contentMatch = content.match(/content:\s*\n([\s\S]*?)$/);
+
+        if (!contentMatch) continue;
+
+        operations.push({
+          type: FileOperationType.CREATE,
+          path,
+          content: contentMatch[1].trim(),
+        });
+      }
+    }
+
+    return operations;
+  };
+
+  // 已移除未使用的parseContinueFlag函数
+
+  // 处理文件操作
+  const handleFileOperation = async (operation: FileOperation) => {
+    setProcessingOperation(true);
+
+    try {
+      switch (operation.type) {
+        case FileOperationType.MODIFY:
+          if (
+            operation.startLine !== undefined &&
+            operation.endLine !== undefined &&
+            operation.newContent !== undefined
+          ) {
+            await modifyFile(
+              operation.path,
+              operation.startLine,
+              operation.endLine,
+              operation.newContent
+            );
+          }
+          break;
+
+        case FileOperationType.DELETE:
+          await deleteFile(operation.path);
+          break;
+
+        case FileOperationType.CREATE:
+          if (operation.content !== undefined) {
+            await createFile(operation.path, operation.content);
+          }
+          break;
+      }
+
+      // 从待处理列表中移除
+      setPendingOperations((prev) => prev.filter((op) => op !== operation));
+    } catch (error) {
+      console.error("文件操作错误:", error);
+    } finally {
+      setProcessingOperation(false);
+    }
+  };
+
+  // 处理权限请求
+  const handlePermissionRequest = () => {
+    setHasPermission(true);
+  };
+
+  // 处理用户输入提交
+  const handleSubmit = async () => {
+    if (!userInput.trim() || isTesting) {
+      console.log("提交被阻止 - 输入为空或正在处理中:", {
+        inputEmpty: !userInput.trim(),
+        isTesting,
+      });
       return;
     }
 
+    console.log("开始处理用户输入:", userInput);
+    setIsSubmitting(true);
     setIsTesting(true);
 
     try {
+      // 创建新的对话轮次
+      const newRound: DialogRound = {
+        userInput: userInput,
+        aiResponse: "",
+      };
+
+      // 添加到对话轮次
+      setDialogRounds((prev) => [...prev, newRound]);
+
+      // 更新当前轮次
       const nextRound = currentRound + 1;
       setCurrentRound(nextRound);
 
-      // 添加用户输入到对话历史
-      const userFollowUp = getLocalizedPrompt(
-        `请继续分析并执行必要的文件操作。`,
-        `Please continue analyzing and perform necessary file operations.`
-      );
+      // 获取完整对话历史的副本
+      const updatedHistory = [...conversationHistory];
 
-      // 获取上一个AI回复，用于提供上下文
-      const lastAiMessage = conversationHistory
-        .filter((msg) => msg.role === "assistant")
-        .pop();
+      // 检查最后一条消息是否是用户消息，如果是，可能是重复的
+      const lastMessage = updatedHistory[updatedHistory.length - 1];
+      const isLastMessageFromUser = lastMessage && lastMessage.role === "user";
 
-      // 添加上下文提示，帮助AI理解这是继续之前对话的请求
-      const enhancedFollowUp = lastAiMessage
-        ? `用户请求继续: "${userFollowUp}"\n\n这是对您之前回复的后续请求。请基于完整对话历史继续之前的对话，执行必要的文件操作。\n\n原始请求: ${userFollowUp}`
-        : userFollowUp;
+      // 如果最后一条消息不是用户消息，或者内容与当前输入不同，则添加新的用户消息
+      if (!isLastMessageFromUser || lastMessage.content !== userInput) {
+        console.log("添加新的用户输入到对话历史:", userInput);
+        updatedHistory.push({ role: "user", content: userInput });
+      } else {
+        console.log("用户输入已存在于对话历史中，不重复添加");
+      }
 
-      setConversationHistory((prev) => [
-        ...prev,
-        { role: "user", content: enhancedFollowUp },
-      ]);
+      setConversationHistory(updatedHistory);
 
-      // 创建新的对话轮次
-      setDialogRounds((prev) => [
-        ...prev,
-        {
-          userInput: userFollowUp,
-          aiResponse: "",
-        },
-      ]);
+      // 清空输入框
+      setUserInput("");
 
       // 首先索引相关文件
       setIsIndexing(true);
-      const relevantFilesResult = await findRelevantFiles(
-        userFollowUp,
-        filePaths
-      );
+      const relevantFilesResult = await findRelevantFiles(userInput, filePaths);
       setIsIndexing(false);
 
       const parsedResult = parseFilePathsResult(relevantFilesResult);
@@ -798,42 +947,85 @@ ${functions
         return updated;
       });
 
-      // 获取AI响应
-      await continueConversation(nextRound - 1, relevantFiles);
+      // 获取AI响应 - 传递当前轮次索引和用户输入
+      const currentUserInputForAI = userInput; // 保存当前用户输入
+      console.log("传递给AI的当前用户输入:", currentUserInputForAI);
+      await continueConversation(
+        nextRound - 1,
+        relevantFiles,
+        currentUserInputForAI
+      );
+      console.log("handleSubmit - AI响应处理完成");
     } catch (error) {
-      console.error("准备下一轮对话错误:", error);
+      console.error("提交用户输入错误:", error);
+      // 发生错误时也要重置状态
+      setIsComplete(false);
     } finally {
-      setIsTesting(false);
+      // 只重置提交状态，isTesting状态由continueConversation负责重置
+      setIsSubmitting(false);
+      console.log("handleSubmit - 提交状态已重置");
+    }
+  };
+
+  // 处理输入框按键事件
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSubmit();
     }
   };
 
   // 继续对话
   const continueConversation = async (
     roundIndex: number,
-    relevantFiles: string[] = []
+    relevantFiles: string[] = [],
+    userInputOverride: string = "" // 新增参数，接收当前用户输入
   ) => {
+    console.log(
+      "继续对话 - 轮次:",
+      roundIndex,
+      "相关文件数:",
+      relevantFiles.length,
+      "用户输入覆盖:",
+      userInputOverride ? "是" : "否"
+    );
     setIsTesting(true);
 
     try {
-      // 构建增强的提示，包含文件内容
-      let enhancedInput = "";
+      // 确定要使用的用户输入
+      let effectiveUserInput = "";
 
-      // 获取当前轮次的用户输入
-      if (dialogRounds[roundIndex]) {
-        enhancedInput = dialogRounds[roundIndex].userInput;
-      } else {
-        // 如果找不到当前轮次，使用最后一个用户输入
+      // 优先使用传入的覆盖输入
+      if (userInputOverride) {
+        effectiveUserInput = userInputOverride;
+        console.log("使用传入的用户输入覆盖");
+      }
+      // 其次尝试从对话轮次获取
+      else if (dialogRounds[roundIndex] && dialogRounds[roundIndex].userInput) {
+        effectiveUserInput = dialogRounds[roundIndex].userInput;
+        console.log("使用对话轮次中的用户输入");
+      }
+      // 最后尝试从对话历史获取
+      else {
         const lastUserMessage = conversationHistory
           .filter((msg) => msg.role === "user")
           .pop();
         if (lastUserMessage) {
-          enhancedInput = lastUserMessage.content;
+          effectiveUserInput = lastUserMessage.content;
+          console.log("使用对话历史中的最后一条用户输入");
         }
       }
 
-      // 添加相关文件内容
+      console.log(
+        "当前用户输入:",
+        effectiveUserInput.substring(0, 50) +
+          (effectiveUserInput.length > 50 ? "..." : "")
+      );
+
+      // 构建文件内容字符串
+      let fileContentsString = "";
       if (relevantFiles.length > 0) {
-        enhancedInput += "\n\n相关文件内容:\n\n";
+        fileContentsString = "相关文件内容:\n\n";
 
         for (const path of relevantFiles) {
           const entry = currentScan?.entries.find(
@@ -904,58 +1096,299 @@ ${functions
                 .join("\n");
             })();
 
-            enhancedInput += `文件: ${path}\n\`\`\`\n${contentWithLineNumbers}\n\`\`\`\n\n`;
+            fileContentsString += `文件: ${path}\n\`\`\`\n${contentWithLineNumbers}\n\`\`\`\n\n`;
           }
         }
       }
 
-      // 更新对话历史中的最后一个用户消息，使用增强的提示
-      const updatedHistory = [...conversationHistory];
-      // 找到最后一个用户消息的索引
-      const lastUserIndex = updatedHistory
-        .map((msg) => msg.role)
-        .lastIndexOf("user");
-      if (lastUserIndex !== -1) {
-        // 保存原始用户输入，用于显示在UI中
-        const originalUserInput = updatedHistory[lastUserIndex].content;
+      // 构建系统提示词，每次对话都重新构建
+      const systemPrompt = getLocalizedPrompt(
+        `你是一个强大的AI代码智能体，能够帮助用户修改、删除和创建文件。你可以直接操作用户的代码库，并具有高级编程理解能力。
 
-        if (originalUserInput.length < 10) {
-          // 添加上下文提示，帮助AI理解简短回复
-          const contextPrompt = `用户回复: "${originalUserInput}"\n\n这是对您之前问题的回答。请基于完整对话历史理解这个简短回复，并继续之前的对话。`;
+请特别注意：
+1. 请记住完整的对话历史，理解用户的问题可能是对之前对话的延续。
+2. 如果用户提供简短回复（如"是的"、"好的"、"明天呢"），应理解为对之前对话的回应或延续。
+3. 只有当用户明确提出新问题或改变话题时，才切换到新话题。
+4. 当用户提出非代码相关的问题，请自然地回答，不要强行引导回代码话题。
+5. 避免在每次回复中都询问是否需要帮助编写代码。
 
-          // 如果有文件内容，保留文件内容部分
-          if (enhancedInput.includes("相关文件内容:")) {
-            enhancedInput =
-              contextPrompt +
-              "\n\n相关文件内容:" +
-              enhancedInput.split("相关文件内容:")[1];
-          } else {
-            enhancedInput = contextPrompt + "\n\n" + enhancedInput;
-          }
+## 编程能力增强指南
+1. **代码理解与分析**：
+   - 主动分析代码结构、设计模式和架构
+   - 识别潜在的代码问题、性能瓶颈和安全漏洞
+   - 理解不同编程语言的特性和最佳实践
 
-          // 更新组件状态中的对话历史，确保后续对话能够使用增强的上下文
-          setConversationHistory((prev) => {
-            const updated = [...prev];
-            if (lastUserIndex < updated.length) {
-              updated[lastUserIndex] = {
-                role: "user",
-                content: enhancedInput,
-              };
+2. **智能代码生成**：
+   - 生成符合项目风格和约定的代码
+   - 自动添加适当的注释和文档
+   - 考虑边界情况和异常处理
+   - 遵循SOLID、DRY等编程原则
+
+3. **上下文感知**：
+   - 记住并理解之前的对话内容和代码修改
+   - 基于项目的整体结构提供建议
+   - 考虑代码修改的连锁反应和依赖关系
+
+4. **主动建议**：
+   - 提供代码优化和重构建议
+   - 推荐更现代、更高效的实现方式
+   - 建议添加测试以确保代码质量
+
+## 文件操作指南
+当需要修改文件时，你应该：
+1. 明确指出要修改的文件路径
+2. 指定要修改的行号范围（起始行到结束行）
+3. 提供新的内容
+4. 解释修改的目的和影响
+
+当需要删除文件时，你应该：
+1. 明确指出要删除的文件路径
+2. 解释为什么需要删除该文件
+3. 评估删除可能带来的影响
+
+当需要创建文件时，你应该：
+1. 明确指出要创建的文件路径
+2. 提供完整的文件内容
+3. 解释文件的用途和它如何与项目其他部分集成
+
+## 文件操作格式
+你的回复应该使用以下格式来表示文件操作：
+
+对于修改文件：
+\`\`\`file-operation
+type: modify
+path: 文件路径
+startLine: 起始行号
+endLine: 结束行号
+content:
+新的内容
+\`\`\`
+
+对于删除文件：
+\`\`\`file-operation
+type: delete
+path: 文件路径
+\`\`\`
+
+对于创建文件：
+\`\`\`file-operation
+type: create
+path: 文件路径
+content:
+文件内容
+\`\`\`
+
+每次操作都需要用户确认后才能执行。请确保你的操作是安全的，并且不会破坏用户的代码库。
+
+## 对话控制
+在每轮对话结束时，你应该评估是否需要继续对话。如果需要，请在回复的最后添加：
+\`\`\`continue
+true
+\`\`\`
+
+如果不需要继续，请添加：
+\`\`\`continue
+false
+\`\`\``,
+        `You are a powerful AI code agent that can help users modify, delete, and create files. You can directly operate on the user's codebase with advanced programming understanding.
+
+Please pay special attention:
+1. Remember the complete conversation history and understand that the user's question may be a continuation of the previous conversation.
+2. If the user provides a short reply (such as "yes", "okay", "tomorrow?"), interpret it as a response to or continuation of the previous conversation.
+3. Only switch to a new topic when the user clearly asks a new question or changes the topic.
+4. When users ask non-code related questions, answer naturally without forcing the conversation back to code topics.
+5. Avoid asking in every reply whether the user needs help writing code.
+
+## Enhanced Programming Capabilities
+1. **Code Understanding & Analysis**:
+   - Actively analyze code structure, design patterns, and architecture
+   - Identify potential code issues, performance bottlenecks, and security vulnerabilities
+   - Understand features and best practices of different programming languages
+
+2. **Intelligent Code Generation**:
+   - Generate code that matches project style and conventions
+   - Automatically add appropriate comments and documentation
+   - Consider edge cases and exception handling
+   - Follow SOLID, DRY, and other programming principles
+
+3. **Context Awareness**:
+   - Remember and understand previous conversation content and code modifications
+   - Provide suggestions based on the overall project structure
+   - Consider the ripple effects and dependencies of code changes
+
+4. **Proactive Suggestions**:
+   - Offer code optimization and refactoring suggestions
+   - Recommend more modern and efficient implementation approaches
+   - Suggest adding tests to ensure code quality
+
+## File Operation Guidelines
+When you need to modify a file, you should:
+1. Clearly indicate the file path to be modified
+2. Specify the line number range to be modified (start line to end line)
+3. Provide the new content
+4. Explain the purpose and impact of the modification
+
+When you need to delete a file, you should:
+1. Clearly indicate the file path to be deleted
+2. Explain why the file needs to be deleted
+3. Assess the potential impact of the deletion
+
+When you need to create a file, you should:
+1. Clearly indicate the file path to be created
+2. Provide the complete file content
+3. Explain the purpose of the file and how it integrates with other parts of the project
+
+## File Operation Format
+Your response should use the following format to represent file operations:
+
+For modifying files:
+\`\`\`file-operation
+type: modify
+path: file_path
+startLine: start_line_number
+endLine: end_line_number
+content:
+new_content
+\`\`\`
+
+For deleting files:
+\`\`\`file-operation
+type: delete
+path: file_path
+\`\`\`
+
+For creating files:
+\`\`\`file-operation
+type: create
+path: file_path
+content:
+file_content
+\`\`\`
+
+Each operation needs to be confirmed by the user before execution. Please ensure that your operations are safe and will not damage the user's codebase.
+
+## Conversation Control
+At the end of each round of conversation, you should evaluate whether to continue the conversation. If needed, please add at the end of your reply:
+\`\`\`continue
+true
+\`\`\`
+
+If not needed, please add:
+\`\`\`continue
+false
+\`\`\``
+      );
+
+      // 保留完整的对话历史，不再限制长度
+      // 只有在对话历史过长时才进行裁剪，避免超出模型的上下文窗口
+      const maxTokenEstimate = 12000; // 估计的最大token数
+      let limitedHistory = [...conversationHistory];
+
+      // 估算当前历史的token数
+      const estimateTokens = (msgs: typeof limitedHistory): number => {
+        // 粗略估计：每个英文单词约1.3个token，每个中文字符约2个token
+        let total = 0;
+        for (const msg of msgs) {
+          const contentLength = msg.content.length;
+          const englishWords = msg.content.match(/[a-zA-Z]+/g) || [];
+          const englishWordCount = englishWords.length;
+          const nonEnglishCharCount = contentLength - englishWordCount;
+          total += englishWordCount * 1.3 + nonEnglishCharCount * 2;
+        }
+        return total;
+      };
+
+      // 如果估计的token数超过限制，则裁剪历史
+      if (estimateTokens(limitedHistory) > maxTokenEstimate) {
+        // 保留系统提示和最近的对话
+        const systemMessages = limitedHistory.filter(
+          (msg) => msg.role === "system"
+        );
+
+        // 从最新的消息开始，尽可能多地保留对话
+        const recentMessages: typeof limitedHistory = [];
+        let tokenCount = 0;
+
+        for (let i = limitedHistory.length - 1; i >= 0; i--) {
+          const msg = limitedHistory[i];
+          if (msg.role !== "system") {
+            const msgTokens = estimateTokens([msg]);
+            if (tokenCount + msgTokens <= maxTokenEstimate * 0.7) {
+              // 留30%给系统提示和新内容
+              recentMessages.unshift(msg);
+              tokenCount += msgTokens;
+            } else {
+              break;
             }
-            return updated;
-          });
+          }
         }
 
-        // 更新当前函数中使用的对话历史
-        updatedHistory[lastUserIndex] = {
-          role: "user",
-          content: enhancedInput,
-        };
+        limitedHistory = [...systemMessages, ...recentMessages];
       }
+
+      // 构建新的对话历史，使用新的系统提示
+      const newHistory = [
+        { role: "system", content: systemPrompt },
+        ...limitedHistory.filter((msg) => msg.role !== "system"),
+      ];
+
+      // 确保对话历史中包含当前有效的用户输入
+      const lastUserMessage = newHistory
+        .filter((msg) => msg.role === "user")
+        .pop();
+
+      // 检查最后一个用户消息是否与当前有效的用户输入匹配
+      const hasEffectiveUserInput =
+        lastUserMessage && lastUserMessage.content.includes(effectiveUserInput);
+
+      // 如果没有当前有效的用户输入，添加到历史
+      if (effectiveUserInput && !hasEffectiveUserInput) {
+        console.log(
+          "添加有效的用户输入到对话历史:",
+          effectiveUserInput.substring(0, 30) + "..."
+        );
+        newHistory.push({ role: "user", content: effectiveUserInput });
+      }
+
+      // 如果有文件内容，添加到最后一个用户消息
+      if (fileContentsString && newHistory.length > 1) {
+        const lastUserIndex = newHistory
+          .map((msg) => msg.role)
+          .lastIndexOf("user");
+        if (lastUserIndex !== -1) {
+          // 确保最后一个用户消息包含当前有效的用户输入
+          const lastUserContent = newHistory[lastUserIndex].content;
+          if (!lastUserContent.includes(effectiveUserInput)) {
+            console.log(
+              "最后一个用户消息不包含当前有效的用户输入，添加有效输入"
+            );
+            newHistory[lastUserIndex] = {
+              role: "user",
+              content: effectiveUserInput + "\n\n" + fileContentsString,
+            };
+          } else {
+            console.log(
+              "最后一个用户消息已包含当前有效的用户输入，添加文件内容"
+            );
+            newHistory[lastUserIndex] = {
+              role: "user",
+              content: lastUserContent + "\n\n" + fileContentsString,
+            };
+          }
+        }
+      }
+
+      console.log(
+        "对话历史:",
+        newHistory.map((msg) => ({
+          role: msg.role,
+          contentLength: msg.content.length,
+        }))
+      );
 
       // 获取AI响应
       let response = "";
-      await chatCompletion(updatedHistory, {
+      await chatCompletion(newHistory, {
         stream: true,
         onUpdate: (chunk) => {
           response += chunk;
@@ -969,8 +1402,18 @@ ${functions
 
       // 解析文件操作
       const fileOperations = parseFileOperations(response);
-      // 解析是否需要继续对话（目前未使用，由用户手动继续）
-      // const shouldContinue = parseContinueFlag(response);
+
+      // 解析是否需要继续对话
+      const shouldContinue = shouldContinueDialog(response);
+
+      // 根据shouldContinueDialog的结果设置完成状态
+      // 只有当明确指示不需要继续对话时，才设置为完成
+      if (!shouldContinue) {
+        setIsComplete(true);
+      } else {
+        // 确保完成状态被重置，允许继续对话
+        setIsComplete(false);
+      }
 
       // 更新对话轮次
       setDialogRounds((prev) => {
@@ -988,231 +1431,39 @@ ${functions
         setPendingOperations((prev) => [...prev, ...fileOperations]);
       }
 
-      // 添加到对话历史
-      setConversationHistory((prev) => [
-        ...prev,
-        { role: "assistant", content: response },
-      ]);
+      // 添加到对话历史，确保不重复添加
+      setConversationHistory((prev) => {
+        // 检查最后一条消息是否已经是AI响应
+        const lastMessage = prev[prev.length - 1];
+        const isLastMessageFromAI =
+          lastMessage && lastMessage.role === "assistant";
+
+        // 如果最后一条消息不是AI响应，或者内容与当前响应不同，则添加新的AI响应
+        if (!isLastMessageFromAI || lastMessage.content !== response) {
+          console.log("添加新的AI响应到对话历史");
+          return [...prev, { role: "assistant", content: response }];
+        } else {
+          console.log("AI响应已存在于对话历史中，不重复添加");
+          return prev;
+        }
+      });
 
       // 如果需要继续对话，显示输入框让用户继续
       // 不再自动准备下一轮
+      console.log(
+        "对话处理完成 - 是否继续:",
+        shouldContinue,
+        "是否完成:",
+        !shouldContinue
+      );
     } catch (error) {
       console.error("对话继续错误:", error);
+      // 发生错误时也要重置状态
+      setIsComplete(false);
     } finally {
+      // 确保处理完成后重置测试状态，允许用户继续输入
       setIsTesting(false);
-    }
-  };
-
-  // 解析文件操作
-  const parseFileOperations = (text: string): FileOperation[] => {
-    const operations: FileOperation[] = [];
-    const regex = /```file-operation\s+([\s\S]*?)```/g;
-    let match: RegExpExecArray | null;
-
-    while ((match = regex.exec(text)) !== null) {
-      const content = match[1];
-
-      // 解析操作类型
-      const typeMatch = content.match(/type:\s*(\w+)/);
-      if (!typeMatch) continue;
-
-      const type = typeMatch[1].toLowerCase();
-
-      // 解析文件路径
-      const pathMatch = content.match(/path:\s*([^\n]+)/);
-      if (!pathMatch) continue;
-
-      const path = pathMatch[1].trim();
-
-      if (type === "modify") {
-        // 解析修改操作
-        const startLineMatch = content.match(/startLine:\s*(\d+)/);
-        const endLineMatch = content.match(/endLine:\s*(\d+)/);
-        const contentMatch = content.match(/content:\s*\n([\s\S]*?)$/);
-
-        if (!startLineMatch || !endLineMatch || !contentMatch) continue;
-
-        operations.push({
-          type: FileOperationType.MODIFY,
-          path,
-          startLine: parseInt(startLineMatch[1]),
-          endLine: parseInt(endLineMatch[1]),
-          newContent: contentMatch[1].trim(),
-        });
-      } else if (type === "delete") {
-        // 解析删除操作
-        operations.push({
-          type: FileOperationType.DELETE,
-          path,
-        });
-      } else if (type === "create") {
-        // 解析创建操作
-        const contentMatch = content.match(/content:\s*\n([\s\S]*?)$/);
-
-        if (!contentMatch) continue;
-
-        operations.push({
-          type: FileOperationType.CREATE,
-          path,
-          content: contentMatch[1].trim(),
-        });
-      }
-    }
-
-    return operations;
-  };
-
-  // 解析是否继续对话 - 目前未使用，保留供未来功能使用
-  /* @ts-ignore */
-  const parseContinueFlag = (text: string): boolean => {
-    const regex = /```continue\s+(true|false)\s*```/;
-    const match = text.match(regex);
-
-    if (match && match[1] === "true") {
-      return true;
-    }
-
-    return false;
-  };
-
-  // 处理文件操作
-  const handleFileOperation = async (operation: FileOperation) => {
-    setProcessingOperation(true);
-
-    try {
-      switch (operation.type) {
-        case FileOperationType.MODIFY:
-          if (
-            operation.startLine !== undefined &&
-            operation.endLine !== undefined &&
-            operation.newContent !== undefined
-          ) {
-            await modifyFile(
-              operation.path,
-              operation.startLine,
-              operation.endLine,
-              operation.newContent
-            );
-          }
-          break;
-
-        case FileOperationType.DELETE:
-          await deleteFile(operation.path);
-          break;
-
-        case FileOperationType.CREATE:
-          if (operation.content !== undefined) {
-            await createFile(operation.path, operation.content);
-          }
-          break;
-      }
-
-      // 从待处理列表中移除
-      setPendingOperations((prev) => prev.filter((op) => op !== operation));
-    } catch (error) {
-      console.error("文件操作错误:", error);
-    } finally {
-      setProcessingOperation(false);
-    }
-  };
-
-  // 处理权限请求
-  const handlePermissionRequest = () => {
-    setHasPermission(true);
-  };
-
-  // 处理用户输入提交
-  const handleSubmit = async () => {
-    if (!userInput.trim() || isTesting) return;
-
-    setIsSubmitting(true);
-    setIsTesting(true);
-
-    try {
-      // 创建新的对话轮次
-      const newRound: DialogRound = {
-        userInput: userInput,
-        aiResponse: "",
-      };
-
-      // 添加到对话轮次
-      setDialogRounds((prev) => [...prev, newRound]);
-
-      // 更新当前轮次
-      const nextRound = currentRound + 1;
-      setCurrentRound(nextRound);
-
-      // 添加用户输入到对话历史
-      // 检查是否是简短回复，如果是，添加上下文提示
-      if (userInput.length < 10 && conversationHistory.length > 0) {
-        // 获取上一个AI回复，用于提供上下文
-        const lastAiMessage = conversationHistory
-          .filter((msg) => msg.role === "assistant")
-          .pop();
-
-        if (lastAiMessage) {
-          // 添加上下文提示，帮助AI理解简短回复
-          const enhancedInput = `用户回复: "${userInput}"\n\n这是对您之前问题的回答。请基于完整对话历史理解这个简短回复，并继续之前的对话。\n\n原始回复: ${userInput}`;
-
-          setConversationHistory((prev) => [
-            ...prev,
-            { role: "user", content: enhancedInput },
-          ]);
-        } else {
-          // 如果没有上一个AI回复，直接添加用户输入
-          setConversationHistory((prev) => [
-            ...prev,
-            { role: "user", content: userInput },
-          ]);
-        }
-      } else {
-        // 如果不是简短回复，直接添加用户输入
-        setConversationHistory((prev) => [
-          ...prev,
-          { role: "user", content: userInput },
-        ]);
-      }
-
-      // 清空输入框
-      setUserInput("");
-
-      // 首先索引相关文件
-      setIsIndexing(true);
-      const relevantFilesResult = await findRelevantFiles(userInput, filePaths);
-      setIsIndexing(false);
-
-      const parsedResult = parseFilePathsResult(relevantFilesResult);
-      const relevantFiles = parsedResult.relevant_paths || [];
-      setIndexedFiles(relevantFiles);
-
-      // 更新对话轮次，添加相关文件
-      setDialogRounds((prev) => {
-        const updated = [...prev];
-        if (updated.length > 0) {
-          const lastIndex = updated.length - 1;
-          updated[lastIndex] = {
-            ...updated[lastIndex],
-            files: relevantFiles,
-          };
-        }
-        return updated;
-      });
-
-      // 获取AI响应
-      await continueConversation(nextRound - 1, relevantFiles);
-    } catch (error) {
-      console.error("提交用户输入错误:", error);
-    } finally {
-      setIsSubmitting(false);
-      setIsTesting(false);
-    }
-  };
-
-  // 处理输入框按键事件
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSubmit();
+      console.log("对话状态已重置 - 可以继续输入");
     }
   };
 
@@ -1609,13 +1860,13 @@ ${functions
                 }
                 className="w-full border border-gray-300 dark:border-gray-600 rounded-lg py-3 px-4 pr-12 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-gray-100"
                 rows={3}
-                disabled={isTesting}
+                disabled={isTesting || isSubmitting}
               />
               <button
                 onClick={handleSubmit}
-                disabled={isTesting || !userInput.trim()}
+                disabled={isTesting || isSubmitting || !userInput.trim()}
                 className={`absolute right-3 bottom-3 p-2 rounded-full ${
-                  isTesting || !userInput.trim()
+                  isTesting || isSubmitting || !userInput.trim()
                     ? "bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed"
                     : "bg-blue-500 hover:bg-blue-600 text-white"
                 } transition-colors`}
@@ -1628,7 +1879,7 @@ ${functions
                 >
                   <path
                     fillRule="evenodd"
-                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.707l-3-3a1 1 0 00-1.414 1.414L10.586 9H7a1 1 0 100 2h3.586l-1.293 1.293a1 1 0 101.414 1.414l3-3a1 1 0 000-1.414z"
+                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.707l-3-3a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
                     clipRule="evenodd"
                   />
                 </svg>
