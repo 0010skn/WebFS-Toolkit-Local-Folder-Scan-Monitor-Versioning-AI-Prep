@@ -1,6 +1,7 @@
 /**
  * 向量化服务模块 - 封装Pollinations API
  * 提供文件路径定位和语义分析功能
+ * 以及文件操作功能，支持智能体修改、删除和创建文件
  */
 
 import { getAllKnowledgeEntries } from "./knowledgeService";
@@ -571,15 +572,49 @@ Available file paths:`
           const content = fileContents[path];
           // 限制每个文件内容的长度，避免提示过长
           const truncatedContent =
-            content.length > 1000
-              ? content.substring(0, 1000) + "..."
+            content.length > 100000
+              ? content.substring(0, 100000) + "..."
               : content;
 
-          // 添加行号到每行
-          const contentWithLineNumbers = truncatedContent
-            .split("\n")
-            .map((line, index) => `${index + 1} ${line}`)
-            .join("\n");
+          // 添加行号到每行，但跳过函数信息注释
+          const contentWithLineNumbers = (() => {
+            const lines = truncatedContent.split("\n");
+
+            // 检查是否包含函数信息注释
+            const hasFunctionInfo =
+              lines.length > 2 &&
+              lines[0].includes("文件中的函数和方法:") &&
+              lines[0].startsWith("/*");
+
+            // 找到实际内容的起始行
+            let startIndex = 0;
+            if (hasFunctionInfo) {
+              // 查找注释结束位置
+              for (let i = 0; i < lines.length; i++) {
+                if (lines[i].includes("*/")) {
+                  // 注释结束行的下一行才是实际内容
+                  startIndex = i + 1;
+                  // 如果下一行是空行，再跳过一行
+                  if (startIndex < lines.length && !lines[startIndex].trim()) {
+                    startIndex++;
+                  }
+                  break;
+                }
+              }
+            }
+
+            // 只给实际内容添加行号
+            return lines
+              .map((line, index) => {
+                // 如果是函数信息注释部分，不添加行号
+                if (index < startIndex) {
+                  return line;
+                }
+                // 对实际内容添加行号，行号从1开始
+                return `${index - startIndex + 1} ${line}`;
+              })
+              .join("\n");
+          })();
 
           prompt += getLocalizedPrompt(
             `文件: ${path}\n内容:\n${contentWithLineNumbers}\n\n---\n\n`,
@@ -914,6 +949,283 @@ export async function vectorizeAllContent(
  * @param onUpdate 可选的流式更新回调
  * @returns 生成的内容
  */
+/**
+ * 获取文件句柄
+ * @param filePath 文件路径（相对于项目根目录）
+ * @returns 文件句柄
+ */
+async function getFileHandle(
+  filePath: string
+): Promise<FileSystemFileHandle | null> {
+  try {
+    // 从全局变量获取目录句柄
+    const directoryHandle = window.directoryHandle;
+
+    if (!directoryHandle) {
+      console.error("未找到目录句柄，请先选择项目文件夹");
+      return null;
+    }
+
+    // 分割路径
+    const pathParts = filePath
+      .split(/[\/\\]/)
+      .filter((part) => part.length > 0);
+
+    // 如果没有路径部分，说明文件在根目录
+    if (pathParts.length === 0) {
+      console.error("无效的文件路径");
+      return null;
+    }
+
+    // 获取文件名（路径的最后一部分）
+    const fileName = pathParts.pop() as string;
+
+    // 导航到包含文件的目录
+    let currentDir = directoryHandle;
+    for (const part of pathParts) {
+      try {
+        currentDir = await currentDir.getDirectoryHandle(part);
+      } catch (error) {
+        console.error(`找不到目录: ${part}`, error);
+        return null;
+      }
+    }
+
+    // 获取文件句柄
+    try {
+      return await currentDir.getFileHandle(fileName);
+    } catch (error) {
+      console.error(`找不到文件: ${fileName}`, error);
+      return null;
+    }
+  } catch (error) {
+    console.error("获取文件句柄时出错:", error);
+    return null;
+  }
+}
+
+/**
+ * 创建目录（如果不存在）
+ * @param dirPath 目录路径
+ * @returns 目录句柄
+ */
+async function createDirectory(
+  dirPath: string
+): Promise<FileSystemDirectoryHandle | null> {
+  try {
+    const directoryHandle = window.directoryHandle;
+
+    if (!directoryHandle) {
+      console.error("未找到目录句柄，请先选择项目文件夹");
+      return null;
+    }
+
+    // 分割路径
+    const pathParts = dirPath.split(/[\/\\]/).filter((part) => part.length > 0);
+
+    // 如果没有路径部分，返回根目录
+    if (pathParts.length === 0) {
+      return directoryHandle;
+    }
+
+    // 逐级创建目录
+    let currentDir = directoryHandle;
+    for (const part of pathParts) {
+      try {
+        currentDir = await currentDir.getDirectoryHandle(part, {
+          create: true,
+        });
+      } catch (error) {
+        console.error(`无法创建目录: ${part}`, error);
+        return null;
+      }
+    }
+
+    return currentDir;
+  } catch (error) {
+    console.error("创建目录时出错:", error);
+    return null;
+  }
+}
+
+/**
+ * 修改文件内容
+ * @param filePath 文件路径
+ * @param startLine 起始行号
+ * @param endLine 结束行号
+ * @param newContent 新内容
+ * @returns 是否成功
+ */
+export async function modifyFile(
+  filePath: string,
+  startLine: number,
+  endLine: number,
+  newContent: string
+): Promise<boolean> {
+  try {
+    // 获取文件句柄
+    const fileHandle = await getFileHandle(filePath);
+    if (!fileHandle) {
+      return false;
+    }
+
+    // 读取文件内容
+    const file = await fileHandle.getFile();
+    const fileContent = await file.text();
+    const lines = fileContent.split("\n");
+
+    // 验证行号范围
+    if (startLine < 1 || endLine > lines.length || startLine > endLine) {
+      console.error(
+        `行号范围无效: ${startLine}-${endLine}, 文件总行数: ${lines.length}`
+      );
+      return false;
+    }
+
+    // 替换指定行的内容
+    const newLines = [
+      ...lines.slice(0, startLine - 1),
+      ...newContent.split("\n"),
+      ...lines.slice(endLine),
+    ];
+
+    // 写入文件
+    const writable = await fileHandle.createWritable();
+    await writable.write(newLines.join("\n"));
+    await writable.close();
+
+    console.log(`成功修改文件: ${filePath}, 行: ${startLine}-${endLine}`);
+    return true;
+  } catch (error) {
+    console.error(`修改文件失败: ${filePath}`, error);
+    return false;
+  }
+}
+
+/**
+ * 删除文件
+ * @param filePath 文件路径
+ * @returns 是否成功
+ */
+export async function deleteFile(filePath: string): Promise<boolean> {
+  try {
+    // 分割路径
+    const pathParts = filePath
+      .split(/[\/\\]/)
+      .filter((part) => part.length > 0);
+
+    // 如果没有路径部分，说明文件在根目录
+    if (pathParts.length === 0) {
+      console.error("无效的文件路径");
+      return false;
+    }
+
+    // 获取文件名和父目录
+    const fileName = pathParts.pop() as string;
+
+    // 获取父目录句柄
+    const directoryHandle = window.directoryHandle;
+    if (!directoryHandle) {
+      console.error("未找到目录句柄，请先选择项目文件夹");
+      return false;
+    }
+
+    // 导航到包含文件的目录
+    let parentDir = directoryHandle;
+    for (const part of pathParts) {
+      try {
+        parentDir = await parentDir.getDirectoryHandle(part);
+      } catch (error) {
+        console.error(`找不到目录: ${part}`, error);
+        return false;
+      }
+    }
+
+    // 删除文件
+    await parentDir.removeEntry(fileName);
+
+    console.log(`成功删除文件: ${filePath}`);
+    return true;
+  } catch (error) {
+    console.error(`删除文件失败: ${filePath}`, error);
+    return false;
+  }
+}
+
+/**
+ * 创建文件
+ * @param filePath 文件路径
+ * @param content 文件内容
+ * @returns 是否成功
+ */
+export async function createFile(
+  filePath: string,
+  content: string
+): Promise<boolean> {
+  try {
+    // 分割路径
+    const pathParts = filePath
+      .split(/[\/\\]/)
+      .filter((part) => part.length > 0);
+
+    // 如果没有路径部分，说明文件在根目录
+    if (pathParts.length === 0) {
+      console.error("无效的文件路径");
+      return false;
+    }
+
+    // 获取文件名（路径的最后一部分）
+    const fileName = pathParts.pop() as string;
+
+    // 获取或创建父目录
+    const dirPath = pathParts.join("/");
+    const parentDir = await createDirectory(dirPath);
+    if (!parentDir) {
+      return false;
+    }
+
+    // 检查文件是否已存在
+    try {
+      await parentDir.getFileHandle(fileName, { create: false });
+      console.error(`文件已存在: ${filePath}`);
+      return false;
+    } catch (error) {
+      // 文件不存在，可以继续创建
+    }
+
+    // 创建文件
+    const fileHandle = await parentDir.getFileHandle(fileName, {
+      create: true,
+    });
+    const writable = await fileHandle.createWritable();
+    await writable.write(content);
+    await writable.close();
+
+    console.log(`成功创建文件: ${filePath}`);
+    return true;
+  } catch (error) {
+    console.error(`创建文件失败: ${filePath}`, error);
+    return false;
+  }
+}
+
+/**
+ * 判断是否需要继续对话
+ * @param response AI响应内容
+ * @returns 是否继续
+ */
+export function shouldContinueDialog(response: string): boolean {
+  // 检查响应中是否包含继续标记
+  const continueRegex = /```continue\s+(true|false)\s*```/;
+  const match = response.match(continueRegex);
+
+  if (match && match[1] === "true") {
+    return true;
+  }
+
+  return false;
+}
+
 export async function searchGpt(
   keyword: string,
   onUpdate?: (chunk: string) => void
@@ -922,7 +1234,7 @@ export async function searchGpt(
     // 构建提示词
     const prompt = getLocalizedPrompt(
       `针对关键词 "${keyword}"，执行最大范围的实时搜索。将所有搜索结果整合提炼，并以结构清晰的 Markdown 文档格式输出。
-      
+
 文档要求：
 1. 以"${keyword}"作为文档标题
 2. 包含完整的背景信息和最新动态
@@ -939,7 +1251,7 @@ export async function searchGpt(
 - 适合作为知识库参考资料`,
 
       `For the keyword "${keyword}", perform a comprehensive real-time search. Synthesize all search results and output in a well-structured Markdown document format.
-      
+
 Document requirements:
 1. Use "${keyword}" as the document title
 2. Include complete background information and latest developments

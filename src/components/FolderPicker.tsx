@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAtom } from "jotai";
 import {
   directoryHandleAtom,
@@ -10,6 +10,13 @@ import {
   gitignoreContentAtom,
   themeAtom,
 } from "../lib/store";
+
+// 确保window.directoryHandle存在
+declare global {
+  interface Window {
+    directoryHandle: FileSystemDirectoryHandle | null;
+  }
+}
 import {
   requestDirectoryAccess,
   checkGitignoreExists,
@@ -49,6 +56,9 @@ export default function FolderPicker() {
 
       // 更新目录句柄
       setDirectoryHandle(dirHandle);
+
+      // 将目录句柄保存到全局变量，供文件操作使用
+      window.directoryHandle = dirHandle;
     } catch (error) {
       console.error("选择文件夹时出错:", error);
       setErrorMessage(
