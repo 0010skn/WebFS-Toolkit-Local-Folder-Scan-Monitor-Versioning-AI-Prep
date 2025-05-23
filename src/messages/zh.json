@@ -3,6 +3,27 @@
     "title": "Folda-Scan",
     "description": "代码项目扫描与监控"
   },
+  "github": {
+    "title": "从GitHub下载",
+    "description": "直接从GitHub下载并分析仓库",
+    "username": "用户名/组织名",
+    "repository": "仓库名",
+    "branch": "分支名",
+    "defaultBranch": "默认: main",
+    "download": "下载",
+    "downloading": "下载中...",
+    "cancel": "取消下载",
+    "success": "仓库下载成功",
+    "error": "仓库下载失败",
+    "networkError": "网络错误，请重试",
+    "invalidRepo": "请输入有效的用户名和仓库名",
+    "progress": "下载进度: {percent}%",
+    "placeholder": {
+      "username": "输入GitHub用户名或组织名",
+      "repository": "输入仓库名",
+      "branch": "输入分支名 (默认: main)"
+    }
+  },
   "nav": {
     "statistics": "统计"
   },

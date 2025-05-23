@@ -22,6 +22,7 @@ import KnowledgeModal from "../components/KnowledgeModal";
 import MultiThreadScanAlert from "../components/MultiThreadScanAlert";
 import IncrementalScanAlert from "../components/IncrementalScanAlert";
 import RssFeed from "../components/RssFeed";
+import GitHubDownloader from "../components/GitHubDownloader";
 
 export default function Home() {
   const [directoryHandle] = useAtom(directoryHandleAtom);
@@ -429,6 +430,9 @@ export default function Home() {
                       {/* 文件夹选择器 */}
                       <FolderPicker />
 
+                      {/* GitHub仓库下载功能 */}
+                      <GitHubDownloader />
+
                       {/* 快速启动区域 - 类似VSCode的欢迎页 */}
                       <div className="mt-8 pt-6 border-t border-gray-200 dark:border-gray-600">
                         <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-4 flex items-center">
@@ -559,6 +563,9 @@ export default function Home() {
 
               {/* 增量扫描支持提示 */}
               <IncrementalScanAlert />
+
+              {/* GitHub仓库下载功能 */}
+              <GitHubDownloader />
 
               <section className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden transition-colors duration-300 border border-gray-200 dark:border-gray-700">
                 <div className="p-6">

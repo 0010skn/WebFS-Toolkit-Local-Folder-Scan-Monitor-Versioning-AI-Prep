@@ -3,6 +3,27 @@
     "title": "Folda-Scan",
     "description": "Local Code Project Scanner & Monitor"
   },
+  "github": {
+    "title": "Download from GitHub",
+    "description": "Download and analyze repositories directly from GitHub",
+    "username": "Username/Organization",
+    "repository": "Repository Name",
+    "branch": "Branch Name",
+    "defaultBranch": "Default: main",
+    "download": "Download",
+    "downloading": "Downloading...",
+    "cancel": "Cancel Download",
+    "success": "Repository downloaded successfully",
+    "error": "Failed to download repository",
+    "networkError": "Network error, please try again",
+    "invalidRepo": "Please enter valid username and repository name",
+    "progress": "Download progress: {percent}%",
+    "placeholder": {
+      "username": "Enter GitHub username or organization",
+      "repository": "Enter repository name",
+      "branch": "Enter branch name (default: main)"
+    }
+  },
   "nav": {
     "statistics": "Statistics"
   },
