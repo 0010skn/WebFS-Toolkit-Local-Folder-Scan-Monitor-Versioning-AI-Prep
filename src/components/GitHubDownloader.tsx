@@ -48,11 +48,9 @@ export default function GitHubDownloader() {
     if (!validateForm()) return;
 
     try {
-      const downloadUrl = `https://api.github.com/${username}/${repository}/zip/${branch}`;
-
+      const downloadUrl = `https://api.github.com/repos/${username}/${repository}/zipball/${branch}`;
       // 打开新窗口进行下载
       window.open(downloadUrl, "_blank");
-
       // 显示成功消息
       setSuccess(true);
 
