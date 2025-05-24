@@ -9,7 +9,8 @@ import { getDefaultLocale } from "./i18n";
 
 // 基本配置
 const API_URL = "https://text.pollinations.ai/openai";
-
+const API_KEY = "";
+const Model = "";
 /**
  * 根据当前语言获取本地化的提示词
  * @param zh 中文提示词
@@ -656,7 +657,7 @@ Return only JSON format, without any other explanation. Format as follows:
       "You are a professional code project analysis tool. Your task is to analyze the user's query and find the most relevant files and knowledge base entries from the project. You must return at least 2 relevant file paths, even if the relevance is low."
     );
 
-    const response = await fetch("https://text.pollinations.ai/openai", {
+    const response = await fetch(API_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

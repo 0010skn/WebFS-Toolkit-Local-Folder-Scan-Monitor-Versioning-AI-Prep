@@ -129,7 +129,7 @@ const additionalChangelogs: ChangelogEntry[] = [
 async function fetchChangelogData(): Promise<ChangelogEntry[]> {
   try {
     const response = await fetch(
-      "https://api.github.com/repos/0010skn/WebFS-Toolkit-Local-Folder-Scan-Monitor-Versioning-AI-Prep/commits"
+      "https://api.github.com/repos/oldjs/web-code-agent"
     );
 
     if (!response.ok) {

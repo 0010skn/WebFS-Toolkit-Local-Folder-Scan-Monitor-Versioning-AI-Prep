@@ -119,6 +119,7 @@ const createEnhancedAtomOneLight = () => {
     "hljs-variable": "#e45649",
     "hljs-template-variable": "#e45649",
     "hljs-type": "#986801",
+
     "hljs-selector-class": "#986801",
     "hljs-selector-attr": "#986801",
     "hljs-selector-pseudo": "#986801",
@@ -170,8 +171,9 @@ const CodeBlock = ({
   className?: string;
   children: string;
 }) => {
-  const isDark = true;
-  // 改进语言检测：从className中提取语言信息
+  const { resolvedTheme } = useTheme();
+  const isDark = resolvedTheme === "dark";
+  // 从className中提取语言信息
   let language = className ? className.replace(/language-/, "") : "";
 
   // 如果语言是text或未指定，尝试自动检测语言
@@ -181,13 +183,13 @@ const CodeBlock = ({
 
   const [copied, setCopied] = useState(false);
 
-  // 如果是单行代码，不做特殊处理，保留原始的 ` 格式，让 processMarkdown 函数处理
+  // 如果是单行代码，不做特殊处理
   const isSingleLine = !children.includes("\n") && children.trim().length < 50;
   if (isSingleLine) {
-    return <code>{children}</code>;
+    return <code className="text-sm">{children}</code>;
   }
 
-  // 高亮块动画
+  // 复制代码功能
   const handleCopy = () => {
     navigator.clipboard.writeText(children || "");
     setCopied(true);
@@ -195,10 +197,9 @@ const CodeBlock = ({
   };
 
   // 使用修改后的高亮样式
-  const highlightStyle = isDark ? atomOneDark : enhancedAtomOneLight;
+  const highlightStyle = isDark ? atomOneDark : atomOneLight;
 
   // 根据语言确定使用哪种高亮器
-  // 对于某些需要特殊处理的语言使用Prism
   const needsPrism = ["jsx", "tsx", "regex"].includes(language);
   const HighlighterComponent = needsPrism
     ? SyntaxHighlighter
@@ -209,18 +210,8 @@ const CodeBlock = ({
       : prism
     : highlightStyle;
 
-  // 为不同的高亮器设置不同的类名
-  const highlighterClassName = `hljs-custom-container ${
-    needsPrism ? "prism-syntax-highlighter" : "light-syntax-highlighter"
-  } ${isDark ? "dark-theme" : "light-theme"}`;
-
   return (
-    <motion.div
-      className="bg-gray-100 dark:bg-gray-700 rounded-md overflow-hidden my-2 w-full max-w-full syntax-highlighter-container"
-      initial={{ opacity: 0.9, y: 5 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.2 }}
-    >
+    <div className="bg-gray-100 dark:bg-gray-700 rounded-md overflow-hidden my-2 w-full max-w-full syntax-highlighter-container">
       <div className="bg-gray-200 dark:bg-gray-600 px-4 py-1 text-xs font-medium text-gray-700 dark:text-gray-300 flex items-center justify-between sticky top-0 z-10">
         <span className="flex items-center">
           {language && (
@@ -233,18 +224,12 @@ const CodeBlock = ({
           )}
           {language || "code"}
         </span>
-        <motion.button
+        <button
           onClick={handleCopy}
-          className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 p-1 rounded-md flex items-center"
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
+          className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 p-1 rounded-md flex items-center transition-colors"
         >
           {copied ? (
-            <motion.span
-              initial={{ opacity: 0, y: 5 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="text-green-500 dark:text-green-400 flex items-center"
-            >
+            <span className="text-green-500 dark:text-green-400 flex items-center">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 className="h-4 w-4 mr-1"
@@ -258,7 +243,7 @@ const CodeBlock = ({
                 />
               </svg>
               已复制
-            </motion.span>
+            </span>
           ) : (
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -275,7 +260,7 @@ const CodeBlock = ({
               />
             </svg>
           )}
-        </motion.button>
+        </button>
       </div>
       <div className="relative overflow-hidden w-full">
         <div
@@ -287,84 +272,60 @@ const CodeBlock = ({
             style={styleToUse}
             customStyle={{
               margin: 0,
-              padding: "1rem",
-              fontSize: "0.875rem",
-              background: isDark ? "#282c34" : "#fafafa", // Atom One Dark背景色
-              color: isDark ? "#abb2bf" : "#383a42", // 默认文本颜色
-              maxWidth: "none", // 允许内容控制宽度
+              padding: "1.25rem",
+              fontSize: "14px",
+              fontFamily:
+                "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
+              lineHeight: 1.6,
+              background: isDark ? "#282c34" : "#fafafa",
+              color: isDark ? "#abb2bf !important" : "#383a42 !important",
+              maxWidth: "none",
               borderRadius: 0,
               overflowX: "auto",
               width: "max-content",
-              minWidth: "100%", // 确保填满容器
+              minWidth: "100%",
             }}
             codeTagProps={{
               style: {
-                fontSize: "0.875rem",
+                fontSize: "14px",
                 fontFamily:
-                  "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
-                lineHeight: 1.5,
-                color: isDark ? "#abb2bf" : "#383a42", // 确保代码内容有正确的文本颜色
+                  "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
+                lineHeight: 1.6,
+                color: isDark ? "#abb2bf !important" : "#383a42 !important",
               },
             }}
-            wrapLines={true}
-            wrapLongLines={false} // 在移动设备上不强制换行
+            preTagProps={{
+              style: {
+                margin: 0,
+                padding: 0,
+                backgroundColor: "transparent",
+                color: isDark ? "#abb2bf !important" : "#383a42 !important",
+              },
+            }}
             showLineNumbers={
               language !== "text" &&
               language !== "" &&
               children.split("\n").length > 1
             }
             lineNumberStyle={{
-              minWidth: "2.5em",
+              minWidth: "3em",
               paddingRight: "1em",
-              color: isDark ? "rgba(255, 255, 255, 0.3)" : "rgba(0, 0, 0, 0.3)",
+              color: isDark ? "rgba(255, 255, 255, 0.4)" : "rgba(0, 0, 0, 0.4)",
               borderRight: isDark
-                ? "1px solid rgba(255, 255, 255, 0.1)"
-                : "1px solid rgba(0, 0, 0, 0.1)",
+                ? "1px solid rgba(255, 255, 255, 0.15)"
+                : "1px solid rgba(0, 0, 0, 0.15)",
               marginRight: "1em",
               userSelect: "none",
               textAlign: "right",
-              fontSize: "0.8em",
+              fontSize: "13px",
+              fontWeight: "normal",
             }}
-            className={highlighterClassName}
-            PreTag={({ children, ...props }) => (
-              <pre
-                {...props}
-                style={{
-                  margin: 0,
-                  padding: 0,
-                  backgroundColor: "transparent",
-                  color: isDark ? "#abb2bf" : "#383a42", // 确保pre标签也有正确的颜色
-                }}
-              >
-                {children}
-              </pre>
-            )}
-            CodeTag={({ children, ...props }) => (
-              <code
-                {...props}
-                style={{
-                  fontFamily:
-                    "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
-                  color: isDark ? "#abb2bf" : "#383a42", // 确保code标签也有正确的颜色
-                }}
-              >
-                {children}
-              </code>
-            )}
           >
             {children}
           </HighlighterComponent>
         </div>
-
-        {/* 添加水平滚动指示器 - 只在桌面设备显示 */}
-        <div className="absolute right-0 top-0 bottom-0 w-6 bg-gradient-to-l from-gray-100 dark:from-gray-700 to-transparent pointer-events-none sm:block hidden"></div>
-
-        {/* 移动设备上的滚动提示 */}
-        <div className="sm:hidden text-xs text-center text-gray-500 dark:text-gray-400 py-1 border-t border-gray-200 dark:border-gray-600">
-          ← 左右滑动查看完整代码 →
-        </div>
       </div>
-    </motion.div>
+    </div>
   );
 };
 
@@ -981,70 +942,136 @@ export default function AITestDialog({
     styleEl.textContent = tooltipStyles;
     document.head.appendChild(styleEl);
 
-    // 添加直接修复浅色模式代码高亮的样式 - 使用更强的选择器
-    const fixLightModeStyle = document.createElement("style");
-    fixLightModeStyle.textContent = `
-      /* 直接重写浅色模式下的代码高亮样式 - 超高优先级 */
-      body:not(.dark) .light-syntax-highlighter pre code,
-      body:not(.dark) pre code,
-      html:not(.dark) .light-syntax-highlighter pre code,
-      html:not(.dark) pre code {
+    // 添加代码高亮修复样式
+    const codeHighlightStyle = document.createElement("style");
+    codeHighlightStyle.textContent = `
+      /* 修复代码块字体大小和高亮 */
+      .syntax-highlighter-container {
+        font-size: 14px !important;
+      }
+
+      .syntax-highlighter-container code,
+      .syntax-highlighter-container pre {
+        font-size: 14px !important;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace !important;
+        line-height: 1.6 !important;
+      }
+
+      /* 浅色模式下的基础文本颜色 */
+      .syntax-highlighter-container,
+      .syntax-highlighter-container code,
+      .syntax-highlighter-container pre {
         color: #383a42 !important;
       }
 
-      /* 最高优先级选择器 */
-      html:not(.dark) pre code span.token,
-      html:not(.dark) pre code span[class*="hljs-"],
-      html:not(.dark) code span[class*="hljs-"] {
-        color: inherit !important;
+      /* 深色模式下的基础文本颜色 */
+      .dark .syntax-highlighter-container,
+      .dark .syntax-highlighter-container code,
+      .dark .syntax-highlighter-container pre {
+        color: #abb2bf !important;
       }
 
-      /* 每个高亮元素单独设置 */
-      html:not(.dark) code span.hljs-keyword,
-      html:not(.dark) pre code span.hljs-keyword { color: #a626a4 !important; }
+      /* 浅色模式下的语法高亮 - 使用Atom One Light主题 */
+      .syntax-highlighter-container .hljs-keyword { color: #a626a4 !important; }
+      .syntax-highlighter-container .hljs-built_in { color: #c18401 !important; }
+      .syntax-highlighter-container .hljs-string { color: #50a14f !important; }
+      .syntax-highlighter-container .hljs-number { color: #986801 !important; }
+      .syntax-highlighter-container .hljs-comment { color: #a0a1a7 !important; font-style: italic !important; }
+      .syntax-highlighter-container .hljs-title { color: #4078f2 !important; }
+      .syntax-highlighter-container .hljs-attr { color: #986801 !important; }
+      .syntax-highlighter-container .hljs-tag { color: #e45649 !important; }
+      .syntax-highlighter-container .hljs-name { color: #e45649 !important; }
+      .syntax-highlighter-container .hljs-type { color: #986801 !important; }
+      .syntax-highlighter-container .hljs-variable { color: #e45649 !important; }
+      .syntax-highlighter-container .hljs-function { color: #4078f2 !important; }
+      .syntax-highlighter-container .hljs-params { color: #383a42 !important; }
+      .syntax-highlighter-container .hljs-literal { color: #0184bc !important; }
+      .syntax-highlighter-container .hljs-selector-tag { color: #e45649 !important; }
+      .syntax-highlighter-container .hljs-selector-class { color: #c18401 !important; }
+      .syntax-highlighter-container .hljs-selector-id { color: #4078f2 !important; }
+      .syntax-highlighter-container .hljs-property { color: #383a42 !important; }
+      .syntax-highlighter-container .hljs-value { color: #50a14f !important; }
+      .syntax-highlighter-container .hljs-class { color: #c18401 !important; }
+      .syntax-highlighter-container .hljs-doctag { color: #a626a4 !important; }
+      .syntax-highlighter-container .hljs-meta { color: #e45649 !important; }
+      .syntax-highlighter-container .hljs-meta-keyword { color: #a626a4 !important; }
+      .syntax-highlighter-container .hljs-meta-string { color: #50a14f !important; }
 
-      html:not(.dark) code span.hljs-built_in,
-      html:not(.dark) pre code span.hljs-built_in { color: #c18401 !important; }
+      /* 深色模式下的语法高亮 - 使用Atom One Dark主题 */
+      .dark .syntax-highlighter-container .hljs-keyword { color: #c678dd !important; }
+      .dark .syntax-highlighter-container .hljs-built_in { color: #e6c07b !important; }
+      .dark .syntax-highlighter-container .hljs-string { color: #98c379 !important; }
+      .dark .syntax-highlighter-container .hljs-number { color: #d19a66 !important; }
+      .dark .syntax-highlighter-container .hljs-comment { color: #7f848e !important; font-style: italic !important; }
+      .dark .syntax-highlighter-container .hljs-title { color: #61afef !important; }
+      .dark .syntax-highlighter-container .hljs-attr { color: #d19a66 !important; }
+      .dark .syntax-highlighter-container .hljs-tag { color: #e06c75 !important; }
+      .dark .syntax-highlighter-container .hljs-name { color: #e06c75 !important; }
+      .dark .syntax-highlighter-container .hljs-type { color: #e6c07b !important; }
+      .dark .syntax-highlighter-container .hljs-variable { color: #e06c75 !important; }
+      .dark .syntax-highlighter-container .hljs-function { color: #61afef !important; }
+      .dark .syntax-highlighter-container .hljs-params { color: #abb2bf !important; }
+      .dark .syntax-highlighter-container .hljs-literal { color: #56b6c2 !important; }
+      .dark .syntax-highlighter-container .hljs-selector-tag { color: #e06c75 !important; }
+      .dark .syntax-highlighter-container .hljs-selector-class { color: #e6c07b !important; }
+      .dark .syntax-highlighter-container .hljs-selector-id { color: #61afef !important; }
+      .dark .syntax-highlighter-container .hljs-property { color: #abb2bf !important; }
+      .dark .syntax-highlighter-container .hljs-value { color: #98c379 !important; }
+      .dark .syntax-highlighter-container .hljs-class { color: #e6c07b !important; }
+      .dark .syntax-highlighter-container .hljs-doctag { color: #c678dd !important; }
+      .dark .syntax-highlighter-container .hljs-meta { color: #e06c75 !important; }
+      .dark .syntax-highlighter-container .hljs-meta-keyword { color: #c678dd !important; }
+      .dark .syntax-highlighter-container .hljs-meta-string { color: #98c379 !important; }
 
-      html:not(.dark) code span.hljs-string,
-      html:not(.dark) pre code span.hljs-string { color: #50a14f !important; }
+      /* 滚动条样式 */
+      .code-scroll-container {
+        scrollbar-width: thin;
+        scrollbar-color: rgba(156, 163, 175, 0.5) transparent;
+      }
 
-      html:not(.dark) code span.hljs-number,
-      html:not(.dark) pre code span.hljs-number { color: #986801 !important; }
+      .code-scroll-container::-webkit-scrollbar {
+        height: 6px;
+        width: 6px;
+      }
 
-      html:not(.dark) code span.hljs-comment,
-      html:not(.dark) pre code span.hljs-comment { color: #a0a1a7 !important; font-style: italic !important; }
+      .code-scroll-container::-webkit-scrollbar-track {
+        background: transparent;
+      }
 
-      html:not(.dark) code span.hljs-title,
-      html:not(.dark) pre code span.hljs-title { color: #4078f2 !important; }
+      .code-scroll-container::-webkit-scrollbar-thumb {
+        background-color: rgba(156, 163, 175, 0.5);
+        border-radius: 3px;
+      }
 
-      html:not(.dark) code span.hljs-attr,
-      html:not(.dark) pre code span.hljs-attr { color: #986801 !important; }
+      .dark .code-scroll-container::-webkit-scrollbar-thumb {
+        background-color: rgba(75, 85, 99, 0.5);
+      }
 
-      html:not(.dark) code span.hljs-tag,
-      html:not(.dark) pre code span.hljs-tag { color: #e45649 !important; }
+      /* 强制设置Python语法高亮 */
+      .syntax-highlighter-container .token.decorator,
+      .syntax-highlighter-container .token.at-rule,
+      .syntax-highlighter-container .hljs-meta {
+        color: #c678dd !important;
+      }
 
-      html:not(.dark) code span.hljs-name,
-      html:not(.dark) pre code span.hljs-name { color: #e45649 !important; }
+      .dark .syntax-highlighter-container .token.decorator,
+      .dark .syntax-highlighter-container .token.at-rule,
+      .dark .syntax-highlighter-container .hljs-meta {
+        color: #c678dd !important;
+      }
 
-      html:not(.dark) code span.hljs-type,
-      html:not(.dark) pre code span.hljs-type { color: #986801 !important; }
-
-      html:not(.dark) code span.hljs-variable,
-      html:not(.dark) pre code span.hljs-variable { color: #e45649 !important; }
-
-      /* 直接给code元素添加样式，确保默认文本颜色正确 */
-      .light-theme code,
-      .light-theme pre {
-        color: #383a42 !important;
+      body:not(.dark) .syntax-highlighter-container .token.decorator,
+      body:not(.dark) .syntax-highlighter-container .token.at-rule,
+      body:not(.dark) .syntax-highlighter-container .hljs-meta {
+        color: #a626a4 !important;
       }
     `;
-    document.head.appendChild(fixLightModeStyle);
+    document.head.appendChild(codeHighlightStyle);
 
     // 清理函数
     return () => {
       document.head.removeChild(styleEl);
-      document.head.removeChild(fixLightModeStyle);
+      document.head.removeChild(codeHighlightStyle);
     };
   }, []);
   const { t } = useTranslations();

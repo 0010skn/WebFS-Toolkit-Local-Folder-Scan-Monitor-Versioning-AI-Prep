@@ -23,6 +23,44 @@ import { currentScanAtom } from "../lib/store";
 import { KnowledgeEntry } from "../lib/knowledgeService";
 import { FileSystemEntry } from "../types";
 
+// 导入语言支持
+import javascript from "react-syntax-highlighter/dist/cjs/languages/hljs/javascript";
+import typescript from "react-syntax-highlighter/dist/cjs/languages/hljs/typescript";
+import python from "react-syntax-highlighter/dist/cjs/languages/hljs/python";
+import java from "react-syntax-highlighter/dist/cjs/languages/hljs/java";
+import jsx from "react-syntax-highlighter/dist/cjs/languages/hljs/xml";
+import css from "react-syntax-highlighter/dist/cjs/languages/hljs/css";
+import bash from "react-syntax-highlighter/dist/cjs/languages/hljs/bash";
+import json from "react-syntax-highlighter/dist/cjs/languages/hljs/json";
+import markdown from "react-syntax-highlighter/dist/cjs/languages/hljs/markdown";
+import sql from "react-syntax-highlighter/dist/cjs/languages/hljs/sql";
+import yaml from "react-syntax-highlighter/dist/cjs/languages/hljs/yaml";
+import xml from "react-syntax-highlighter/dist/cjs/languages/hljs/xml";
+import rust from "react-syntax-highlighter/dist/cjs/languages/hljs/rust";
+import go from "react-syntax-highlighter/dist/cjs/languages/hljs/go";
+import cpp from "react-syntax-highlighter/dist/cjs/languages/hljs/cpp";
+import plaintext from "react-syntax-highlighter/dist/cjs/languages/hljs/plaintext";
+
+// 注册语言
+LightSyntaxHighlighter.registerLanguage("javascript", javascript);
+LightSyntaxHighlighter.registerLanguage("typescript", typescript);
+LightSyntaxHighlighter.registerLanguage("python", python);
+LightSyntaxHighlighter.registerLanguage("java", java);
+LightSyntaxHighlighter.registerLanguage("jsx", jsx);
+LightSyntaxHighlighter.registerLanguage("tsx", typescript);
+LightSyntaxHighlighter.registerLanguage("css", css);
+LightSyntaxHighlighter.registerLanguage("bash", bash);
+LightSyntaxHighlighter.registerLanguage("json", json);
+LightSyntaxHighlighter.registerLanguage("markdown", markdown);
+LightSyntaxHighlighter.registerLanguage("sql", sql);
+LightSyntaxHighlighter.registerLanguage("yaml", yaml);
+LightSyntaxHighlighter.registerLanguage("xml", xml);
+LightSyntaxHighlighter.registerLanguage("rust", rust);
+LightSyntaxHighlighter.registerLanguage("go", go);
+LightSyntaxHighlighter.registerLanguage("cpp", cpp);
+LightSyntaxHighlighter.registerLanguage("text", plaintext);
+LightSyntaxHighlighter.registerLanguage("plaintext", plaintext);
+
 // 导入语法高亮样式
 import {
   vscDarkPlus,
@@ -81,6 +119,143 @@ interface DialogRound {
   hideUserInput?: boolean; // 是否隐藏用户输入气泡
 }
 
+// 自动检测代码语言的函数
+const detectCodeLanguage = (code: string): string => {
+  // 检查代码中的特征来判断语言
+  if (/\bimport\s+React|\bfrom\s+['"]react['"]/i.test(code)) {
+    return code.includes("tsx") || code.includes(":") ? "tsx" : "jsx";
+  }
+  if (
+    /\bimport\s+|\bexport\s+|\bconst\s+\w+\s*=\s*|let\s+\w+\s*=\s*/i.test(code)
+  ) {
+    return code.includes(":") ||
+      code.includes("interface") ||
+      code.includes("type ")
+      ? "typescript"
+      : "javascript";
+  }
+  if (/^(<!DOCTYPE|<html|<head|<body)/i.test(code)) {
+    return "html";
+  }
+  if (/class=".*?"|className=".*?"|<div|<span|<p>/i.test(code)) {
+    return "jsx";
+  }
+  if (/^\s*\.[\w-]+\s*{|@media|@keyframes/i.test(code)) {
+    return "css";
+  }
+  if (/SELECT|INSERT|UPDATE|DELETE|CREATE TABLE/i.test(code)) {
+    return "sql";
+  }
+  if (/def\s+\w+\s*\(|import\s+\w+|from\s+\w+\s+import/i.test(code)) {
+    return "python";
+  }
+  if (/public\s+(static\s+)?(void|class|int|boolean)/i.test(code)) {
+    return "java";
+  }
+  if (/^\s*package\s+\w+|func\s+\w+\s*\(/i.test(code)) {
+    return "go";
+  }
+  if (/^#include\s+<|std::|int\s+main\s*\(\s*\)/i.test(code)) {
+    return "cpp";
+  }
+  if (
+    /\$\w+\s*=|\$\w+\s*->|function\s+\w+\s*\(/i.test(code) &&
+    code.includes("<?php")
+  ) {
+    return "php";
+  }
+  if (/^\s*{\s*["']\w+["']\s*:/i.test(code)) {
+    return "json";
+  }
+  if (/npm|yarn|apt-get|sudo|bash|sh\s+/i.test(code)) {
+    return "bash";
+  }
+  if (/^#!\/bin\/bash|^#!\/bin\/sh/i.test(code)) {
+    return "bash";
+  }
+  if (/^\s*#\s+|^##\s+|^\*\*\s+/i.test(code)) {
+    return "markdown";
+  }
+
+  // 检查文件扩展名引用
+  const extMatch = code.match(/\.([a-zA-Z0-9]+)(\s|$|['")\]}]|:|,)/);
+  if (extMatch) {
+    const ext = extMatch[1].toLowerCase();
+    switch (ext) {
+      case "js":
+        return "javascript";
+      case "jsx":
+        return "jsx";
+      case "ts":
+        return "typescript";
+      case "tsx":
+        return "tsx";
+      case "py":
+        return "python";
+      case "rb":
+        return "ruby";
+      case "java":
+        return "java";
+      case "php":
+        return "php";
+      case "go":
+        return "go";
+      case "cs":
+        return "csharp";
+      case "html":
+        return "html";
+      case "css":
+        return "css";
+      case "scss":
+        return "scss";
+      case "less":
+        return "less";
+      case "json":
+        return "json";
+      case "md":
+        return "markdown";
+      case "xml":
+        return "xml";
+      case "yml":
+      case "yaml":
+        return "yaml";
+      case "sh":
+        return "bash";
+      case "sql":
+        return "sql";
+    }
+  }
+
+  return "text";
+};
+
+// 获取编程语言的颜色
+const getLanguageColor = (language: string): string => {
+  const colorMap: { [key: string]: string } = {
+    javascript: "#f7df1e",
+    typescript: "#3178c6",
+    jsx: "#61dafb",
+    tsx: "#3178c6",
+    python: "#3572A5",
+    java: "#b07219",
+    cpp: "#f34b7d",
+    csharp: "#178600",
+    php: "#4F5D95",
+    ruby: "#CC342D",
+    go: "#00ADD8",
+    rust: "#DEA584",
+    html: "#e34c26",
+    css: "#563d7c",
+    json: "#292929",
+    bash: "#89e051",
+    shell: "#89e051",
+    sql: "#e38c00",
+    markdown: "#083fa1",
+  };
+
+  return colorMap[language.toLowerCase()] || "#aaa";
+};
+
 // 自定义代码块组件
 const CodeBlock = ({
   className,
@@ -95,7 +270,7 @@ const CodeBlock = ({
 
   // 如果语言是text或未指定，尝试自动检测语言
   if (!language || language === "text" || language === "plaintext") {
-    language = "text"; // 简化，实际应使用语言检测函数
+    language = detectCodeLanguage(children);
   }
 
   const [copied, setCopied] = useState(false);
@@ -128,36 +303,25 @@ const CodeBlock = ({
     : highlightStyle;
 
   return (
-    <motion.div
-      className="bg-gray-100 dark:bg-gray-700 rounded-md overflow-hidden my-2 w-full max-w-full syntax-highlighter-container"
-      initial={{ opacity: 0.9, y: 5 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.2 }}
-    >
+    <div className="bg-gray-100 dark:bg-gray-700 rounded-md overflow-hidden my-2 w-full max-w-full syntax-highlighter-container">
       <div className="bg-gray-200 dark:bg-gray-600 px-4 py-1 text-xs font-medium text-gray-700 dark:text-gray-300 flex items-center justify-between sticky top-0 z-10">
         <span className="flex items-center">
           {language && (
             <span
               className="w-3 h-3 rounded-full mr-2"
               style={{
-                backgroundColor: "#aaa", // 简化，实际应使用语言颜色函数
+                backgroundColor: getLanguageColor(language),
               }}
             ></span>
           )}
           {language || "code"}
         </span>
-        <motion.button
+        <button
           onClick={handleCopy}
-          className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 p-1 rounded-md flex items-center"
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
+          className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 p-1 rounded-md flex items-center transition-colors"
         >
           {copied ? (
-            <motion.span
-              initial={{ opacity: 0, y: 5 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="text-green-500 dark:text-green-400 flex items-center"
-            >
+            <span className="text-green-500 dark:text-green-400 flex items-center">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 className="h-4 w-4 mr-1"
@@ -171,7 +335,7 @@ const CodeBlock = ({
                 />
               </svg>
               已复制
-            </motion.span>
+            </span>
           ) : (
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -188,7 +352,7 @@ const CodeBlock = ({
               />
             </svg>
           )}
-        </motion.button>
+        </button>
       </div>
       <div className="relative overflow-hidden w-full">
         <div
@@ -200,15 +364,35 @@ const CodeBlock = ({
             style={styleToUse}
             customStyle={{
               margin: 0,
-              padding: "1rem",
-              fontSize: "0.875rem",
+              padding: "1.25rem",
+              fontSize: "14px",
+              fontFamily:
+                "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
+              lineHeight: 1.6,
               background: isDark ? "#282c34" : "#fafafa",
-              color: isDark ? "#abb2bf" : "#383a42",
+              color: isDark ? "#abb2bf !important" : "#383a42 !important",
               maxWidth: "none",
               borderRadius: 0,
               overflowX: "auto",
               width: "max-content",
               minWidth: "100%",
+            }}
+            codeTagProps={{
+              style: {
+                fontSize: "14px",
+                fontFamily:
+                  "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
+                lineHeight: 1.6,
+                color: isDark ? "#abb2bf !important" : "#383a42 !important",
+              },
+            }}
+            preTagProps={{
+              style: {
+                margin: 0,
+                padding: 0,
+                backgroundColor: "transparent",
+                color: isDark ? "#abb2bf !important" : "#383a42 !important",
+              },
             }}
             showLineNumbers={
               language !== "text" &&
@@ -220,7 +404,7 @@ const CodeBlock = ({
           </HighlighterComponent>
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 };
 
@@ -350,6 +534,186 @@ export default function AIagent({
   initialPrompt,
   projectFilePaths = [],
 }: AIagentProps) {
+  // 添加样式到head
+  useEffect(() => {
+    // 创建样式元素
+    const styleEl = document.createElement("style");
+    styleEl.textContent = `
+      /* 修复代码块字体大小和高亮 */
+      .syntax-highlighter-container {
+        font-size: 14px !important;
+      }
+
+      .syntax-highlighter-container code,
+      .syntax-highlighter-container pre {
+        font-size: 14px !important;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace !important;
+        line-height: 1.6 !important;
+      }
+
+      /* 强制重置所有span元素的颜色，确保语法高亮生效 */
+      .syntax-highlighter-container span {
+        color: inherit !important;
+      }
+
+      /* 强制覆盖任何可能的灰色样式 */
+      .syntax-highlighter-container span:not([class*="hljs-"]) {
+        color: inherit !important;
+      }
+
+      /* 确保没有类名的span也有正确颜色 */
+      .syntax-highlighter-container code span:not([class]) {
+        color: inherit !important;
+      }
+
+      /* 覆盖可能的默认样式 */
+      .syntax-highlighter-container * {
+        color: inherit !important;
+      }
+
+      /* 深色模式下的语法高亮 - 使用Atom One Dark主题 */
+      .dark .syntax-highlighter-container .hljs-keyword { color: #c678dd !important; }
+      .dark .syntax-highlighter-container .hljs-built_in { color: #e6c07b !important; }
+      .dark .syntax-highlighter-container .hljs-string { color: #98c379 !important; }
+      .dark .syntax-highlighter-container .hljs-number { color: #d19a66 !important; }
+      .dark .syntax-highlighter-container .hljs-comment { color: #7f848e !important; font-style: italic !important; }
+      .dark .syntax-highlighter-container .hljs-title { color: #61afef !important; }
+      .dark .syntax-highlighter-container .hljs-attr { color: #d19a66 !important; }
+      .dark .syntax-highlighter-container .hljs-tag { color: #e06c75 !important; }
+      .dark .syntax-highlighter-container .hljs-name { color: #e06c75 !important; }
+      .dark .syntax-highlighter-container .hljs-type { color: #e6c07b !important; }
+      .dark .syntax-highlighter-container .hljs-variable { color: #e06c75 !important; }
+      .dark .syntax-highlighter-container .hljs-function { color: #61afef !important; }
+      .dark .syntax-highlighter-container .hljs-params { color: #abb2bf !important; }
+      .dark .syntax-highlighter-container .hljs-literal { color: #56b6c2 !important; }
+      .dark .syntax-highlighter-container .hljs-selector-tag { color: #e06c75 !important; }
+      .dark .syntax-highlighter-container .hljs-selector-class { color: #e6c07b !important; }
+      .dark .syntax-highlighter-container .hljs-selector-id { color: #61afef !important; }
+      .dark .syntax-highlighter-container .hljs-property { color: #abb2bf !important; }
+      .dark .syntax-highlighter-container .hljs-value { color: #98c379 !important; }
+      .dark .syntax-highlighter-container .hljs-class { color: #e6c07b !important; }
+      .dark .syntax-highlighter-container .hljs-doctag { color: #c678dd !important; }
+      .dark .syntax-highlighter-container .hljs-meta { color: #e06c75 !important; }
+      .dark .syntax-highlighter-container .hljs-meta-keyword { color: #c678dd !important; }
+      .dark .syntax-highlighter-container .hljs-meta-string { color: #98c379 !important; }
+
+      /* 深色模式下的默认文本颜色 */
+      .dark .syntax-highlighter-container,
+      .dark .syntax-highlighter-container code,
+      .dark .syntax-highlighter-container pre {
+        color: #abb2bf !important;
+      }
+
+      /* 浅色模式下的语法高亮 - 使用Atom One Light主题 */
+      .syntax-highlighter-container .hljs-keyword { color: #a626a4 !important; }
+      .syntax-highlighter-container .hljs-built_in { color: #c18401 !important; }
+      .syntax-highlighter-container .hljs-string { color: #50a14f !important; }
+      .syntax-highlighter-container .hljs-number { color: #986801 !important; }
+      .syntax-highlighter-container .hljs-comment { color: #a0a1a7 !important; font-style: italic !important; }
+      .syntax-highlighter-container .hljs-title { color: #4078f2 !important; }
+      .syntax-highlighter-container .hljs-attr { color: #986801 !important; }
+      .syntax-highlighter-container .hljs-tag { color: #e45649 !important; }
+      .syntax-highlighter-container .hljs-name { color: #e45649 !important; }
+      .syntax-highlighter-container .hljs-type { color: #986801 !important; }
+      .syntax-highlighter-container .hljs-variable { color: #e45649 !important; }
+      .syntax-highlighter-container .hljs-function { color: #4078f2 !important; }
+      .syntax-highlighter-container .hljs-params { color: #383a42 !important; }
+      .syntax-highlighter-container .hljs-literal { color: #0184bc !important; }
+      .syntax-highlighter-container .hljs-selector-tag { color: #e45649 !important; }
+      .syntax-highlighter-container .hljs-selector-class { color: #c18401 !important; }
+      .syntax-highlighter-container .hljs-selector-id { color: #4078f2 !important; }
+      .syntax-highlighter-container .hljs-property { color: #383a42 !important; }
+      .syntax-highlighter-container .hljs-value { color: #50a14f !important; }
+      .syntax-highlighter-container .hljs-class { color: #c18401 !important; }
+      .syntax-highlighter-container .hljs-doctag { color: #a626a4 !important; }
+      .syntax-highlighter-container .hljs-meta { color: #e45649 !important; }
+      .syntax-highlighter-container .hljs-meta-keyword { color: #a626a4 !important; }
+      .syntax-highlighter-container .hljs-meta-string { color: #50a14f !important; }
+
+      /* 浅色模式下的默认文本颜色 */
+      .syntax-highlighter-container,
+      .syntax-highlighter-container code,
+      .syntax-highlighter-container pre {
+        color: #383a42 !important;
+      }
+
+      /* 确保浅色模式下的样式优先级更高 */
+      body:not(.dark) .syntax-highlighter-container .hljs-keyword { color: #a626a4 !important; }
+      body:not(.dark) .syntax-highlighter-container .hljs-built_in { color: #c18401 !important; }
+      body:not(.dark) .syntax-highlighter-container .hljs-string { color: #50a14f !important; }
+      body:not(.dark) .syntax-highlighter-container .hljs-number { color: #986801 !important; }
+      body:not(.dark) .syntax-highlighter-container .hljs-comment { color: #a0a1a7 !important; }
+      body:not(.dark) .syntax-highlighter-container .hljs-title { color: #4078f2 !important; }
+      body:not(.dark) .syntax-highlighter-container .hljs-attr { color: #986801 !important; }
+      body:not(.dark) .syntax-highlighter-container .hljs-tag { color: #e45649 !important; }
+      body:not(.dark) .syntax-highlighter-container .hljs-name { color: #e45649 !important; }
+      body:not(.dark) .syntax-highlighter-container .hljs-type { color: #986801 !important; }
+      body:not(.dark) .syntax-highlighter-container .hljs-variable { color: #e45649 !important; }
+      body:not(.dark) .syntax-highlighter-container .hljs-function { color: #4078f2 !important; }
+      body:not(.dark) .syntax-highlighter-container .hljs-class { color: #c18401 !important; }
+      body:not(.dark) .syntax-highlighter-container .hljs-doctag { color: #a626a4 !important; }
+      body:not(.dark) .syntax-highlighter-container .hljs-meta { color: #e45649 !important; }
+      body:not(.dark) .syntax-highlighter-container .hljs-meta-keyword { color: #a626a4 !important; }
+      body:not(.dark) .syntax-highlighter-container .hljs-meta-string { color: #50a14f !important; }
+
+      .code-scroll-container {
+        scrollbar-width: thin;
+        scrollbar-color: rgba(156, 163, 175, 0.5) transparent;
+      }
+
+      .code-scroll-container::-webkit-scrollbar {
+        height: 6px;
+        width: 6px;
+      }
+
+      .code-scroll-container::-webkit-scrollbar-track {
+        background: transparent;
+      }
+
+      .code-scroll-container::-webkit-scrollbar-thumb {
+        background-color: rgba(156, 163, 175, 0.5);
+        border-radius: 3px;
+      }
+
+      .dark .code-scroll-container::-webkit-scrollbar-thumb {
+        background-color: rgba(75, 85, 99, 0.5);
+      }
+
+      /* 最高优先级修复 - 直接覆盖所有可能的灰色 */
+      .syntax-highlighter-container pre[class*="language-"] code,
+      .syntax-highlighter-container pre[class*="language-"] code *,
+      .syntax-highlighter-container code[class*="language-"],
+      .syntax-highlighter-container code[class*="language-"] * {
+        color: inherit !important;
+      }
+
+      /* 强制设置Python语法高亮 */
+      .syntax-highlighter-container .token.decorator,
+      .syntax-highlighter-container .token.at-rule,
+      .syntax-highlighter-container .hljs-meta {
+        color: #c678dd !important;
+      }
+
+      .dark .syntax-highlighter-container .token.decorator,
+      .dark .syntax-highlighter-container .token.at-rule,
+      .dark .syntax-highlighter-container .hljs-meta {
+        color: #c678dd !important;
+      }
+
+      body:not(.dark) .syntax-highlighter-container .token.decorator,
+      body:not(.dark) .syntax-highlighter-container .token.at-rule,
+      body:not(.dark) .syntax-highlighter-container .hljs-meta {
+        color: #a626a4 !important;
+      }
+    `;
+    document.head.appendChild(styleEl);
+
+    // 清理函数
+    return () => {
+      document.head.removeChild(styleEl);
+    };
+  }, []);
+
   const { t } = useTranslations();
   const [dialogRounds, setDialogRounds] = useState<DialogRound[]>([]);
   const [isTesting, setIsTesting] = useState(false);
