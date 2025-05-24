@@ -899,6 +899,10 @@
     "indexing": "正在索引相关文件...",
     "processing": "正在处理文件操作...",
     "complete": "智能体任务已完成",
-    "autoMode": "自动模式"
+    "autoMode": "自动模式",
+    "taskCompleted": "任务完成",
+    "taskExecuting": "执行中",
+    "taskPlanning": "规划中",
+    "taskWaiting": "等待中"
   }
 }

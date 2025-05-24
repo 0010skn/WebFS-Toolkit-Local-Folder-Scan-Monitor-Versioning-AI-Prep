@@ -14,7 +14,6 @@ import {
   modifyFile,
   deleteFile,
   createFile,
-  shouldContinueDialog,
 } from "../lib/vectorizeService";
 import Markdown from "markdown-to-jsx";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
@@ -386,6 +385,14 @@ export default function AIagent({
   // 自动模式状态 - 默认启用
   const [autoMode, setAutoMode] = useState(true);
 
+  // 任务状态跟踪
+  const [taskStatus, setTaskStatus] = useState<
+    "planning" | "executing" | "completed" | "waiting"
+  >("planning");
+  // 移除自动执行相关的状态，改为手动控制
+  const [showExecuteInput, setShowExecuteInput] = useState(false);
+  const [executeCommand, setExecuteCommand] = useState("");
+
   // 初始化对话
   useEffect(() => {
     if (initialPrompt && !dialogRounds.length && !isTesting) {
@@ -429,6 +436,33 @@ export default function AIagent({
       // 构建系统提示词
       const systemPrompt = getLocalizedPrompt(
         `你是一个强大的AI代码智能体，能够帮助用户修改、删除和创建文件。你可以直接操作用户的代码库，并具有高级编程理解能力。
+
+## 智能体协作模式
+你现在处于协作模式，这意味着：
+1. **任务导向**：你需要专注于完成用户给定的任务
+2. **分步执行**：将复杂任务分解为多个步骤，每步都等待用户确认
+3. **清晰沟通**：明确说明当前进度和下一步计划
+4. **用户控制**：每一步都需要用户决定是否继续
+
+## 任务状态管理
+你需要在每次回复中明确标识当前的任务状态：
+
+\`\`\`task-status
+status: planning|executing|completed
+progress: 当前进度描述
+next_action: 下一步行动计划（如果有的话）
+\`\`\`
+
+- **planning**: 正在分析任务和制定计划
+- **executing**: 正在执行具体的操作
+- **completed**: 任务已完成
+
+## 协作机制
+在每轮对话中，你应该：
+1. 明确说明当前完成了什么
+2. 如果任务未完成，在 next_action 中描述建议的下一步行动
+3. 等待用户决定是否继续执行下一步
+4. 只有当任务真正完成时，才将状态设为 completed
 
 请特别注意：
 1. 请记住完整的对话历史，理解用户的问题可能是对之前对话的延续。
@@ -503,19 +537,35 @@ content:
 文件内容
 \`\`\`
 
-每次操作都需要用户确认后才能执行。请确保你的操作是安全的，并且不会破坏用户的代码库。
+每次操作都需要用户确认后才能执行。请确保你的操作是安全的，并且不会破坏用户的代码库。`,
+        `You are a powerful AI code agent that can help users modify, delete, and create files. You can directly operate on the user's codebase with advanced programming understanding.
 
-## 对话控制
-在每轮对话结束时，你应该评估是否需要继续对话。如果需要，请在回复的最后添加：
-\`\`\`continue
-true
+## Intelligent Agent Collaboration Mode
+You are now in collaboration mode, which means:
+1. **Task-Oriented**: Focus on completing the user's given task
+2. **Step-by-Step Execution**: Break complex tasks into multiple steps, waiting for user confirmation at each step
+3. **Clear Communication**: Clearly explain current progress and next step plans
+4. **User Control**: Each step requires user decision to continue
+
+## Task Status Management
+You need to clearly identify the current task status in each response:
+
+\`\`\`task-status
+status: planning|executing|completed
+progress: Current progress description
+next_action: Next action plan (if applicable)
 \`\`\`
 
-如果不需要继续，请添加：
-\`\`\`continue
-false
-\`\`\``,
-        `You are a powerful AI code agent that can help users modify, delete, and create files. You can directly operate on the user's codebase with advanced programming understanding.
+- **planning**: Analyzing task and formulating plan
+- **executing**: Performing specific operations
+- **completed**: Task completed
+
+## Collaboration Mechanism
+In each round of conversation, you should:
+1. Clearly explain what has been completed
+2. If the task is not finished, describe the suggested next action in next_action
+3. Wait for user decision on whether to continue to the next step
+4. Only set status to completed when the task is truly finished
 
 Please pay special attention:
 1. Remember the complete conversation history and understand that the user's question may be a continuation of the previous conversation.
@@ -590,18 +640,7 @@ content:
 file_content
 \`\`\`
 
-Each operation needs to be confirmed by the user before execution. Please ensure that your operations are safe and will not damage the user's codebase.
-
-## Conversation Control
-At the end of each round of conversation, you should evaluate whether to continue the conversation. If needed, please add at the end of your reply:
-\`\`\`continue
-true
-\`\`\`
-
-If not needed, please add:
-\`\`\`continue
-false
-\`\`\``
+Each operation needs to be confirmed by the user before execution. Please ensure that your operations are safe and will not damage the user's codebase.`
       );
 
       // 构建增强的用户提示词，包含文件内容
@@ -711,15 +750,14 @@ ${functions
       // 解析文件操作
       const fileOperations = parseFileOperations(response);
 
-      // 解析是否需要继续对话
-      const shouldContinue = shouldContinueDialog(response);
+      // 解析任务状态
+      const taskStatusInfo = parseTaskStatus(response);
+      setTaskStatus(taskStatusInfo.status);
 
-      // 根据shouldContinueDialog的结果设置完成状态
-      // 只有当明确指示不需要继续对话时，才设置为完成
-      if (!shouldContinue) {
+      // 根据任务状态设置完成状态
+      if (taskStatusInfo.status === "completed") {
         setIsComplete(true);
       } else {
-        // 确保完成状态被重置，允许继续对话
         setIsComplete(false);
       }
 
@@ -756,13 +794,20 @@ ${functions
         }
       });
 
-      // 如果需要继续对话，显示输入框让用户继续
-      // 不再自动准备下一轮
+      // 不再自动执行，每轮都等待用户决定
+      // 只有当任务状态为completed时才设置为完成
+      if (taskStatusInfo.status === "completed") {
+        setIsComplete(true);
+      } else {
+        setIsComplete(false);
+        // 显示继续按钮，让用户决定是否继续
+      }
+
       console.log(
-        "初始对话处理完成 - 是否继续:",
-        shouldContinue,
+        "初始对话处理完成 - 任务状态:",
+        taskStatusInfo.status,
         "是否完成:",
-        !shouldContinue
+        taskStatusInfo.status === "completed"
       );
     } catch (error) {
       console.error("对话初始化错误:", error);
@@ -834,7 +879,45 @@ ${functions
     return operations;
   };
 
-  // 已移除未使用的parseContinueFlag函数
+  // 解析任务状态
+  const parseTaskStatus = (
+    text: string
+  ): {
+    status: "planning" | "executing" | "completed";
+    progress: string;
+    nextAction?: string;
+  } => {
+    const regex = /```task-status\s+([\s\S]*?)```/;
+    const match = text.match(regex);
+
+    if (!match) {
+      // 如果没有找到任务状态标记，根据内容推断
+      if (
+        text.includes("完成") ||
+        text.includes("completed") ||
+        text.includes("任务已完成")
+      ) {
+        return { status: "completed", progress: "任务已完成" };
+      }
+      return { status: "executing", progress: "正在执行中" };
+    }
+
+    const content = match[1];
+
+    // 解析状态
+    const statusMatch = content.match(/status:\s*(\w+)/);
+    const status = (statusMatch?.[1] as any) || "executing";
+
+    // 解析进度
+    const progressMatch = content.match(/progress:\s*([^\n]+)/);
+    const progress = progressMatch?.[1]?.trim() || "正在处理中";
+
+    // 解析下一步行动
+    const nextActionMatch = content.match(/next_action:\s*([^\n]+)/);
+    const nextAction = nextActionMatch?.[1]?.trim();
+
+    return { status, progress, nextAction };
+  };
 
   // 处理文件操作
   const handleFileOperation = async (operation: FileOperation) => {
@@ -877,6 +960,83 @@ ${functions
     }
   };
 
+  // 一键应用所有待处理操作
+  const handleApplyAllOperations = async () => {
+    setProcessingOperation(true);
+
+    try {
+      for (const operation of pendingOperations) {
+        switch (operation.type) {
+          case FileOperationType.MODIFY:
+            if (
+              operation.startLine !== undefined &&
+              operation.endLine !== undefined &&
+              operation.newContent !== undefined
+            ) {
+              await modifyFile(
+                operation.path,
+                operation.startLine,
+                operation.endLine,
+                operation.newContent
+              );
+            }
+            break;
+
+          case FileOperationType.DELETE:
+            await deleteFile(operation.path);
+            break;
+
+          case FileOperationType.CREATE:
+            if (operation.content !== undefined) {
+              await createFile(operation.path, operation.content);
+            }
+            break;
+        }
+      }
+
+      // 清空待处理列表
+      setPendingOperations([]);
+    } catch (error) {
+      console.error("批量文件操作错误:", error);
+    } finally {
+      setProcessingOperation(false);
+    }
+  };
+
+  // 手动继续下一步
+  const handleContinueTask = async () => {
+    if (isTesting) return; // 防止重复执行
+
+    // 使用默认的继续提示
+    const continuePrompt = "请继续执行任务，基于之前的分析和计划。";
+
+    // 直接调用handleSubmit的逻辑，但使用继续提示
+    setUserInput(continuePrompt);
+    setTimeout(() => {
+      handleSubmit();
+    }, 100);
+  };
+
+  // 处理执行命令
+  const handleExecuteCommand = async () => {
+    if (isTesting || !executeCommand.trim()) return;
+
+    // 使用用户输入的执行命令
+    setUserInput(executeCommand);
+    setExecuteCommand(""); // 清空执行命令
+    setShowExecuteInput(false); // 隐藏输入框
+
+    setTimeout(() => {
+      handleSubmit();
+    }, 100);
+  };
+
+  // 显示执行输入框
+  const handleShowExecuteInput = () => {
+    setShowExecuteInput(true);
+    setExecuteCommand("");
+  };
+
   // 处理权限请求
   const handlePermissionRequest = () => {
     setHasPermission(true);
@@ -895,6 +1055,9 @@ ${functions
     console.log("开始处理用户输入:", userInput);
     setIsSubmitting(true);
     setIsTesting(true);
+
+    // 重置任务状态，因为这是用户的新输入
+    setTaskStatus("planning");
 
     try {
       // 创建新的对话轮次
@@ -1110,6 +1273,33 @@ ${functions
       const systemPrompt = getLocalizedPrompt(
         `你是一个强大的AI代码智能体，能够帮助用户修改、删除和创建文件。你可以直接操作用户的代码库，并具有高级编程理解能力。
 
+## 智能体协作模式
+你现在处于协作模式，这意味着：
+1. **任务导向**：你需要专注于完成用户给定的任务
+2. **分步执行**：将复杂任务分解为多个步骤，每步都等待用户确认
+3. **清晰沟通**：明确说明当前进度和下一步计划
+4. **用户控制**：每一步都需要用户决定是否继续
+
+## 任务状态管理
+你需要在每次回复中明确标识当前的任务状态：
+
+\`\`\`task-status
+status: planning|executing|completed
+progress: 当前进度描述
+next_action: 下一步行动计划（如果有的话）
+\`\`\`
+
+- **planning**: 正在分析任务和制定计划
+- **executing**: 正在执行具体的操作
+- **completed**: 任务已完成
+
+## 协作机制
+在每轮对话中，你应该：
+1. 明确说明当前完成了什么
+2. 如果任务未完成，在 next_action 中描述建议的下一步行动
+3. 等待用户决定是否继续执行下一步
+4. 只有当任务真正完成时，才将状态设为 completed
+
 请特别注意：
 1. 请记住完整的对话历史，理解用户的问题可能是对之前对话的延续。
 2. 如果用户提供简短回复（如"是的"、"好的"、"明天呢"），应理解为对之前对话的回应或延续。
@@ -1183,19 +1373,35 @@ content:
 文件内容
 \`\`\`
 
-每次操作都需要用户确认后才能执行。请确保你的操作是安全的，并且不会破坏用户的代码库。
+每次操作都需要用户确认后才能执行。请确保你的操作是安全的，并且不会破坏用户的代码库。`,
+        `You are a powerful AI code agent that can help users modify, delete, and create files. You can directly operate on the user's codebase with advanced programming understanding.
 
-## 对话控制
-在每轮对话结束时，你应该评估是否需要继续对话。如果需要，请在回复的最后添加：
-\`\`\`continue
-true
+## Intelligent Agent Collaboration Mode
+You are now in collaboration mode, which means:
+1. **Task-Oriented**: Focus on completing the user's given task
+2. **Step-by-Step Execution**: Break complex tasks into multiple steps, waiting for user confirmation at each step
+3. **Clear Communication**: Clearly explain current progress and next step plans
+4. **User Control**: Each step requires user decision to continue
+
+## Task Status Management
+You need to clearly identify the current task status in each response:
+
+\`\`\`task-status
+status: planning|executing|completed
+progress: Current progress description
+next_action: Next action plan (if applicable)
 \`\`\`
 
-如果不需要继续，请添加：
-\`\`\`continue
-false
-\`\`\``,
-        `You are a powerful AI code agent that can help users modify, delete, and create files. You can directly operate on the user's codebase with advanced programming understanding.
+- **planning**: Analyzing task and formulating plan
+- **executing**: Performing specific operations
+- **completed**: Task completed
+
+## Collaboration Mechanism
+In each round of conversation, you should:
+1. Clearly explain what has been completed
+2. If the task is not finished, describe the suggested next action in next_action
+3. Wait for user decision on whether to continue to the next step
+4. Only set status to completed when the task is truly finished
 
 Please pay special attention:
 1. Remember the complete conversation history and understand that the user's question may be a continuation of the previous conversation.
@@ -1270,18 +1476,7 @@ content:
 file_content
 \`\`\`
 
-Each operation needs to be confirmed by the user before execution. Please ensure that your operations are safe and will not damage the user's codebase.
-
-## Conversation Control
-At the end of each round of conversation, you should evaluate whether to continue the conversation. If needed, please add at the end of your reply:
-\`\`\`continue
-true
-\`\`\`
-
-If not needed, please add:
-\`\`\`continue
-false
-\`\`\``
+Each operation needs to be confirmed by the user before execution. Please ensure that your operations are safe and will not damage the user's codebase.`
       );
 
       // 保留完整的对话历史，不再限制长度
@@ -1397,26 +1592,38 @@ false
         stream: true,
         onUpdate: (chunk) => {
           response += chunk;
+          // 确保更新到正确的轮次
           setResponseSegments((prev) => ({
             ...prev,
             [roundIndex]: (prev[roundIndex] || "") + chunk,
           }));
           setCurrentResponse(response);
+
+          // 实时更新对话轮次中的AI回复
+          setDialogRounds((prev) => {
+            const updated = [...prev];
+            if (updated[roundIndex]) {
+              updated[roundIndex] = {
+                ...updated[roundIndex],
+                aiResponse: response,
+              };
+            }
+            return updated;
+          });
         },
       });
 
       // 解析文件操作
       const fileOperations = parseFileOperations(response);
 
-      // 解析是否需要继续对话
-      const shouldContinue = shouldContinueDialog(response);
+      // 解析任务状态
+      const taskStatusInfo = parseTaskStatus(response);
+      setTaskStatus(taskStatusInfo.status);
 
-      // 根据shouldContinueDialog的结果设置完成状态
-      // 只有当明确指示不需要继续对话时，才设置为完成
-      if (!shouldContinue) {
+      // 根据任务状态设置完成状态
+      if (taskStatusInfo.status === "completed") {
         setIsComplete(true);
       } else {
-        // 确保完成状态被重置，允许继续对话
         setIsComplete(false);
       }
 
@@ -1453,13 +1660,20 @@ false
         }
       });
 
-      // 如果需要继续对话，显示输入框让用户继续
-      // 不再自动准备下一轮
+      // 不再自动执行，每轮都等待用户决定
+      // 只有当任务状态为completed时才设置为完成
+      if (taskStatusInfo.status === "completed") {
+        setIsComplete(true);
+      } else {
+        setIsComplete(false);
+        // 显示继续按钮，让用户决定是否继续
+      }
+
       console.log(
-        "对话处理完成 - 是否继续:",
-        shouldContinue,
+        "对话处理完成 - 任务状态:",
+        taskStatusInfo.status,
         "是否完成:",
-        !shouldContinue
+        taskStatusInfo.status === "completed"
       );
     } catch (error) {
       console.error("对话继续错误:", error);
@@ -1733,9 +1947,27 @@ false
 
     return (
       <div className="mt-4 border-t border-gray-200 dark:border-gray-700 pt-4">
-        <h3 className="text-lg font-medium text-gray-800 dark:text-gray-200 mb-3">
-          {t("aiagent.pendingOperations")} ({pendingOperations.length})
-        </h3>
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-lg font-medium text-gray-800 dark:text-gray-200">
+            {t("aiagent.pendingOperations")} ({pendingOperations.length})
+          </h3>
+          <div className="flex space-x-2">
+            <button
+              onClick={handleApplyAllOperations}
+              disabled={processingOperation}
+              className="px-3 py-1 bg-green-500 text-white text-sm rounded-md hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {processingOperation ? "应用中..." : "一键全部应用"}
+            </button>
+            <button
+              onClick={() => setPendingOperations([])}
+              disabled={processingOperation}
+              className="px-3 py-1 bg-red-500 text-white text-sm rounded-md hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              全部拒绝
+            </button>
+          </div>
+        </div>
         <div className="space-y-3">
           {pendingOperations.map((operation, index) => (
             <FileOperationCard
@@ -1785,7 +2017,58 @@ false
               {t("aiagent.title")}
             </h2>
           </div>
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-4">
+            {/* 自动模式开关 */}
+            <div className="flex items-center space-x-2">
+              <span className="text-sm text-gray-600 dark:text-gray-400">
+                {t("aiagent.autoMode")}
+              </span>
+              <button
+                onClick={() => setAutoMode(!autoMode)}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                  autoMode ? "bg-blue-500" : "bg-gray-300 dark:bg-gray-600"
+                }`}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    autoMode ? "translate-x-6" : "translate-x-1"
+                  }`}
+                />
+              </button>
+            </div>
+
+            {/* 任务状态指示器 */}
+            {hasPermission && (
+              <div className="flex items-center space-x-2">
+                <div
+                  className={`w-2 h-2 rounded-full ${
+                    taskStatus === "completed"
+                      ? "bg-green-500"
+                      : taskStatus === "executing"
+                      ? "bg-blue-500 animate-pulse"
+                      : taskStatus === "planning"
+                      ? "bg-yellow-500 animate-pulse"
+                      : "bg-gray-400"
+                  }`}
+                />
+                <span className="text-xs text-gray-500 dark:text-gray-400">
+                  {taskStatus === "completed"
+                    ? t("aiagent.taskCompleted")
+                    : taskStatus === "executing"
+                    ? t("aiagent.taskExecuting")
+                    : taskStatus === "planning"
+                    ? t("aiagent.taskPlanning")
+                    : t("aiagent.taskWaiting")}
+                </span>
+                {/* 任务进行状态 */}
+                {taskStatus === "executing" && (
+                  <span className="text-xs text-blue-500 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 py-1 rounded">
+                    执行中
+                  </span>
+                )}
+              </div>
+            )}
+
             <button
               onClick={onClose}
               className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
@@ -1869,6 +2152,95 @@ false
                     </svg>
                     {t("aiagent.complete")}
                   </div>
+                </div>
+              )}
+
+              {/* 继续任务和执行按钮 */}
+              {!isComplete && !isTesting && taskStatus !== "completed" && (
+                <div className="mt-4">
+                  <div className="flex justify-center space-x-3">
+                    <button
+                      onClick={handleContinueTask}
+                      className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors flex items-center space-x-2"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-4 w-4"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                      <span>继续任务</span>
+                    </button>
+
+                    <button
+                      onClick={handleShowExecuteInput}
+                      className="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors flex items-center space-x-2"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-4 w-4"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                      <span>执行</span>
+                    </button>
+                  </div>
+
+                  {/* 执行命令输入框 */}
+                  {showExecuteInput && (
+                    <div className="mt-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                      <div className="flex space-x-2">
+                        <input
+                          type="text"
+                          value={executeCommand}
+                          onChange={(e) => setExecuteCommand(e.target.value)}
+                          placeholder="输入要执行的命令..."
+                          className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" && !e.shiftKey) {
+                              e.preventDefault();
+                              handleExecuteCommand();
+                            } else if (e.key === "Escape") {
+                              setShowExecuteInput(false);
+                              setExecuteCommand("");
+                            }
+                          }}
+                          autoFocus
+                        />
+                        <button
+                          onClick={handleExecuteCommand}
+                          disabled={!executeCommand.trim()}
+                          className="px-3 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                          执行
+                        </button>
+                        <button
+                          onClick={() => {
+                            setShowExecuteInput(false);
+                            setExecuteCommand("");
+                          }}
+                          className="px-3 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors"
+                        >
+                          取消
+                        </button>
+                      </div>
+                      <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                        按 Enter 执行，按 Esc 取消
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </>
