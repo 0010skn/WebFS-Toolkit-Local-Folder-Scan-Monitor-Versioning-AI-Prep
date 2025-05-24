@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslations } from "./LocaleProvider";
+import { useTheme } from "next-themes";
 import {
   testWithAI,
   findRelevantFiles,
@@ -264,7 +265,8 @@ const CodeBlock = ({
   className?: string;
   children: string;
 }) => {
-  const isDark = true;
+  const { resolvedTheme } = useTheme();
+  const isDark = resolvedTheme === "dark";
   // 从className中提取语言信息
   let language = className ? className.replace(/language-/, "") : "";
 
@@ -551,26 +553,6 @@ export default function AIagent({
         line-height: 1.6 !important;
       }
 
-      /* 强制重置所有span元素的颜色，确保语法高亮生效 */
-      .syntax-highlighter-container span {
-        color: inherit !important;
-      }
-
-      /* 强制覆盖任何可能的灰色样式 */
-      .syntax-highlighter-container span:not([class*="hljs-"]) {
-        color: inherit !important;
-      }
-
-      /* 确保没有类名的span也有正确颜色 */
-      .syntax-highlighter-container code span:not([class]) {
-        color: inherit !important;
-      }
-
-      /* 覆盖可能的默认样式 */
-      .syntax-highlighter-container * {
-        color: inherit !important;
-      }
-
       /* 深色模式下的语法高亮 - 使用Atom One Dark主题 */
       .dark .syntax-highlighter-container .hljs-keyword { color: #c678dd !important; }
       .dark .syntax-highlighter-container .hljs-built_in { color: #e6c07b !important; }
@@ -605,30 +587,30 @@ export default function AIagent({
       }
 
       /* 浅色模式下的语法高亮 - 使用Atom One Light主题 */
-      .syntax-highlighter-container .hljs-keyword { color: #a626a4 !important; }
-      .syntax-highlighter-container .hljs-built_in { color: #c18401 !important; }
-      .syntax-highlighter-container .hljs-string { color: #50a14f !important; }
-      .syntax-highlighter-container .hljs-number { color: #986801 !important; }
-      .syntax-highlighter-container .hljs-comment { color: #a0a1a7 !important; font-style: italic !important; }
-      .syntax-highlighter-container .hljs-title { color: #4078f2 !important; }
-      .syntax-highlighter-container .hljs-attr { color: #986801 !important; }
-      .syntax-highlighter-container .hljs-tag { color: #e45649 !important; }
-      .syntax-highlighter-container .hljs-name { color: #e45649 !important; }
-      .syntax-highlighter-container .hljs-type { color: #986801 !important; }
-      .syntax-highlighter-container .hljs-variable { color: #e45649 !important; }
-      .syntax-highlighter-container .hljs-function { color: #4078f2 !important; }
-      .syntax-highlighter-container .hljs-params { color: #383a42 !important; }
-      .syntax-highlighter-container .hljs-literal { color: #0184bc !important; }
-      .syntax-highlighter-container .hljs-selector-tag { color: #e45649 !important; }
-      .syntax-highlighter-container .hljs-selector-class { color: #c18401 !important; }
-      .syntax-highlighter-container .hljs-selector-id { color: #4078f2 !important; }
-      .syntax-highlighter-container .hljs-property { color: #383a42 !important; }
-      .syntax-highlighter-container .hljs-value { color: #50a14f !important; }
-      .syntax-highlighter-container .hljs-class { color: #c18401 !important; }
-      .syntax-highlighter-container .hljs-doctag { color: #a626a4 !important; }
-      .syntax-highlighter-container .hljs-meta { color: #e45649 !important; }
-      .syntax-highlighter-container .hljs-meta-keyword { color: #a626a4 !important; }
-      .syntax-highlighter-container .hljs-meta-string { color: #50a14f !important; }
+      .syntax-highlighter-container .hljs-keyword { color: #a626a4; }
+      .syntax-highlighter-container .hljs-built_in { color: #c18401; }
+      .syntax-highlighter-container .hljs-string { color: #50a14f; }
+      .syntax-highlighter-container .hljs-number { color: #986801; }
+      .syntax-highlighter-container .hljs-comment { color: #a0a1a7; font-style: italic; }
+      .syntax-highlighter-container .hljs-title { color: #4078f2; }
+      .syntax-highlighter-container .hljs-attr { color: #986801; }
+      .syntax-highlighter-container .hljs-tag { color: #e45649; }
+      .syntax-highlighter-container .hljs-name { color: #e45649; }
+      .syntax-highlighter-container .hljs-type { color: #986801; }
+      .syntax-highlighter-container .hljs-variable { color: #e45649; }
+      .syntax-highlighter-container .hljs-function { color: #4078f2; }
+      .syntax-highlighter-container .hljs-params { color: #383a42; }
+      .syntax-highlighter-container .hljs-literal { color: #0184bc; }
+      .syntax-highlighter-container .hljs-selector-tag { color: #e45649; }
+      .syntax-highlighter-container .hljs-selector-class { color: #c18401; }
+      .syntax-highlighter-container .hljs-selector-id { color: #4078f2; }
+      .syntax-highlighter-container .hljs-property { color: #383a42; }
+      .syntax-highlighter-container .hljs-value { color: #50a14f; }
+      .syntax-highlighter-container .hljs-class { color: #c18401; }
+      .syntax-highlighter-container .hljs-doctag { color: #a626a4; }
+      .syntax-highlighter-container .hljs-meta { color: #e45649; }
+      .syntax-highlighter-container .hljs-meta-keyword { color: #a626a4; }
+      .syntax-highlighter-container .hljs-meta-string { color: #50a14f; }
 
       /* 浅色模式下的默认文本颜色 */
       .syntax-highlighter-container,
@@ -638,23 +620,23 @@ export default function AIagent({
       }
 
       /* 确保浅色模式下的样式优先级更高 */
-      body:not(.dark) .syntax-highlighter-container .hljs-keyword { color: #a626a4 !important; }
-      body:not(.dark) .syntax-highlighter-container .hljs-built_in { color: #c18401 !important; }
-      body:not(.dark) .syntax-highlighter-container .hljs-string { color: #50a14f !important; }
-      body:not(.dark) .syntax-highlighter-container .hljs-number { color: #986801 !important; }
-      body:not(.dark) .syntax-highlighter-container .hljs-comment { color: #a0a1a7 !important; }
-      body:not(.dark) .syntax-highlighter-container .hljs-title { color: #4078f2 !important; }
-      body:not(.dark) .syntax-highlighter-container .hljs-attr { color: #986801 !important; }
-      body:not(.dark) .syntax-highlighter-container .hljs-tag { color: #e45649 !important; }
-      body:not(.dark) .syntax-highlighter-container .hljs-name { color: #e45649 !important; }
-      body:not(.dark) .syntax-highlighter-container .hljs-type { color: #986801 !important; }
-      body:not(.dark) .syntax-highlighter-container .hljs-variable { color: #e45649 !important; }
-      body:not(.dark) .syntax-highlighter-container .hljs-function { color: #4078f2 !important; }
-      body:not(.dark) .syntax-highlighter-container .hljs-class { color: #c18401 !important; }
-      body:not(.dark) .syntax-highlighter-container .hljs-doctag { color: #a626a4 !important; }
-      body:not(.dark) .syntax-highlighter-container .hljs-meta { color: #e45649 !important; }
-      body:not(.dark) .syntax-highlighter-container .hljs-meta-keyword { color: #a626a4 !important; }
-      body:not(.dark) .syntax-highlighter-container .hljs-meta-string { color: #50a14f !important; }
+      body:not(.dark) .syntax-highlighter-container .hljs-keyword { color: #a626a4; }
+      body:not(.dark) .syntax-highlighter-container .hljs-built_in { color: #c18401; }
+      body:not(.dark) .syntax-highlighter-container .hljs-string { color: #50a14f; }
+      body:not(.dark) .syntax-highlighter-container .hljs-number { color: #986801; }
+      body:not(.dark) .syntax-highlighter-container .hljs-comment { color: #a0a1a7; }
+      body:not(.dark) .syntax-highlighter-container .hljs-title { color: #4078f2; }
+      body:not(.dark) .syntax-highlighter-container .hljs-attr { color: #986801; }
+      body:not(.dark) .syntax-highlighter-container .hljs-tag { color: #e45649; }
+      body:not(.dark) .syntax-highlighter-container .hljs-name { color: #e45649; }
+      body:not(.dark) .syntax-highlighter-container .hljs-type { color: #986801; }
+      body:not(.dark) .syntax-highlighter-container .hljs-variable { color: #e45649; }
+      body:not(.dark) .syntax-highlighter-container .hljs-function { color: #4078f2; }
+      body:not(.dark) .syntax-highlighter-container .hljs-class { color: #c18401; }
+      body:not(.dark) .syntax-highlighter-container .hljs-doctag { color: #a626a4; }
+      body:not(.dark) .syntax-highlighter-container .hljs-meta { color: #e45649; }
+      body:not(.dark) .syntax-highlighter-container .hljs-meta-keyword { color: #a626a4; }
+      body:not(.dark) .syntax-highlighter-container .hljs-meta-string { color: #50a14f; }
 
       .code-scroll-container {
         scrollbar-width: thin;
@@ -679,19 +661,11 @@ export default function AIagent({
         background-color: rgba(75, 85, 99, 0.5);
       }
 
-      /* 最高优先级修复 - 直接覆盖所有可能的灰色 */
-      .syntax-highlighter-container pre[class*="language-"] code,
-      .syntax-highlighter-container pre[class*="language-"] code *,
-      .syntax-highlighter-container code[class*="language-"],
-      .syntax-highlighter-container code[class*="language-"] * {
-        color: inherit !important;
-      }
-
       /* 强制设置Python语法高亮 */
       .syntax-highlighter-container .token.decorator,
       .syntax-highlighter-container .token.at-rule,
       .syntax-highlighter-container .hljs-meta {
-        color: #c678dd !important;
+        color: #c678dd;
       }
 
       .dark .syntax-highlighter-container .token.decorator,
@@ -703,7 +677,7 @@ export default function AIagent({
       body:not(.dark) .syntax-highlighter-container .token.decorator,
       body:not(.dark) .syntax-highlighter-container .token.at-rule,
       body:not(.dark) .syntax-highlighter-container .hljs-meta {
-        color: #a626a4 !important;
+        color: #a626a4;
       }
     `;
     document.head.appendChild(styleEl);
