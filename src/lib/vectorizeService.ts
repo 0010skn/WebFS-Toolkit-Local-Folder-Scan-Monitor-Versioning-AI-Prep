@@ -151,6 +151,7 @@ export async function testWithAI(
 
 重要格式指南：
 - 只在显示实际代码片段时才使用代码块（\`\`\`语言 ...代码... \`\`\`）
+- **代码块语言标识符必须使用标准名称，如：javascript、typescript、python、html、css等，不要使用lang-前缀**
 - 避免在普通解释文本,名词,文件夹,文件名中使用代码块格式
 - 当引用变量名、函数名或简短代码片段时，使用单行代码格式（\`代码\`）而非代码块
 - 对于文件名，请使用单行代码格式，例如：\`filename.tsx\` 而非 \`\`\`filename.tsx\`\`\`
@@ -177,6 +178,7 @@ Please actively analyze the code and project information provided by the user, w
 
 Important formatting guidelines:
 - Only use code blocks (\`\`\`language ...code... \`\`\`) when displaying actual code snippets
+- **Code block language identifiers must use standard names like: javascript, typescript, python, html, css, etc. Do NOT use lang- prefix**
 - Avoid using code block formatting for regular explanatory text, nouns, folder names, or file names
 - When referencing variable names, function names, or short code snippets, use inline code format (\`code\`) rather than code blocks
 - Keep your answers clear and concise, avoiding unnecessary markup and formatting
@@ -323,6 +325,7 @@ async function simulateRound(
 
 重要格式指南：
 - 只在显示实际代码片段时才使用代码块（\`\`\`语言 ...代码... \`\`\`）
+- **代码块语言标识符必须使用标准名称，如：javascript、typescript、python、html、css等，不要使用lang-前缀**
 - 避免在普通解释文本中使用代码块格式
 - 当引用变量名、函数名或简短代码片段时，使用单行代码格式（\`代码\`）而非代码块
 - 对于文件名，请使用单行代码格式，例如：\`filename.tsx\` 而非 \`\`\`filename.tsx\`\`\`
@@ -348,6 +351,7 @@ Please actively analyze the code and project information provided by the user, w
 
 Important formatting guidelines:
 - Only use code blocks (\`\`\`language ...code... \`\`\`) when displaying actual code snippets
+- **Code block language identifiers must use standard names like: javascript, typescript, python, html, css, etc. Do NOT use lang- prefix**
 - Avoid using code block formatting for regular explanatory text, nouns, folder names, or file names
 - When referencing variable names, function names, or short code snippets, use inline code format (\`code\`) rather than code blocks
 - Keep your answers clear and concise, avoiding unnecessary markup and formatting
