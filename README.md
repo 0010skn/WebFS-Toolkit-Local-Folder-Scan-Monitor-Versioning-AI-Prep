@@ -29,7 +29,7 @@
 ---
 
 <a name="en-us"></a>
-
+[![Powered by DartNode](https://dartnode.com/branding/DN-Open-Source-sm.png)](https://dartnode.com "Powered by DartNode - Free VPS for Open Source")
 **Lost in a code maze? Tired of tedious context prep for AI collaboration? Folda-Scan to the rescue!** 💡
 
 **Folda-Scan** is a revolutionary intelligent project Q&A tool that **runs entirely locally in your browser**. It transforms your codebase into a conversational partner using advanced semantic vectorization, making code comprehension and AI collaboration unprecedentedly simple and secure.
