@@ -16,7 +16,6 @@
 </p>
 
 # Folda-Scan: Your Private AI Navigator & Q&A Engine for Codebases 🚀
-[![Powered by DartNode](https://dartnode.com/branding/DN-Open-Source-sm.png)](https://dartnode.com "Powered by DartNode - Free VPS for Open Source")
 [![许可证: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
 [![GitHub Repo stars](https://img.shields.io/github/stars/oldjs/web-code-agent?style=social)](https://github.com/oldjs/web-code-agent/stargazers)
 
