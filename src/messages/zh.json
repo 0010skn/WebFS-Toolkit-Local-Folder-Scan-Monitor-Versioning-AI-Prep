@@ -903,6 +903,10 @@
     "taskCompleted": "任务完成",
     "taskExecuting": "执行中",
     "taskPlanning": "规划中",
-    "taskWaiting": "等待中"
+    "taskWaiting": "等待中",
+    "execute": "执行",
+    "eta": "预计{seconds}秒",
+    "suggestion": "建议一次对话只完成一项任务",
+    "defaultExecutePrompt": "基于上面的规划,改吧"
   }
 }

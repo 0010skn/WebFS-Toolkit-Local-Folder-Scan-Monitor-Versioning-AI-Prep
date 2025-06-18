@@ -899,6 +899,10 @@
     "taskCompleted": "Completed",
     "taskExecuting": "Executing",
     "taskPlanning": "Planning",
-    "taskWaiting": "Waiting"
+    "taskWaiting": "Waiting",
+    "execute": "Execute",
+    "eta": "ETA {seconds}s",
+    "suggestion": "It is recommended to complete only one task per conversation",
+    "defaultExecutePrompt": "Based on the plan above, please proceed."
   }
 }

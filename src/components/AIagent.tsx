@@ -118,6 +118,7 @@ interface DialogRound {
   knowledgeEntries?: string[];
   fileOperations?: FileOperation[];
   hideUserInput?: boolean; // 是否隐藏用户输入气泡
+  modelUsed?: string; // 新增：记录该轮使用的模型
 }
 
 // 自动检测代码语言的函数
@@ -818,6 +819,13 @@ export default function AIagent({
   const [showExecuteInput, setShowExecuteInput] = useState(false);
   const [executeCommand, setExecuteCommand] = useState("");
 
+  // ===== 新增：模型常量 =====
+  const PLANNING_MODEL = "openai-reasoning";
+  const EXECUTION_MODEL = "openai-large";
+
+  // 1. 新增 estimatedTime 状态
+  const [estimatedTime, setEstimatedTime] = useState<number | null>(null);
+
   // 初始化对话
   useEffect(() => {
     if (initialPrompt && !dialogRounds.length && !isTesting) {
@@ -853,6 +861,7 @@ export default function AIagent({
         aiResponse: "",
         files: relevantFiles,
         hideUserInput: true, // 隐藏第一轮用户输入气泡
+        modelUsed: PLANNING_MODEL, // 记录模型
       };
 
       setDialogRounds([newRound]);
@@ -874,6 +883,7 @@ export default function AIagent({
 
 \`\`\`task-status
 status: planning|executing|completed
+code: 要改动的代码
 progress: 当前进度描述
 next_action: 下一步行动计划（如果有的话）
 \`\`\`
@@ -881,6 +891,7 @@ next_action: 下一步行动计划（如果有的话）
 - **planning**: 正在分析任务和制定计划
 - **executing**: 正在执行具体的操作
 - **completed**: 任务已完成
+- **code**: 要改动的编程代码（必须包含）
 
 ## 协作机制
 在每轮对话中，你应该：
@@ -977,6 +988,7 @@ You need to clearly identify the current task status in each response:
 
 \`\`\`task-status
 status: planning|executing|completed
+code: code to be modified
 progress: Current progress description
 next_action: Next action plan (if applicable)
 \`\`\`
@@ -984,6 +996,7 @@ next_action: Next action plan (if applicable)
 - **planning**: Analyzing task and formulating plan
 - **executing**: Performing specific operations
 - **completed**: Task completed
+- **code**: need to modify programming code (must be included)
 
 ## Collaboration Mechanism
 In each round of conversation, you should:
@@ -1161,6 +1174,7 @@ ${functions
       // 获取AI响应
       let response = "";
       await chatCompletion(history, {
+        model: PLANNING_MODEL, // <<<<<< 使用规划模型
         stream: true,
         onUpdate: (chunk) => {
           response += chunk;
@@ -1172,12 +1186,16 @@ ${functions
         },
       });
 
-      // 解析文件操作
-      const fileOperations = parseFileOperations(response);
-
       // 解析任务状态
       const taskStatusInfo = parseTaskStatus(response);
       setTaskStatus(taskStatusInfo.status);
+
+      // ===== 解析文件操作（无论什么阶段都解析） =====
+      let fileOperations: FileOperation[] = parseFileOperations(response);
+      // 只有 executing 阶段才真正挂起待处理操作
+      if (taskStatusInfo.status === "executing" && fileOperations.length) {
+        setPendingOperations(fileOperations);
+      }
 
       // 根据任务状态设置完成状态
       if (taskStatusInfo.status === "completed") {
@@ -1196,11 +1214,6 @@ ${functions
         };
         return updated;
       });
-
-      // 如果有文件操作，添加到待处理列表
-      if (fileOperations.length > 0) {
-        setPendingOperations(fileOperations);
-      }
 
       // 添加到对话历史，确保不重复添加
       setConversationHistory((prev) => {
@@ -1324,7 +1337,8 @@ ${functions
       ) {
         return { status: "completed", progress: "任务已完成" };
       }
-      return { status: "executing", progress: "正在执行中" };
+      // 默认视为规划阶段
+      return { status: "planning", progress: "正在规划" };
     }
 
     const content = match[1];
@@ -1390,33 +1404,44 @@ ${functions
     setProcessingOperation(true);
 
     try {
-      for (const operation of pendingOperations) {
-        switch (operation.type) {
-          case FileOperationType.MODIFY:
-            if (
-              operation.startLine !== undefined &&
-              operation.endLine !== undefined &&
-              operation.newContent !== undefined
-            ) {
-              await modifyFile(
-                operation.path,
-                operation.startLine,
-                operation.endLine,
-                operation.newContent
-              );
-            }
-            break;
-
-          case FileOperationType.DELETE:
-            await deleteFile(operation.path);
-            break;
-
-          case FileOperationType.CREATE:
-            if (operation.content !== undefined) {
-              await createFile(operation.path, operation.content);
-            }
-            break;
+      // 1) 先处理创建
+      for (const op of pendingOperations.filter(
+        (o) => o.type === FileOperationType.CREATE
+      )) {
+        if (op.content !== undefined) {
+          await createFile(op.path, op.content);
         }
+      }
+
+      // 2) 处理修改：同一文件按起始行号降序，避免行号错位
+      const modifyGroups: { [key: string]: FileOperation[] } = {};
+      pendingOperations
+        .filter((o) => o.type === FileOperationType.MODIFY)
+        .forEach((op) => {
+          if (!modifyGroups[op.path]) modifyGroups[op.path] = [];
+          modifyGroups[op.path].push(op);
+        });
+
+      for (const [filePath, ops] of Object.entries(modifyGroups)) {
+        const ordered = ops.sort(
+          (a, b) => (b.startLine ?? 0) - (a.startLine ?? 0)
+        );
+        for (const op of ordered) {
+          if (
+            op.startLine !== undefined &&
+            op.endLine !== undefined &&
+            op.newContent !== undefined
+          ) {
+            await modifyFile(filePath, op.startLine, op.endLine, op.newContent);
+          }
+        }
+      }
+
+      // 3) 最后处理删除
+      for (const op of pendingOperations.filter(
+        (o) => o.type === FileOperationType.DELETE
+      )) {
+        await deleteFile(op.path);
       }
 
       // 清空待处理列表
@@ -1467,6 +1492,17 @@ ${functions
     setHasPermission(true);
   };
 
+  // 2. 新增 handleExecuteNow，点击执行按钮直接发送固定 prompt
+  const handleExecuteNow = () => {
+    if (isTesting) return;
+    const fixedPrompt =
+      t("aiagent.defaultExecutePrompt") || "基于上面的规划,改吧";
+    setUserInput(fixedPrompt);
+    setTimeout(() => {
+      handleSubmit();
+    }, 50);
+  };
+
   // 处理用户输入提交
   const handleSubmit = async () => {
     if (!userInput.trim() || isTesting) {
@@ -1477,11 +1513,11 @@ ${functions
       return;
     }
 
-    console.log("开始处理用户输入:", userInput);
+    // 预估思考时间：每 30 字 1 秒，最短 2 秒，最长 15 秒
+    const sec = Math.max(2, Math.min(15, Math.ceil(userInput.length / 30)));
+    setEstimatedTime(sec);
     setIsSubmitting(true);
     setIsTesting(true);
-
-    // 重置任务状态，因为这是用户的新输入
     setTaskStatus("planning");
 
     try {
@@ -1489,6 +1525,7 @@ ${functions
       const newRound: DialogRound = {
         userInput: userInput,
         aiResponse: "",
+        modelUsed: EXECUTION_MODEL, // 记录模型
       };
 
       // 添加到对话轮次
@@ -1557,6 +1594,9 @@ ${functions
       // 只重置提交状态，isTesting状态由continueConversation负责重置
       setIsSubmitting(false);
       console.log("handleSubmit - 提交状态已重置");
+      // 4. handleSubmit finally 清空 ETA
+      setIsTesting(false);
+      setEstimatedTime(null);
     }
   };
 
@@ -1572,7 +1612,8 @@ ${functions
   const continueConversation = async (
     roundIndex: number,
     relevantFiles: string[] = [],
-    userInputOverride: string = "" // 新增参数，接收当前用户输入
+    userInputOverride: string = "", // 新增参数，接收当前用户输入
+    modelToUse: string = EXECUTION_MODEL // <<<<<< 新增参数，默认执行模型
   ) => {
     console.log(
       "继续对话 - 轮次:",
@@ -2014,6 +2055,7 @@ Each operation needs to be confirmed by the user before execution. Please ensure
       // 获取AI响应
       let response = "";
       await chatCompletion(newHistory, {
+        model: modelToUse, // <<<<<< 根据阶段选择模型
         stream: true,
         onUpdate: (chunk) => {
           response += chunk;
@@ -2031,6 +2073,7 @@ Each operation needs to be confirmed by the user before execution. Please ensure
               updated[roundIndex] = {
                 ...updated[roundIndex],
                 aiResponse: response,
+                modelUsed: modelToUse, // 记录模型
               };
             }
             return updated;
@@ -2038,12 +2081,14 @@ Each operation needs to be confirmed by the user before execution. Please ensure
         },
       });
 
-      // 解析文件操作
-      const fileOperations = parseFileOperations(response);
-
-      // 解析任务状态
+      // ===== 解析文件操作（无论什么阶段都解析） =====
       const taskStatusInfo = parseTaskStatus(response);
       setTaskStatus(taskStatusInfo.status);
+
+      let fileOperations: FileOperation[] = parseFileOperations(response);
+      if (taskStatusInfo.status === "executing" && fileOperations.length) {
+        setPendingOperations((prev) => [...prev, ...fileOperations]);
+      }
 
       // 根据任务状态设置完成状态
       if (taskStatusInfo.status === "completed") {
@@ -2059,14 +2104,10 @@ Each operation needs to be confirmed by the user before execution. Please ensure
           ...updated[roundIndex],
           aiResponse: response,
           fileOperations: fileOperations,
+          modelUsed: modelToUse, // 记录模型
         };
         return updated;
       });
-
-      // 如果有文件操作，添加到待处理列表
-      if (fileOperations.length > 0) {
-        setPendingOperations((prev) => [...prev, ...fileOperations]);
-      }
 
       // 添加到对话历史，确保不重复添加
       setConversationHistory((prev) => {
@@ -2165,8 +2206,15 @@ Each operation needs to be confirmed by the user before execution. Please ensure
                     />
                   </svg>
                 </div>
-                <div className="font-medium text-purple-700 dark:text-purple-300">
-                  {t("aiagent.agent")}
+                <div
+                  className="font-medium text-purple-700 dark:text-purple-300"
+                  style={{ opacity: 0.85 }}
+                >
+                  {round.modelUsed === PLANNING_MODEL
+                    ? "o3"
+                    : round.modelUsed === EXECUTION_MODEL
+                    ? "gpt4.1"
+                    : t("aiagent.agent")}
                 </div>
               </div>
               <div className="text-gray-700 dark:text-gray-200 ml-10 prose dark:prose-invert max-w-none">
@@ -2191,7 +2239,11 @@ Each operation needs to be confirmed by the user before execution. Please ensure
                     </Markdown>
                     <div className="flex items-center mt-2 text-gray-500 dark:text-gray-400">
                       <div className="w-2 h-2 bg-purple-500 rounded-full animate-pulse mr-2"></div>
-                      {t("aiagent.thinking")}
+                      {t("aiagent.thinking")}{" "}
+                      {estimatedTime &&
+                        `(${t("aiagent.eta", {
+                          seconds: String(estimatedTime),
+                        })})`}
                     </div>
                   </>
                 ) : (
@@ -2411,6 +2463,43 @@ Each operation needs to be confirmed by the user before execution. Please ensure
     );
   };
 
+  // ========= handleContinueTask 定义之后新增 =========
+  useEffect(() => {
+    if (
+      hasPermission &&
+      autoMode &&
+      !isTesting &&
+      !isIndexing &&
+      !processingOperation &&
+      pendingOperations.length === 0 &&
+      taskStatus !== "completed"
+    ) {
+      handleContinueTask(); // 自动进入下一轮
+    }
+  }, [
+    hasPermission,
+    autoMode,
+    isTesting,
+    isIndexing,
+    processingOperation,
+    pendingOperations.length,
+    taskStatus,
+  ]);
+  // ========= 自动续步 effect 结束 =========
+
+  // ========= 自动应用操作 effect =========
+  useEffect(() => {
+    if (
+      autoMode &&
+      taskStatus === "executing" &&
+      pendingOperations.length > 0 &&
+      !processingOperation
+    ) {
+      handleApplyAllOperations();
+    }
+  }, [autoMode, taskStatus, pendingOperations.length, processingOperation]);
+  // ========= 自动应用操作 effect 结束 =========
+
   // 主组件渲染
   return (
     <div className="fixed inset-0 bg-black/50 dark:bg-black/70 z-50 flex items-center justify-center p-4 overflow-hidden">
@@ -2582,90 +2671,25 @@ Each operation needs to be confirmed by the user before execution. Please ensure
 
               {/* 继续任务和执行按钮 */}
               {!isComplete && !isTesting && taskStatus !== "completed" && (
-                <div className="mt-4">
-                  <div className="flex justify-center space-x-3">
-                    <button
-                      onClick={handleContinueTask}
-                      className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors flex items-center space-x-2"
+                <div className="mt-4 flex justify-center">
+                  <button
+                    onClick={handleExecuteNow}
+                    className="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors flex items-center space-x-2"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-4 w-4"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
                     >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-4 w-4"
-                        viewBox="0 0 20 20"
-                        fill="currentColor"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                      <span>继续任务</span>
-                    </button>
-
-                    <button
-                      onClick={handleShowExecuteInput}
-                      className="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors flex items-center space-x-2"
-                    >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-4 w-4"
-                        viewBox="0 0 20 20"
-                        fill="currentColor"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                      <span>执行</span>
-                    </button>
-                  </div>
-
-                  {/* 执行命令输入框 */}
-                  {showExecuteInput && (
-                    <div className="mt-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                      <div className="flex space-x-2">
-                        <input
-                          type="text"
-                          value={executeCommand}
-                          onChange={(e) => setExecuteCommand(e.target.value)}
-                          placeholder="输入要执行的命令..."
-                          className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter" && !e.shiftKey) {
-                              e.preventDefault();
-                              handleExecuteCommand();
-                            } else if (e.key === "Escape") {
-                              setShowExecuteInput(false);
-                              setExecuteCommand("");
-                            }
-                          }}
-                          autoFocus
-                        />
-                        <button
-                          onClick={handleExecuteCommand}
-                          disabled={!executeCommand.trim()}
-                          className="px-3 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                        >
-                          执行
-                        </button>
-                        <button
-                          onClick={() => {
-                            setShowExecuteInput(false);
-                            setExecuteCommand("");
-                          }}
-                          className="px-3 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors"
-                        >
-                          取消
-                        </button>
-                      </div>
-                      <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                        按 Enter 执行，按 Esc 取消
-                      </div>
-                    </div>
-                  )}
+                      <path
+                        fillRule="evenodd"
+                        d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                    <span>{t("aiagent.execute")}</span>
+                  </button>
                 </div>
               )}
             </>
