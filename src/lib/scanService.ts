@@ -31,7 +31,7 @@ export async function requestDirectoryAccess(): Promise<FileSystemDirectoryHandl
   try {
     // 请求用户选择文件夹并授权访问
     const dirHandle = await window.showDirectoryPicker({
-      mode: "read", // 只读模式
+      mode: "readwrite",
     });
 
     return dirHandle;

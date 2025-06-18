@@ -883,7 +883,7 @@ export default function AIagent({
 
 \`\`\`task-status
 status: planning|executing|completed
-code: 要改动的代码
+code: 要改动的完整、真实代码（禁止伪代码、占位符或省略号）
 progress: 当前进度描述
 next_action: 下一步行动计划（如果有的话）
 \`\`\`
@@ -891,7 +891,7 @@ next_action: 下一步行动计划（如果有的话）
 - **planning**: 正在分析任务和制定计划
 - **executing**: 正在执行具体的操作
 - **completed**: 任务已完成
-- **code**: 要改动的编程代码（必须包含）
+- **code**: 要改动的完整、可编译代码（必须包含，禁止伪代码、占位符或省略号）
 
 ## 协作机制
 在每轮对话中，你应该：
@@ -988,7 +988,7 @@ You need to clearly identify the current task status in each response:
 
 \`\`\`task-status
 status: planning|executing|completed
-code: code to be modified
+code: exact compilable code changes (NO pseudocode, placeholders or ellipses)
 progress: Current progress description
 next_action: Next action plan (if applicable)
 \`\`\`
@@ -996,7 +996,7 @@ next_action: Next action plan (if applicable)
 - **planning**: Analyzing task and formulating plan
 - **executing**: Performing specific operations
 - **completed**: Task completed
-- **code**: need to modify programming code (must be included)
+- **code**: exact compilable code to be modified (must be included, NO pseudocode, placeholders or ellipses)
 
 ## Collaboration Mechanism
 In each round of conversation, you should:
@@ -1751,6 +1751,7 @@ ${functions
 
 \`\`\`task-status
 status: planning|executing|completed
+code: 要改动的完整、真实代码（禁止伪代码、占位符或省略号）
 progress: 当前进度描述
 next_action: 下一步行动计划（如果有的话）
 \`\`\`
@@ -1758,6 +1759,7 @@ next_action: 下一步行动计划（如果有的话）
 - **planning**: 正在分析任务和制定计划
 - **executing**: 正在执行具体的操作
 - **completed**: 任务已完成
+- **code**: 要改动的完整、可编译代码（必须包含，禁止伪代码、占位符或省略号）
 
 ## 协作机制
 在每轮对话中，你应该：
@@ -1854,6 +1856,7 @@ You need to clearly identify the current task status in each response:
 
 \`\`\`task-status
 status: planning|executing|completed
+code: exact compilable code changes (NO pseudocode, placeholders or ellipses)
 progress: Current progress description
 next_action: Next action plan (if applicable)
 \`\`\`
@@ -1861,6 +1864,7 @@ next_action: Next action plan (if applicable)
 - **planning**: Analyzing task and formulating plan
 - **executing**: Performing specific operations
 - **completed**: Task completed
+- **code**: exact compilable code to be modified (must be included, NO pseudocode, placeholders or ellipses)
 
 ## Collaboration Mechanism
 In each round of conversation, you should:
