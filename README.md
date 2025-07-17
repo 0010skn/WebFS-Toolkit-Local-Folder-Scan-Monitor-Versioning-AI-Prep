@@ -1,3 +1,34 @@
+
+<div align="right">
+  <details>
+    <summary >🌐 Language</summary>
+    <div>
+      <div align="center">
+        <a href="https://openaitx.github.io/view.html?user=oldjs&project=web-code-agent&lang=en">English</a>
+        | <a href="https://openaitx.github.io/view.html?user=oldjs&project=web-code-agent&lang=zh-CN">简体中文</a>
+        | <a href="https://openaitx.github.io/view.html?user=oldjs&project=web-code-agent&lang=zh-TW">繁體中文</a>
+        | <a href="https://openaitx.github.io/view.html?user=oldjs&project=web-code-agent&lang=ja">日本語</a>
+        | <a href="https://openaitx.github.io/view.html?user=oldjs&project=web-code-agent&lang=ko">한국어</a>
+        | <a href="https://openaitx.github.io/view.html?user=oldjs&project=web-code-agent&lang=hi">हिन्दी</a>
+        | <a href="https://openaitx.github.io/view.html?user=oldjs&project=web-code-agent&lang=th">ไทย</a>
+        | <a href="https://openaitx.github.io/view.html?user=oldjs&project=web-code-agent&lang=fr">Français</a>
+        | <a href="https://openaitx.github.io/view.html?user=oldjs&project=web-code-agent&lang=de">Deutsch</a>
+        | <a href="https://openaitx.github.io/view.html?user=oldjs&project=web-code-agent&lang=es">Español</a>
+        | <a href="https://openaitx.github.io/view.html?user=oldjs&project=web-code-agent&lang=it">Itapano</a>
+        | <a href="https://openaitx.github.io/view.html?user=oldjs&project=web-code-agent&lang=ru">Русский</a>
+        | <a href="https://openaitx.github.io/view.html?user=oldjs&project=web-code-agent&lang=pt">Português</a>
+        | <a href="https://openaitx.github.io/view.html?user=oldjs&project=web-code-agent&lang=nl">Nederlands</a>
+        | <a href="https://openaitx.github.io/view.html?user=oldjs&project=web-code-agent&lang=pl">Polski</a>
+        | <a href="https://openaitx.github.io/view.html?user=oldjs&project=web-code-agent&lang=ar">العربية</a>
+        | <a href="https://openaitx.github.io/view.html?user=oldjs&project=web-code-agent&lang=fa">فارسی</a>
+        | <a href="https://openaitx.github.io/view.html?user=oldjs&project=web-code-agent&lang=tr">Türkçe</a>
+        | <a href="https://openaitx.github.io/view.html?user=oldjs&project=web-code-agent&lang=vi">Tiếng Việt</a>
+        | <a href="https://openaitx.github.io/view.html?user=oldjs&project=web-code-agent&lang=id">Bahasa Indonesia</a>
+      </div>
+    </div>
+  </details>
+</div>
+
 <!-- GitHub Badges -->
 <p align="center">
   <a href="https://github.com/oldjs/web-code-agent/stargazers"><img src="https://img.shields.io/github/stars/oldjs/web-code-agent?style=social" alt="GitHub stars"></a>
